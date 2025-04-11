@@ -1,0 +1,26 @@
+/* GarantesPage.css */
+
+.fade-enter {
+  opacity: 0;
+  transform: translateY(-50px);
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 500ms, transform 500ms;
+}
+
+.fade-exit {
+  opacity: 1;
+  transform: translateY(0);
+  background-color: rgb(255, 255, 255);
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transform: translateX(-250px);
+  transition: opacity 500ms, transform 700ms;
+  background-color: rgb(189, 66, 255);
+
+}
