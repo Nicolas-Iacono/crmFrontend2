@@ -49,7 +49,9 @@ import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import DescriptionIcon from '@mui/icons-material/Description';
-
+import NotaContratoForm from '../common/NotaContratoForm';
+import NotasContratoList from '../common/NotasContratoList';
+import ModalContract from '../common/popUps/ModalContract';
 const ContratosPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -641,7 +643,7 @@ const ContratosPage = () => {
           </IconButton>
         </DialogTitle>
         
-        <DialogContent sx={{ py: 3 }}>
+        {/* <DialogContent sx={{ py: 3 }}>
           <Box sx={{ mb: 3 }}>
             <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
               <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
@@ -698,7 +700,7 @@ const ContratosPage = () => {
             </Paper>
             
             {/* Sección Propietario */}
-            <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+            {/* <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
               <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
                 Propietario
               </Typography>
@@ -745,9 +747,9 @@ const ContratosPage = () => {
                 </Box>
               </Box>
             </Paper>
-            
+             */}
             {/* Sección Inquilino */}
-            <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+            {/* <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
               <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
                 Inquilino
               </Typography>
@@ -793,10 +795,10 @@ const ContratosPage = () => {
                   </Tooltip>
                 </Box>
               </Box>
-            </Paper>
+            </Paper> */}
             
             {/* Sección Garantes */}
-            <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+            {/* <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
               <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
                 Garantes ({selectedContract.garantes?.length || 0})
               </Typography>
@@ -860,48 +862,12 @@ const ContratosPage = () => {
                   No hay garantes asociados a este contrato
                 </Typography>
               )}
-            </Paper>
+            </Paper> */}
             
             {/* Sección Notas */}
-            <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
-              <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
-                Notas
-              </Typography>
-              
-              <TextField
-                fullWidth
-                multiline
-                minRows={4}
-                maxRows={8}
-                placeholder="Escribe tus notas sobre este contrato aquí..."
-                value={contractNote}
-                onChange={(e) => setContractNote(e.target.value)}
-                variant="outlined"
-                sx={{
-                  mb: 2,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : '#f5f5f5'
-                  }
-                }}
-              />
-              
-              <Button
-                variant="contained"
-                startIcon={<SaveIcon />}
-                onClick={handleSaveNote}
-                sx={{
-                  borderRadius: '8px',
-                  backgroundColor: '#1F2C61',
-                  '&:hover': {
-                    backgroundColor: '#151e40'
-                  },
-                 
-                }}
-              >
-                Guardar nota
-              </Button>
-            </Paper>
+            {/* Sección Notas - Nuevo Componente */}
+            {/* <NotaContratoForm idContrato={selectedContract?.id} />
+            <NotasContratoList idContrato={selectedContract?.id} />
           </Box>
         </DialogContent>
         
@@ -937,7 +903,18 @@ const ContratosPage = () => {
           >
             Cerrar
           </Button>
-        </DialogActions>
+        </DialogActions> */}
+         <ModalContract
+          selectedContract={selectedContract}
+          handleCloseDetailModal={handleCloseDetailModal}
+          detailModalOpen={detailModalOpen}
+          handleWhatsAppClick={handleWhatsAppClick}
+          handleEmailClick={handleEmailClick}
+          handleGenerateReceipt={handleGenerateReceipt}
+          contractNote={contractNote}
+          setContractNote={setContractNote}
+          handleSaveNote={handleSaveNote}
+        />
       </Dialog>
     );
   };

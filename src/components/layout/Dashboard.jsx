@@ -148,7 +148,6 @@ export default function ButtonAppBar() {
   
     return color;
   }
-  console.log(open)
   function stringAvatar(name) {
     const initials = name.split(' ').map(n => n[0]).join('');
     return {
