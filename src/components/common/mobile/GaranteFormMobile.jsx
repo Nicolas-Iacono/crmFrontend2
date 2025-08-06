@@ -9,7 +9,7 @@ import Divider from '@mui/material/Divider';
 import { format } from 'date-fns';
 import contratoApi from '../../api/contratoApi';
 
-const GaranteFormMobile = () => {
+const GaranteFormMobile = ({ onSuccess }) => {
   const [contratos, setContratos] = useState({ data: [] });
   const [tipoGarantia, setTipoGarantia] = useState(false);
   
@@ -91,11 +91,20 @@ const GaranteFormMobile = () => {
   
   const onSubmit = async (values, { setSubmitting }) => {
     try {
-      // Ensure username is included
+      // Ensure username is included and convert numeric fields to integers
       const formattedValues = {
         ...values,
-        nombreUsuario: localUser.name
+        nombreUsuario: localUser.name,
+        // Convert numeric fields that should be integers
+        dni: values.dni ? parseInt(values.dni, 10) || values.dni : values.dni,
+        telefono: values.telefono ? parseInt(values.telefono, 10) || values.telefono : values.telefono,
+        cuit: values.cuit ? parseInt(values.cuit, 10) || values.cuit : values.cuit,
+        legajo: values.legajo ? parseInt(values.legajo, 10) || values.legajo : values.legajo,
+        cuitEmpresa: values.cuitEmpresa ? parseInt(values.cuitEmpresa, 10) || values.cuitEmpresa : values.cuitEmpresa,
+        partidaInmobiliaria: values.partidaInmobiliaria ? parseInt(values.partidaInmobiliaria, 10) || values.partidaInmobiliaria : values.partidaInmobiliaria,
       };
+      
+      console.log("Valores procesados (mobile):", formattedValues);
       
       await GarantesApi.crearGarante(formattedValues);
       console.log('Garante creado exitosamente');
@@ -104,6 +113,11 @@ const GaranteFormMobile = () => {
         text: 'Garante creado exitosamente',
         icon: 'success',
       });
+      
+      // Close modal if onSuccess callback is provided
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       console.error(`Error al crear el garante:`, error);
       
@@ -140,7 +154,7 @@ const GaranteFormMobile = () => {
       validationSchema={SchemaValidation.garanteValidation}
       onSubmit={onSubmit}
     >
-      {({ values, handleChange, handleBlur, setFieldValue }) => (
+      {({ values, handleChange, handleBlur, setFieldValue, isSubmitting }) => (
         <Form>
           <Typography variant="h4" sx={{ textAlign: 'center', margin: '1rem 0' }}>
             Nuevo Garante
@@ -279,9 +293,19 @@ const GaranteFormMobile = () => {
                 </FormControl>
                 <ErrorMessage name="estadoCivil" component="div" style={{ color: 'red' }} />
               </Box>
-
-              <Divider sx={{ margin: "1rem 0" }} />
-
+              <Box sx={{ display: "flex", alignItems: "center", margin: "1rem 0" }}>
+              <Typography>Recibo de Sueldo</Typography>
+              <Switch
+                checked={!tipoGarantia}
+                onChange={cambioGarantia}
+                name="tipoGarantia"
+              />
+              <Typography>Garantía Propietaria</Typography>
+            </Box>
+            </Grid2>
+<Grid2>
+    {tipoGarantia ? (
+            <Grid2>
               <Typography variant="h6" sx={{ marginBottom: "1rem" }}>
                 Información Laboral
               </Typography>
@@ -340,10 +364,16 @@ const GaranteFormMobile = () => {
                 />
                 <ErrorMessage name="cargoActual" component="div" style={{ color: 'red' }} />
               </Box>
+
+            </Grid2>
               
-              <Divider sx={{ margin: "1rem 0" }} />
+              ) 
+              :
               
-              {tipoGarantia && (
+              (
+
+              
+              
                 <Grid2>
                   <Typography variant="h6" sx={{ marginBottom: "1rem" }}>
                     Información de la Propiedad en Garantía
@@ -427,21 +457,20 @@ const GaranteFormMobile = () => {
                   </Box>
                 </Grid2>
               )}
+
             </Grid2>
 
-            <Box sx={{ display: "flex", alignItems: "center", margin: "1rem 0" }}>
-              <Typography>Recibo de Sueldo</Typography>
-              <Switch
-                checked={!tipoGarantia}
-                onChange={cambioGarantia}
-                name="tipoGarantia"
-              />
-              <Typography>Garantía Propietaria</Typography>
-            </Box>
+            
 
             <Box sx={{ display: "flex", width: "100%", marginBottom: "2rem" }}>
-              <Button fullWidth type="submit" variant="contained" color="primary">
-                Cargar Garante
+              <Button 
+                fullWidth 
+                type="submit" 
+                variant="contained" 
+                color="primary"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Creando garante..." : "Cargar Garante"}
               </Button>
             </Box>
           </Grid2>

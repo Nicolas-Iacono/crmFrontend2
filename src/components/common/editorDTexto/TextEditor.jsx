@@ -6,6 +6,7 @@ import { UseEditorGlobalContext } from "../../context/EditorGlobal";
 import DOMPurify from 'dompurify';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../context/GlobalAuth';
 
 const TextEditor = ({ contrato, isOpen, onClose }) => {
   const { addParagraph, resetEditor, clearEditor } = UseEditorGlobalContext();
@@ -14,10 +15,12 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { usuarioFetch } = useAuth();
 
+  
   useEffect(() => {
     setLoading(true);
-    if (!contrato) {
+    if (!contrato || !usuarioFetch) {
       clearEditor();
       setLoading(false);
       return;
@@ -30,7 +33,7 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
     } else {
       const contenidoInicial = `
         <div class="contrato-content">
-          <p>En la Ciudad de Quilmes, en el dia de hoy sito ${contrato.fecha_inicio}, ${contrato.propietario.pronombre} ${contrato.propietario.nombre} ${contrato.propietario.apellido} de nacionalidad ${contrato.propietario.nacionalidad}, D.N.I. ${contrato.propietario.dni} , C.U.I.L. ${contrato.propietario.cuit} en adelante denominada la "parte LOCADORA", y por la otra parte ${contrato.inquilino.pronombre} ${contrato.inquilino.nombre} ${contrato.inquilino.apellido} de ${contrato.inquilino.nacionalidad} con DNI N° ${contrato.inquilino.dni}, CUIL ${contrato.inquilino.cuit} con domicilio en la ${contrato.propiedad.direccion} de la ciudad de ${contrato.propiedad.localidad}, partido de ${contrato.propiedad.partido} Provincia de ${contrato.propiedad.provincia}, en adelante llamado la "parte LOCATARIA", convienen en celebrar el presente Contrato de Locación, que celebran de buena fé, con el cuidado y previsión que exigen y contemplan los art. 9, 729, 961, 965 y 1061 Del Código Civil y Comercial de La Nación, en un todo de acuerdo el que se regirá por las siguientes cláusulas y condiciones.</p>
+        <p>En la Ciudad de ${usuarioFetch.partido}, en el dia de hoy sito ${contrato.fecha_inicio}, ${contrato?.propietario.pronombre || ""} ${contrato?.propietario.nombre || ""} ${contrato?.propietario.apellido ||   ""} de nacionalidad ${contrato.propietario.nacionalidad}, D.N.I. ${contrato.propietario.dni} , C.U.I.L. ${contrato.propietario.cuit} en adelante denominada la "parte LOCADORA", y por la otra parte ${contrato.inquilino.pronombre} ${contrato.inquilino.nombre} ${contrato.inquilino.apellido} de ${contrato.inquilino.nacionalidad} con DNI N° ${contrato.inquilino.dni}, CUIL ${contrato.inquilino.cuit} con domicilio en la ${contrato.propiedad.direccion} de la ciudad de ${contrato.propiedad.localidad}, partido de ${contrato.propiedad.partido} Provincia de ${contrato.propiedad.provincia}, en adelante llamado la "parte LOCATARIA", convienen en celebrar el presente Contrato de Locación, que celebran de buena fé, con el cuidado y previsión que exigen y contemplan los art. 9, 729, 961, 965 y 1061 Del Código Civil y Comercial de La Nación, en un todo de acuerdo el que se regirá por las siguientes cláusulas y condiciones.</p>
 
 
           PRIMERA: OBJETO:
@@ -46,7 +49,7 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
 
 
           CUARTA: FORMA DE PAGO:
-          <p>La parte Locataria abonará el alquiler del mes en curso del 1 al 10 de cada mes, en la inmobiliaria IACONO TROFA PROPIEDADES, sito en la calle Corrientes N°321, Localidad de Quilmes Oeste, Partido de Quilmes. La mora en el pago de los alquileres se producirá en forma automática por el mero transcurso del tiempo y sin necesidad de interpelación ni gestión previa de ninguna naturaleza. La falta de pago del alquiler dentro del plazo establecido facultará a la Locadora, a aplicar un interés punitorio pactado del 0,50 % diario. Dicho interés deberá abonarse conjuntamente con el alquiler correspondiente. La Locadora podrá rechazar el pago que no contenga dicho interés.</p>
+          <p>La parte Locataria abonará el alquiler del mes en curso del 1 al 10 de cada mes, en la inmobiliaria ${usuarioFetch.nombreNegocio}, sito en la calle ${usuarioFetch.razonSocial}, Localidad de ${usuarioFetch.localidad}, Partido de ${usuarioFetch.partido}. La mora en el pago de los alquileres se producirá en forma automática por el mero transcurso del tiempo y sin necesidad de interpelación ni gestión previa de ninguna naturaleza. La falta de pago del alquiler dentro del plazo establecido facultará a la Locadora, a aplicar un interés punitorio pactado del 0,50 % diario. Dicho interés deberá abonarse conjuntamente con el alquiler correspondiente. La Locadora podrá rechazar el pago que no contenga dicho interés.</p>
 
        
 
@@ -67,7 +70,7 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
 
 
           SÉPTIMA: DESTINO DE LA LOCACIÓN:
-          <p>La Locataria destinará el inmueble para uso ${contrato.destino}, el cual será ocupado únicamente por La Locataria, no pudiéndose dar otro destino por causa alguna. La falta de cumplimiento será causal de resolución sin perjuicio de las demás acciones por incumplimiento contractual. Queda terminantemente prohibido a La Locataria almacenar en el inmueble productos inflamables, explosivos y/o que emanen olores nauseabundos, como así la emisión de ruidos molestos, cualquier situación mencionada, será causal de resolución ut supra.</p>
+          <p>La Locataria destinará el inmueble para uso ${contrato?.destino || ""}, el cual será ocupado únicamente por La Locataria, no pudiéndose dar otro destino por causa alguna. La falta de cumplimiento será causal de resolución sin perjuicio de las demás acciones por incumplimiento contractual. Queda terminantemente prohibido a La Locataria almacenar en el inmueble productos inflamables, explosivos y/o que emanen olores nauseabundos, como así la emisión de ruidos molestos, cualquier situación mencionada, será causal de resolución ut supra.</p>
           OCTAVA: RESOLUCIÓN ANTICIPADA: La Locataria tendrán derecho, transcurridos los seis (6) primeros meses de vigencia de la relación locativa, rescindir el contrato en forma unilateral, debiendo notificar fehacientemente a la Locadora con un (1) mes de anticipación como mínimo. La Locataria, de hacer uso de la opción resolutoria, deberá abonar a la Locadora la indemnización equivalente a un mes y medio (1 y 1/2) del alquiler, cuando esta se produzca antes del año y de un (1) mes vigente al momento de la rescisión, si es de después del año de haber iniciado el contrato. En caso que La Locataria notifique fehacientemente a la Locadora con 3 (tres) meses o más de anticipación y transcurrido seis (6) meses de contrato no corresponderá abonar suma alguna en concepto de indemnización. 
           NOVENA: RENOVACIÓN DE CONTRATO: Queda facultada cualquiera de las partes (Locadora y Locataria) a notificar fehacientemente dentro de los 3 (tres) últimos meses de finalizar el presente contrato, con el objeto de acordar las nuevas condiciones para la renovación de la contratación, debiendo expedirse dentro de los quince (15) días hábiles. En caso que la notificación la ejerciera La Locataria, en caso de silencio o negativa de la Locadora, facultará a resolver anticipadamente el contrato, sin indemnización alguna, en cuyo caso deberá notificar fehacientemente a la Locadora la resolución anticipada con un mes de preaviso o bien en caso de incumplimiento deberá abonar a la Locadora la suma equivalente a  un (1)  mes del alquiler vigente al momento de la resolución. 
           DÉCIMA: REPARACIONES: La Locataria dará cuenta a la Locadora de cualquier desperfecto estructural, edilicio o por roturas de cañerías de cualquier tipo que sufriera la propiedad dentro de las 48 hs. de ocurrido el mismo, permitiéndole al mismo o a sus representantes el libre acceso a cualquier dependencia, cuando éste juzgue necesario su inspección. Dichas reparaciones estarán a cargo de la Locadora, siempre que las mismas no obedezcan a causas imputables a La Locataria, en cuyo caso deberán ser soportadas por esta última a su exclusivo costo y cargo. Para todos los casos, se pacta que dichas reparaciones serán exclusivamente a cargo de la Locadora, debiendo ser efectuadas en un plazo no mayor de diez (10) días hábiles de notificado fehacientemente por La Locataria, debiendo permitir todo trabajo que sea necesario para su conservación o mejora sin derecho a cobrar indemnización alguna por frustración de uso o goce, desistiendo expresamente La Locataria a plantear la cesación del pago del precio del canon, durante el tiempo de reparación. Conviniendo las partes que quedarán a cargo y costo de La Locataria todas las reparaciones destinadas al mantenimiento del buen estado del inmueble, conservando el mismo en el estado que lo recibió, como asimismo el funcionamiento de todos los artefactos y servicios (gas, refrigeración, agua caliente y fría, electricidad, etc), conforme lo prevé el Art. 1206 del Código Civil y Comercial de la Nación.  Por dichas erogaciones que efectúen La Locataria, motivadas en el cumplimiento de las obligaciones pactadas en el presente contrato, no corresponderá ningún tipo de indemnización o reintegro por parte de la Locadora. 
@@ -82,19 +85,26 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
           DÉCIMA NOVENA: PROHIBICIONES: Queda prohibido a la parte Locataria: 1) colocar vinilos decorativos en cualquier superficie del inmueble. 2) Pintar las paredes de color oscuro. El no cumplimiento de lo precitado será causal de resolución de contrato, toda vez que se demuestre fehacientemente dichas situaciones.
           VIGÉSIMA: FIANZA:
   ${
-    contrato.garantes && contrato.garantes.length > 0 
-      ? contrato.garantes.map((garante, index) => `
-          ${garante.pronombre} ${garante.nombre} ${garante.apellido} de nacionalidad ${garante.nacionalidad}, ${garante.estadoCivil}, con DNI N°${garante.dni}; CUIL ${garante.cuit}, con domicilio en la calle ${garante.direccionResidencial},
+    contrato?.garantes && contrato?.garantes?.length > 0 
+      ? contrato?.garantes?.map((garante, index) => `
+          ${garante?.pronombre || ''} ${garante?.nombre || ''} ${garante?.apellido || ''} de nacionalidad ${garante?.nacionalidad || ''}, con DNI N°${garante?.dni || ''}; CUIL ${garante?.cuit || ''}, con domicilio en la calle ${garante?.direccionResidencial || ''},
       `).join('')
       : 'No hay fiador registrado en el contrato.'
   }  
-  ${`
-          se constituye${contrato.garantes.length > 1 ? 'n' : ''} en FIADOR${contrato.garantes.length > 1 ? 'ES LISOS LLANOS' : ' LISO LLANO'} y principal${contrato.garantes.length > 1 ? 'es pagadores' : ' pagador'} con todo su patrimonio presente y futuro de todos los gastos que devengue este contrato, hasta que El Locatario devuelva el inmueble a la Locadora. Esta queda autorizada, en caso de iniciar acción judicial, para hacerlo contra ${contrato.garantes.length > 1 ? 'los Garantes' : 'el Garante'} o contra El Locatario o contra ambos, según convenga a sus intereses, sin que el hecho de iniciarla contra uno implique que se libere al otro de la obligación contraída.`
-  } 
+  ${
+    (() => {
+      const cantidadGarantes = contrato?.garantes?.length || 0;
+      const plural = cantidadGarantes > 1;
+  
+      return `
+        se constituye${plural ? 'n' : ''} en FIADOR${plural ? 'ES LISOS LLANOS' : ' LISO LLANO'} y principal${plural ? 'es pagadores' : ' pagador'} con todo su patrimonio presente y futuro de todos los gastos que devengue este contrato, hasta que El Locatario devuelva el inmueble a la Locadora. Esta queda autorizada, en caso de iniciar acción judicial, para hacerlo contra ${plural ? 'los Garantes' : 'el Garante'} o contra El Locatario o contra ambos, según convenga a sus intereses, sin que el hecho de iniciarla contra uno implique que se libere al otro de la obligación contraída.
+      `;
+    })()
+  }
     ${
     contrato.garantes && contrato.garantes.length > 0 
       ? contrato.garantes.map((garante, index) => `
-          ${garante.pronombre} ${garante.nombre} ${garante.apellido} de nacionalidad ${garante.nacionalidad}, aporta ${contrato.garantes.nombreEmpresa === null ? `la siguiente escritura publica  de un ${garante.tipoPropiedad}; Partida Inmobiliaria N° ${garante.partidaInmobiliaria}; Informacion catastral: ${garante.infoCatastral}; ubicada en la calle ${garante.direccion}; la cual se encuentra ${garante.estadoOcupacion}` : `recibos de sueldo de ${garante.nombreEmpresa}; C.U.I.T : ${garante.cuitEmpresa}; Legajo: ${garante.legajo}; Sector: ${garante.sectorActual}; Cargo: ${garante.cargoActual};  `}
+          ${garante?.pronombre || ''} ${garante?.nombre || ''} ${garante?.apellido || ''} de nacionalidad ${garante?.nacionalidad || ''}, aporta ${contrato.garantes.nombreEmpresa === null ? `la siguiente escritura publica  de un ${garante?.tipoPropiedad}; Partida Inmobiliaria N° ${garante?.partidaInmobiliaria}; Informacion catastral: ${garante?.infoCatastral}; ubicada en la calle ${garante?.direccion}; la cual se encuentra ${garante?.estadoOcupacion}` : `recibos de sueldo de ${garante?.nombreEmpresa}; C.U.I.T : ${garante?.cuitEmpresa}; Legajo: ${garante?.legajo}; Sector: ${garante?.sectorActual}; Cargo: ${garante?.cargoActual};  `}
       `).join('')
       : 'No hay fiador registrado en el contrato.'
   }  
@@ -238,12 +248,13 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
         apiKey="yk10ygeb6q71ucxlc2kqvhzpliekkdjmjgw8bxrxbxmvbl6y"
         value={contenido}
         init={{
+          theme: 'silver',
           height: isMobile ? "calc(100vh - 130px)" : "620px",
           menubar: true,
           plugins: [
-            'advlist autolink lists link image charmap print preview anchor',
-            'searchreplace visualblocks code fullscreen',
-            'insertdatetime media table paste code help wordcount'
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+            'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'help', 'wordcount'
           ],
           toolbar: 'undo redo | formatselect | bold italic underline | ' +
             'alignleft aligncenter alignright alignjustify | ' +
@@ -295,11 +306,10 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
             { title: 'Separador', block: 'p', wrapper: true, styles: { 'text-align': 'center' } },
             { title: 'Párrafo Normal', block: 'p', wrapper: true }
           ],
-          setup: function (editor) {
-            editor.on('init', function (e) {
-              editor.getBody().style.fontSize = '12pt';
-            });
+          setup: (editor) => {
+            console.log('TinyMCE instance:', tinymce);
           }
+          
         }}
         onEditorChange={handleEditorChange}
       />
@@ -346,15 +356,15 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
 
   if (isMobile) {
     return (
-      <Slide direction="up" in={isOpen} mountOnEnter unmountOnExit>
+      <Slide direction="up" in={isOpen}>
         <Box sx={{ 
-          width: '100%',
-          height: '100%',
-          backgroundColor: '#f8fafc',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
+            width: '100%',
+            height: 'calc(100dvh - 56px)', // nuevo: usa altura dinámica del viewport real
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: '#f8fafc',
+            overflow: 'hidden',
+            position: 'relative',
           '& .tox-tinymce': {
             border: 'none',
             borderRadius: 0,

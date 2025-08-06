@@ -166,6 +166,8 @@ const NuevoRecibo = () => {
                     montoTotal: values.montoTotal || selectedContrato.montoAlquiler,
                     concepto: values.concepto,
                     servicios: values.servicios,
+                    fechaVencimiento: values.fechaVencimiento,
+                    fechaEmision: values.fechaEmision,
                   }
                 } 
               });

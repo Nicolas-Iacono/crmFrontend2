@@ -22,27 +22,25 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import PersonIcon from '@mui/icons-material/Person';
+import CalculateIcon from '@mui/icons-material/Calculate';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
+import ShareIcon from '@mui/icons-material/Share';
+import Modal from '@mui/material/Modal';
+import Fade from '@mui/material/Fade';
+import Backdrop from '@mui/material/Backdrop';
+import QRCode from 'react-qr-code';
+
 
 export const Header = ({ toggleTheme, darkMode }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-  const { logout } = useAuth();
-
-  const [user, setUser] = useState({
-    name: '',
-    authorities: '',
-  });
-
-  useEffect(() => {
-    if (localStorage.getItem("username")) {
-      setUser({
-        name: localStorage.getItem("username"),
-        authorities: localStorage.getItem("authorities"),
-      });
-    }
-  }, []);
-
+  const { user, usuarioFetch, authUser } = useAuth();
+  const {  logout } = useAuth(); // Get user from AuthContext
+  const handleOpenQR = () => setOpenQR(true);
+  const handleCloseQR = () => setOpenQR(false);
+  // Local user state and useEffect are no longer needed as authUser provides the data.
+    const [openQR, setOpenQR] = useState(false);
   function stringToColor(string) {
     let hash = 0;
     let i;
@@ -60,7 +58,26 @@ export const Header = ({ toggleTheme, darkMode }) => {
 
     return color;
   }
+  const nombreNegocio = usuarioFetch?.nombreNegocio || 'Nombre de usuario';
+  const email = usuarioFetch?.email || 'usuario@email.com';
+  const razonSocial = usuarioFetch?.razonSocial || 'Ciudad, País';
+  const cuit = usuarioFetch?.cuit || 'Ciudad, País';
+  const telefono = usuarioFetch?.telefono || 'Ciudad, País';
+  const localidad = usuarioFetch?.localidad || 'Ciudad, País';
+  const provincia = usuarioFetch?.provincia || 'Ciudad, País';
+  const matricula = usuarioFetch?.matricula || '000000';
+  const qrData = usuarioFetch
 
+
+  ? `BEGIN:VCARD
+VERSION:3.0
+FN:${nombreNegocio}
+TEL;TYPE=WORK,VOICE:${telefono || ''}
+ADR;TYPE=WORK:;;${razonSocial || ''};${localidad || ''};${provincia || ''}.
+EMAIL:${email}
+NOTE:Matricula: ${matricula} / CUIT: ${cuit || ''}
+END:VCARD`
+  : '';
   function stringAvatar(name) {
     if (!name) return {};
     const initials = name.split(' ').map(n => n[0]).join('');
@@ -86,7 +103,17 @@ export const Header = ({ toggleTheme, darkMode }) => {
 
   const handleSettings = () => {
     setDrawerOpen(false);
-    navigate('/settings');
+    navigate('/ajustes');
+  };
+
+  const handleCalculadoraDeAlquileres = () => {
+    setDrawerOpen(false);
+    navigate('/calculadora-de-alquileres');
+  };
+
+  const handleQrCode = () => {
+    setDrawerOpen(false);
+    navigate('/qr-code');
   };
 
   const drawerContent = (
@@ -101,18 +128,21 @@ export const Header = ({ toggleTheme, darkMode }) => {
     >
       <Box sx={{ p: 2, textAlign: 'center' }}>
         <Avatar 
-          {...stringAvatar((user.name || '').toUpperCase())}
+          src={usuarioFetch?.logo}
+          {...(usuarioFetch?.logo ? {} : stringAvatar((usuarioFetch?.username || '').toUpperCase()))}
           sx={{
             width: 80,
             height: 80,
             mx: 'auto',
             mb: 1,
-            bgcolor: theme.palette.primary.main,
+            ...(usuarioFetch?.logo 
+              ? { bgcolor: 'transparent' } 
+              : { ...(stringAvatar((user?.username || '').toUpperCase()).sx || {}), bgcolor: theme.palette.primary.main }),
           }}
         />
-        <Typography variant="h6">{user.name}</Typography>
+        <Typography variant="h6">{user?.username}</Typography>
         <Typography variant="body2" color="text.secondary">
-          {user.authorities?.includes('ROLE_ADMIN') ? 'Administrador' : 'Usuario'}
+          {user?.authorities?.includes('ROLE_ADMIN') ? 'Administrador' : 'Usuario'}
         </Typography>
       </Box>
       
@@ -129,6 +159,24 @@ export const Header = ({ toggleTheme, darkMode }) => {
         </ListItem>
         
         <ListItem disablePadding>
+          <ListItemButton onClick={handleCalculadoraDeAlquileres}>
+            <ListItemIcon>
+              <CalculateIcon color="primary" />
+            </ListItemIcon>
+            <ListItemText primary="Calculadora de Alquileres" />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton  onClick={handleOpenQR}>
+            <ListItemIcon>
+              <QrCode2Icon color="primary" />
+            </ListItemIcon>
+            <ListItemText primary="Compartir Contacto" />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
           <ListItemButton onClick={handleSettings}>
             <ListItemIcon>
               <SettingsIcon color="primary" />
@@ -136,7 +184,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
             <ListItemText primary="Ajustes" />
           </ListItemButton>
         </ListItem>
-        
+       
         <ListItem>
           <ListItemIcon>
             {darkMode ? <DarkModeIcon /> : <LightModeIcon />}
@@ -149,7 +197,48 @@ export const Header = ({ toggleTheme, darkMode }) => {
           />
         </ListItem>
       </List>
+
+
+        <Modal
+            open={openQR}
+            onClose={handleCloseQR}
+            closeAfterTransition
+            slots={{ backdrop: Backdrop }}
+            slotProps={{
+              backdrop: {
+                timeout: 500,
+              },
+            }}
+          >
+            <Fade in={openQR}>
+              <Box sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 320,
+                bgcolor: 'background.paper',
+                borderRadius: '8px',
+                boxShadow: 24,
+                p: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+              }}>
+                <Typography variant="h6" color="primary">Compartir Contacto</Typography>
+                <Box sx={{ p: 2, bgcolor: 'white', borderRadius: '4px' }}>
+                  <QRCode value={qrData} size={256} />
+                </Box>
+                <Typography variant="body2" align="center" sx={{ mt: 1 }}>
+                  Escanea este código para guardar los datos del martillero.
+                </Typography>
+              </Box>
+            </Fade>
+          </Modal>
     </Box>
+
+    
   );
 
   if (isMobile) {
@@ -175,11 +264,14 @@ export const Header = ({ toggleTheme, darkMode }) => {
           }}
         >
           <Avatar 
-            {...stringAvatar((user.name || '').toUpperCase())}
+            src={usuarioFetch?.logo}
+            {...(usuarioFetch?.logo ? {} : stringAvatar((usuarioFetch?.username || '').toUpperCase()))}
             sx={{
               width: 40,
               height: 40,
-              bgcolor: theme.palette.primary.main,
+              ...(usuarioFetch?.logo 
+                ? { bgcolor: 'transparent' } 
+                : { ...(stringAvatar((usuarioFetch?.username || '').toUpperCase()).sx || {}), bgcolor: theme.palette.primary.main }),
             }}
           />
         </IconButton>
@@ -220,22 +312,24 @@ export const Header = ({ toggleTheme, darkMode }) => {
       boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
     }}>
       <Box sx={{ typography: 'body1' }}>
-        {user.name}
+        {authUser?.username}
       </Box>
       
       <IconButton
         onClick={handleDrawerToggle}
         sx={{ p: 0 }}
       >
-        <Avatar 
-          {...stringAvatar((user.name || '').toUpperCase())}
-          sx={{
-            width: 40,
-            height: 40,
-            bgcolor: 'white',
-            color: theme.palette.primary.main
-          }}
-        />
+       <Avatar 
+            src={usuarioFetch?.logo}
+            {...(usuarioFetch?.logo ? {} : stringAvatar((usuarioFetch?.username || '').toUpperCase()))}
+            sx={{
+              width: 40,
+              height: 40,
+              ...(usuarioFetch?.logo 
+                ? { bgcolor: 'transparent' } 
+                : { ...(stringAvatar((usuarioFetch?.username || '').toUpperCase()).sx || {}), bgcolor: theme.palette.primary.main }),
+            }}
+          />
       </IconButton>
 
       <Drawer

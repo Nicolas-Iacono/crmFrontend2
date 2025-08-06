@@ -164,7 +164,7 @@ export default function NavigationMenu() {
           left: 0,
           zIndex: 1000,
           boxShadow: '0px -2px 10px rgba(0,0,0,0.15)',
-          bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 30, 30, 0.95)' : 'white',
           height: '60px',
           '& .MuiBottomNavigationAction-label': {
             fontSize: '0.75rem',
@@ -175,13 +175,13 @@ export default function NavigationMenu() {
         onChange={handleChange}
       >
         <BottomNavigationAction
-          label="Contratos"
+          label="Inicio"
           value="contratos"
           icon={<ArticleIcon />}
           sx={{
-            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'inherit',
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(35, 35, 35)',
             '&.Mui-selected': {
-              color: theme.palette.primary.main,
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(24, 21, 101)',
             },
           }}
         />
@@ -190,9 +190,9 @@ export default function NavigationMenu() {
           value="personas"
           icon={<AccountBoxIcon />}
           sx={{
-            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'inherit',
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(35, 35, 35)',
             '&.Mui-selected': {
-              color: showPersonsMenu ? theme.palette.primary.main : 'inherit',
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(24, 21, 101)',
             },
           }}
         />
@@ -201,9 +201,9 @@ export default function NavigationMenu() {
           value="propiedades"
           icon={<MapsHomeWorkIcon />}
           sx={{
-            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'inherit',
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(35, 35, 35)',
             '&.Mui-selected': {
-              color: theme.palette.primary.main,
+             color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(24, 21, 101)',
             },
           }}
         />

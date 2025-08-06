@@ -24,13 +24,14 @@ export const InquilinosApi =  {
     throw new Error("Error al crear inquilino", error);
     }
   },
+  buscarInquilinoPorUsuario: (username) => axios.get(`${URL_INQUILINOS}/${username}`),
   getInquilinosPerLocalUser : async (username) => {
     if (!username) {
       console.error('Username is required for getInquilinosPerLocalUser');
       return { data: null, isLoading: false, error: 'Username is required' };
     }
     try {
-      const response = await axios.get(`${URL_INQUILINOS}/${username}`);
+      const response = await axios.get(`${URL_INQUILINOS}/enum/${username}`);
       return { data: response.data, isLoading: false, error: null };
     } catch (error) {
       console.error('Error fetching inquilinos por usuario:', error);

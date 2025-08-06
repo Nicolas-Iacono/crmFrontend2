@@ -1,37 +1,17 @@
-import { Typography, useMediaQuery, useTheme, Paper, Fade } from '@mui/material'
+import { Typography, useMediaQuery, useTheme, Paper, Fade, Grid2 } from '@mui/material'
 import React, { useState } from 'react'
 import LoginForm from './LoginForm'
 import RegistroForm from '../registro/RegistroForm'
-import logo1 from "../../../../assets/logo2.png"
 import { Box, Link, Grid } from '@mui/material'
 import { styled } from '@mui/material/styles'
+import logoinmoListopng from "../../../../assets/logoinmoListopng.png"
 
 // Estilos personalizados para los componentes
-const LoginContainer = styled(Box)(({ theme }) => ({
-  position: "fixed",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  display: "flex",
-  justifyContent: "space-around",
-  alignItems: "center",
-  background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-  margin: 0,
-  padding: 0,
-  boxSizing: "border-box",
-  width: "100vw",
-  minHeight: "100vh",
-  [theme.breakpoints.down('md')]: {
-    flexDirection: "column",
-    justifyContent: "center",
-    padding: theme.spacing(2),
-  },
-}));
+
 
 const LogoSection = styled(Box)(({ theme }) => ({
   width: "50%",
-  height: "80vh",
+  height: "100vh",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
@@ -99,43 +79,14 @@ const FormContainer = styled(Box)({
 const ToggleLink = styled(Link)({
   cursor: "pointer",
   fontWeight: "600",
+  color:"white",
   "&:hover": {
     textDecoration: "underline",
   },
 });
 
-// Formas decorativas para el fondo
-const DecorativeShape1 = styled(Box)(({ theme }) => ({
-  position: "absolute",
-  width: "300px",
-  height: "300px",
-  borderRadius: "50%",
-  background: "rgba(25, 118, 210, 0.1)",
-  top: "10%",
-  right: "10%",
-  [theme.breakpoints.down('md')]: {
-    width: "150px",
-    height: "150px",
-    top: "5%",
-    right: "5%",
-  },
-}));
 
-const DecorativeShape2 = styled(Box)(({ theme }) => ({
-  position: "absolute",
-  width: "200px",
-  height: "200px",
-  borderRadius: "50%",
-  background: "rgba(25, 118, 210, 0.1)",
-  bottom: "10%",
-  left: "15%",
-  [theme.breakpoints.down('md')]: {
-    width: "100px",
-    height: "100px",
-    bottom: "5%",
-    left: "10%",
-  },
-}));
+
 
 const Login = () => {
   const [register, setRegister] = useState(false)
@@ -147,45 +98,35 @@ const Login = () => {
   }
 
   return (
-    <Fade in={true} timeout={800}>
-      <LoginContainer>
-        {/* Formas decorativas */}
-        <DecorativeShape1 />
-        <DecorativeShape2 />
-        
-        {/* Sección del logo */}
-     
-        
-        {/* Sección del formulario */}
-        <FormSection elevation={10}>
-          <FormContainer>
-            <FormTitle>
-              {register ? 'Iniciar Sesión' : 'Registrarse'}
-            </FormTitle>
-          </FormContainer>
+   
+    <Grid2 container sx={{backgroundColor:"rgb(86, 23, 164)", height:"100vh", width:"100vw",position:"fixed"}}>
+        {register ? <LoginForm /> : <RegistroForm />}
 
-          {register ? (
-            <>
-              <FormContainer>
-                <LoginForm />
-              </FormContainer>
-              <Typography variant="body1">
-                ¿No tienes cuenta? <ToggleLink onClick={() => cambio()}>Registrarse</ToggleLink>
-              </Typography>
-            </>
-          ) : (
-            <>
-              <FormContainer>
-                <RegistroForm />
-              </FormContainer>
-              <Typography variant="body1">
-                ¿Ya tienes cuenta? <ToggleLink onClick={() => cambio()}>Iniciar sesión</ToggleLink>
-              </Typography>
-            </>
-          )}
-        </FormSection>
-      </LoginContainer>
-    </Fade>
+        <Box sx={{  position: "fixed",
+  bottom: "0",
+  left: "0",
+  width: "100%",
+  height:"3rem",
+  backgroundColor:"rgb(86, 23, 164)",
+  textAlign: "center",
+  zIndex: "1000"}}>
+               {register ? (
+             <>
+         
+           
+               <Typography variant="body1" sx={{color:"white"}}>
+                 ¿No tienes cuenta? <ToggleLink onClick={() => cambio()}>Registrarse</ToggleLink>
+               </Typography>
+             </>
+           ) : (
+             <>
+               <Typography variant="body1" sx={{color:"white"}}>
+                 ¿Ya tienes cuenta? <ToggleLink onClick={() => cambio()}>Iniciar sesión</ToggleLink>
+               </Typography>
+             </>
+           )}
+        </Box>
+    </Grid2>
   )
 }
 

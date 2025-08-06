@@ -52,6 +52,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import NotaContratoForm from '../common/NotaContratoForm';
 import NotasContratoList from '../common/NotasContratoList';
 import ModalContract from '../common/popUps/ModalContract';
+import EditIcon from '@mui/icons-material/Edit';
 const ContratosPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -133,38 +134,43 @@ const ContratosPage = () => {
   };
 
   const handleDeleteClick = async(id) => {
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: "Esta acción no se puede revertir",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await axios.delete(`${import.meta.env.VITE_API_URL}/contrato/${id}`);
-          Swal.fire(
-            'Eliminado!',
-            'El contrato ha sido eliminado.',
-            'success'
-          );
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/contrato/delete/${id}`);
+      Swal.fire('✅ Contrato eliminado', '', 'success');
+      
+      // Remove the deleted contract from the frontend state
+      const updatedContratos = contratos.filter(contrato => contrato.id !== id);
+      setContratos(updatedContratos);
+      
+    } catch (error) {
+      const mensajeError = error.response?.data?.message || '';
+    
+      if (
+        error.response?.status === 500 ||
+        (error.response?.status === 500 &&
+         mensajeError.includes("contrato activo"))
+      ) {
+        const confirmar = await Swal.fire({
+          title: 'Contrato activo',
+          text: '¿Querés eliminarlo de todas formas?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminar igual',
+          cancelButtonText: 'Cancelar',
+        });
+    
+        if (confirmar.isConfirmed) {
+          await axios.delete(`${import.meta.env.VITE_API_URL}/contrato/delete-forzado/${id}`);
+          Swal.fire('✅ Eliminado forzadamente', '', 'success');
+          
+          // Remove the deleted contract from the frontend state after forced deletion
           const updatedContratos = contratos.filter(contrato => contrato.id !== id);
           setContratos(updatedContratos);
-        } catch (error) {
-          console.error('Error al eliminar contrato:', error);
-          Swal.fire(
-            'Error!',
-            'No se pudo eliminar el contrato.',
-            'error'
-          );
         }
+      } else {
+        Swal.fire('❌ Error', 'No se pudo eliminar el contrato', 'error');
       }
-    });
-  };
-
+    }}
   const handleSelectContrato = (contrato) => {
     setSelectedContract(contrato);
     setEditorOpen(true);
@@ -353,17 +359,17 @@ const ContratosPage = () => {
                 </Tooltip>
                 
                 <Tooltip title="Generar contrato" placement="top">
-                  <IconButton 
-                    onClick={() => handleSelectContrato(contrato)}
-                    sx={{ 
-                      color: '#C22961', 
-                      bgcolor: 'rgba(194, 41, 97, 0.08)',
-                      '&:hover': { bgcolor: 'rgba(194, 41, 97, 0.12)' } 
-                    }}
-                  >
-                    <PictureAsPdfIcon />
-                  </IconButton>
-                </Tooltip>
+                      <IconButton 
+                        onClick={() => handleSelectContrato(contrato)}
+                        sx={{ 
+                          color: '#C22961', 
+                          bgcolor: 'rgba(194, 41, 97, 0.08)',
+                          '&:hover': { bgcolor: 'rgba(194, 41, 97, 0.12)' } 
+                        }}
+                      >
+                        <PictureAsPdfIcon />
+                      </IconButton>
+                    </Tooltip>
                 
                 <Tooltip title="Ver recibos" placement="top">
                   <IconButton 
@@ -643,269 +649,10 @@ const ContratosPage = () => {
           </IconButton>
         </DialogTitle>
         
-        {/* <DialogContent sx={{ py: 3 }}>
-          <Box sx={{ mb: 3 }}>
-            <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-              <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
-                Información del contrato
-              </Typography>
-              
-              <Grid2 container spacing={2}>
-                <Grid2 item xs={12} sm={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                    <HomeIcon sx={{ mr: 1, color: '#1F2C61' }} />
-                    <Typography variant="body1" fontWeight={500}>
-                      {selectedContract.propiedad?.direccion || 'Sin dirección'}
-                    </Typography>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                    <CalendarTodayIcon sx={{ mr: 1, color: '#C22961' }} />
-                    <Typography variant="body2">
-                      Fecha de inicio: {new Date(selectedContract.fechaCreacion).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                    <CalendarTodayIcon sx={{ mr: 1, color: '#C22961' }} />
-                    <Typography variant="body2">
-                      Fecha de finalización: {selectedContract.fechaFinalizacion ? new Date(selectedContract.fechaFinalizacion).toLocaleDateString() : 'No especificada'}
-                    </Typography>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                    <DescriptionIcon sx={{ mr: 1, color: '#1F2C61' }} />
-                    <Typography variant="body2">
-                      Destino: {selectedContract.destino || 'No especificado'}
-                    </Typography>
-                  </Box>
-                </Grid2>
-                
-                <Grid2 item xs={12} sm={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                    <AttachMoneyIcon sx={{ mr: 1, color: 'green' }} />
-                    <Typography variant="body1" fontWeight={500}>
-                      Monto: ${selectedContract.monto?.toLocaleString() || 'No especificado'}
-                    </Typography>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                    <AttachMoneyIcon sx={{ mr: 1, color: 'green' }} />
-                    <Typography variant="body2">
-                      Depósito: ${selectedContract.deposito?.toLocaleString() || 'No especificado'}
-                    </Typography>
-                  </Box>
-                </Grid2>
-              </Grid2>
-            </Paper>
-            
-            {/* Sección Propietario */}
-            {/* <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-              <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
-                Propietario
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 500, mb: 1 }}>
-                    {selectedContract.propietario?.nombre} {selectedContract.propietario?.apellido}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Email: {selectedContract.propietario?.email || 'No disponible'}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Teléfono: {selectedContract.propietario?.telefono || 'No disponible'}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    DNI: {selectedContract.propietario?.dni || 'No disponible'}
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                  <Tooltip title="Contactar por WhatsApp">
-                    <IconButton 
-                      color="success" 
-                      onClick={() => handleWhatsAppClick(selectedContract.propietario?.telefono)}
-                      sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }}
-                    >
-                      <WhatsAppIcon />
-                    </IconButton>
-                  </Tooltip>
-                  
-                  <Tooltip title="Enviar Email">
-                    <IconButton 
-                      color="primary" 
-                      onClick={() => handleEmailClick(selectedContract.propietario?.email)}
-                      sx={{ bgcolor: 'rgba(25, 118, 210, 0.1)' }}
-                    >
-                      <EmailIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              </Box>
-            </Paper>
-             */}
-            {/* Sección Inquilino */}
-            {/* <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-              <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
-                Inquilino
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 500, mb: 1 }}>
-                    {selectedContract.inquilino?.nombre} {selectedContract.inquilino?.apellido}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Email: {selectedContract.inquilino?.email || 'No disponible'}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Teléfono: {selectedContract.inquilino?.telefono || 'No disponible'}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    DNI: {selectedContract.inquilino?.dni || 'No disponible'}
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                  <Tooltip title="Contactar por WhatsApp">
-                    <IconButton 
-                      color="success" 
-                      onClick={() => handleWhatsAppClick(selectedContract.inquilino?.telefono)}
-                      sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }}
-                    >
-                      <WhatsAppIcon />
-                    </IconButton>
-                  </Tooltip>
-                  
-                  <Tooltip title="Enviar Email">
-                    <IconButton 
-                      color="primary" 
-                      onClick={() => handleEmailClick(selectedContract.inquilino?.email)}
-                      sx={{ bgcolor: 'rgba(25, 118, 210, 0.1)' }}
-                    >
-                      <EmailIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              </Box>
-            </Paper> */}
-            
-            {/* Sección Garantes */}
-            {/* <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-              <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
-                Garantes ({selectedContract.garantes?.length || 0})
-              </Typography>
-              
-              {selectedContract.garantes && selectedContract.garantes.length > 0 ? (
-                selectedContract.garantes.map((garante, index) => (
-                  <Box 
-                    key={garante.id || index} 
-                    sx={{ 
-                      display: 'flex', 
-                      flexDirection: { xs: 'column', sm: 'row' }, 
-                      gap: 2,
-                      mb: 2,
-                      pb: 2,
-                      borderBottom: index < selectedContract.garantes.length - 1 ? `1px solid ${theme.palette.divider}` : 'none'
-                    }}
-                  >
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 500, mb: 1 }}>
-                        {garante.nombre} {garante.apellido}
-                      </Typography>
-                      
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        Email: {garante.email || 'No disponible'}
-                      </Typography>
-                      
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        Teléfono: {garante.telefono || 'No disponible'}
-                      </Typography>
-                      
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        DNI: {garante.dni || 'No disponible'}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                      <Tooltip title="Contactar por WhatsApp">
-                        <IconButton 
-                          color="success" 
-                          onClick={() => handleWhatsAppClick(garante.telefono)}
-                          sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }}
-                        >
-                          <WhatsAppIcon />
-                        </IconButton>
-                      </Tooltip>
-                      
-                      <Tooltip title="Enviar Email">
-                        <IconButton 
-                          color="primary" 
-                          onClick={() => handleEmailClick(garante.email)}
-                          sx={{ bgcolor: 'rgba(25, 118, 210, 0.1)' }}
-                        >
-                          <EmailIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </Box>
-                ))
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  No hay garantes asociados a este contrato
-                </Typography>
-              )}
-            </Paper> */}
-            
-            {/* Sección Notas */}
-            {/* Sección Notas - Nuevo Componente */}
-            {/* <NotaContratoForm idContrato={selectedContract?.id} />
-            <NotasContratoList idContrato={selectedContract?.id} />
-          </Box>
-        </DialogContent>
         
-        <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
-          <Button
-            variant="contained"
-            onClick={() => handleGenerateReceipt(selectedContract)}
-            startIcon={<ReceiptIcon />}
-            sx={{
-              mr: 'auto',
-              borderRadius: '8px',
-              backgroundColor: '#C22961',
-              '&:hover': {
-                backgroundColor: '#991f4d'
-              }
-            }}
-          >
-            Ver recibos
-          </Button>
-          
-          <Button
-            variant="outlined"
-            onClick={handleCloseDetailModal}
-            sx={{
-              borderRadius: '8px',
-              borderColor: '#1F2C61',
-              color: '#1F2C61',
-              '&:hover': {
-                borderColor: '#1F2C61',
-                backgroundColor: 'rgba(31, 44, 97, 0.08)'
-              }
-            }}
-          >
-            Cerrar
-          </Button>
-        </DialogActions> */}
          <ModalContract
           selectedContract={selectedContract}
+          setSelectedContract={setSelectedContract}
           handleCloseDetailModal={handleCloseDetailModal}
           detailModalOpen={detailModalOpen}
           handleWhatsAppClick={handleWhatsAppClick}
@@ -1061,11 +808,20 @@ const ContratosPage = () => {
                       contrato={selectedContract} 
                       isOpen={editorOpen}
                       onClose={handleCloseEditor}
-                    />
+                   />
                   )}
                 </>
               ) : (
-                renderDesktopView(contratosFiltrados)
+                                <>
+                  {renderDesktopView(contratosFiltrados)}
+                  {selectedContract && (
+                    <TextEditor 
+                      contrato={selectedContract} 
+                      isOpen={editorOpen}
+                      onClose={handleCloseEditor}
+                    />
+                  )}
+                </>
               )}
             </>
           )}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Paper, Typography, TextField, Button, MenuItem, Grid } from '@mui/material';
+import { Paper, Typography, TextField, Button, MenuItem, Grid, Collapse, IconButton } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const estados = [
   { value: 'EN_PROCESO', label: 'En proceso' },
@@ -31,6 +32,7 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [openNotes, setOpenNotes] = useState(false); // State for collapse/expand
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,10 +73,26 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
 
   return (
     <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
-      <Typography variant="h6" color="#1F2C61" sx={{ mb: 2, fontWeight: 600 }}>
-        Notas
-      </Typography>
-      <form onSubmit={handleSubmit}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: openNotes ? '16px' : 0 }}>
+        <Typography variant="h6" color="#1F2C61" sx={{ fontWeight: 600 }}>
+          Notas
+        </Typography>
+        <IconButton
+          onClick={() => setOpenNotes(!openNotes)}
+          aria-expanded={openNotes}
+          aria-label="mostrar notas"
+          sx={{
+            transform: openNotes ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: (theme) => theme.transitions.create('transform', {
+              duration: theme.transitions.duration.shortest,
+            }),
+          }}
+        >
+          <ExpandMoreIcon />
+        </IconButton>
+      </div>
+      <Collapse in={openNotes} timeout="auto" unmountOnExit>
+        <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <TextField
@@ -186,6 +204,7 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
           Guardar nota
         </Button>
       </form>
+      </Collapse>
     </Paper>
   );
 };

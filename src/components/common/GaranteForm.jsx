@@ -11,7 +11,7 @@ import ContratoApi from '../api/contratoApi';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
-const GaranteForm = () => {
+const GaranteForm = ({ onSuccess }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -115,44 +115,64 @@ const GaranteForm = () => {
     { value: 2, label: 'Recibo de sueldo'}
   ]
   const onSubmit = async (values, { setSubmitting }) => {
+    console.log("Valores enviados:", values);
+
+    // Convert numeric fields to integers to avoid backend parsing errors
+    const processedValues = {
+      ...values,
+      // Convert numeric fields that should be integers
+      dni: values.dni ? parseInt(values.dni, 10) || values.dni : values.dni,
+      telefono: values.telefono ? parseInt(values.telefono, 10) || values.telefono : values.telefono,
+      cuit: values.cuit ? parseInt(values.cuit, 10) || values.cuit : values.cuit,
+      legajo: values.legajo ? parseInt(values.legajo, 10) || values.legajo : values.legajo,
+      cuitEmpresa: values.cuitEmpresa ? parseInt(values.cuitEmpresa, 10) || values.cuitEmpresa : values.cuitEmpresa,
+      partidaInmobiliaria: values.partidaInmobiliaria ? parseInt(values.partidaInmobiliaria, 10) || values.partidaInmobiliaria : values.partidaInmobiliaria,
+    };
+
+    console.log("Valores procesados:", processedValues);
 
     try {
-      await GarantesApi.crearGarante(values);
+      await GarantesApi.crearGarante(processedValues);
       console.log('Garante creado exitosamente');
       Swal.fire({
         title: '¡Éxito!',
         text: 'Garante creado exitosamente',
         icon: 'success',
       })
+      console.log("Valores enviados:", processedValues);
+      
+      // Close modal if onSuccess callback is provided
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
-      console.log(values)
+      console.log(processedValues)
       console.error(`Error al crear el garante: ${error.message}`);
       Swal.fire({
         title: 'Error',
         text: 'Error al crear el garante',
         icon: "error",
       })
+      console.log("Valores enviados:", processedValues);
+
       console.log(`${error.message}`)
     } finally {
       setSubmitting(false);
     }
   };
-  const cambioGarantia = () =>{
-    setTipoGarantia(!tipoGarantia)
-    if(tipoGarantia == false){
-      initialValues.tipoGarantia = "Garantia Propietaria"
-    }else{
-      initialValues.tipoGarantia = "Recibos de Sueldo"
-    }
-  } 
+  const cambioGarantia = () => {
+    const nuevoTipo = !tipoGarantia;
+    setTipoGarantia(nuevoTipo);
+    setFieldValue("tipoGarantia", nuevoTipo ? "Recibo de Sueldo" : "Garantia Propietaria");
+  };
 
   if (!isUserLoaded) return null;
   return (
     <Box sx={{ 
-      p: 3, 
       bgcolor: 'background.default',
       color: 'text.primary',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      width:"100%"
     }}>
       <Typography 
         variant="h4" 
@@ -174,20 +194,20 @@ const GaranteForm = () => {
         enableReinitialize >
     
 
-        {({ values, handleChange, handleBlur}) => (
-          <Form>
+        {({ values, handleChange, handleBlur, isSubmitting }) => (
+          <Form sx={{width:"100%" }}>
 
-            <Grid2 sx={{width:"100%"}}>
+            <Grid2 sx={{width:"100%", display:"flex",flexDirection:"column", justifyContent:"center", alignItems:"center" }}>
 
-            <Grid2 sx={{ display: 'flex', width: '100%', padding:".5rem",justifyContent:"space-evenly"}}>
+            <Grid2 sx={{ display: 'flex', width: '100%', padding:".5rem",justifyContent:"space-evenly",flexDirection:"column", justifyContent:"center", alignItems:"center"}}>
               
-              <Grid2 sx={{display:"flex" , gap:"3rem", width:"50%"}}>
-                <Grid2 sx={{ width: '50%', padding:".5rem"}}>
+              <Grid2 sx={{display:"flex" , gap:"3rem", width:"100%",flexDirection:"column", justifyContent:"center", alignItems:"center"}}>
+                <Grid2 sx={{ width: '100%',flexDirection:"column", justifyContent:"center", alignItems:"center"}}>
                 <Typography>
                   Datos personales
                 </Typography>
                 
-                  <Box sx={{ marginTop: '.5rem'}}>
+                  <Box sx={{ marginTop: '.5rem', width:"100%"}}>
                 
                 <Field name="pronombre">
                   {({ field, form }) => (
@@ -303,9 +323,7 @@ const GaranteForm = () => {
                   />
                   <ErrorMessage name="direccionResidencial" component="div" style={{ color: 'red' }} />
                 </Box>
-              </Grid2> 
-              <Grid2 sx={{ width: '50%', padding:".5rem", marginTop:"1.5rem"}}>
-              <Box sx={{ marginTop: '.5rem'}}>
+                <Box sx={{ marginTop: '.5rem'}}>
                 
                 <Field name="estadoCivil">
                   {({ field, form }) => (
@@ -344,24 +362,85 @@ const GaranteForm = () => {
                 />
                 <ErrorMessage name="nacionalidad" component="div" style={{ color: 'red' }} />
               </Box>
-              </Grid2>
+              
+              </Grid2> 
+         
             </Grid2>
 
             {/* Sección para subir imágenes */}
             <Divider orientation="vertical" flexItem variant="middle"/>
            <Grid2 >
 
-            <Grid2 sx={{display:"flex", alignItems:"center", marginBottom:".5rem"}}>
-            <Typography>Recibo de Sueldo</Typography>
+            <Grid2 sx={{display:"flex", alignItems:"center", marginBottom:"1rem", justifyContent:"space-evenly", gap:"1rem",
+              width:"100%"
+            }}>
+           {tipoGarantia ? (
+             <Box sx={{
+              display:"flex",
+              alignItems:"center", 
+              marginBottom:"1rem", 
+              justifyContent:"center",
+              gap:"1rem",
+              width:"100%",
+               padding:".5rem"
+            }}>
+      <Typography fontSize={".9rem"} textAlign={"center"}>Recibo de Sueldo</Typography>
+      </Box>
+           ):(
+            <Box sx={{
+              display:"flex",
+              alignItems:"center", 
+              marginBottom:"1rem", 
+              justifyContent:"center",
+              gap:"1rem",
+              width:"100%",
+               padding:".5rem",
+               backgroundColor:"rgba(33, 28, 128, 0.87)",
+               borderRadius:"10px"
+            }}>
+      <Typography fontSize={".9rem"} textAlign={"center"} color="white">Recibo de Sueldo</Typography>
+      </Box>
+           )}
+          
+            
             <Switch onClick={cambioGarantia}/>
-            <Typography>Garantia Propietaria</Typography>
+           {tipoGarantia ? (
+             <Box sx={{
+              display:"flex",
+              alignItems:"center", 
+              marginBottom:"1rem", 
+              justifyContent:"center",
+              gap:"1rem",
+              width:"100%",
+              padding:".5rem",
+               backgroundColor:"rgba(33, 28, 128, 0.87)",
+               borderRadius:"10px"
+            }}>
+      <Typography fontSize={".9rem"} textAlign={"center"} color="white">Garantia Propietaria</Typography>
+      </Box>
+           ):(
+            <Box sx={{
+              display:"flex",
+              alignItems:"center", 
+              marginBottom:"1rem", 
+              justifyContent:"center",
+              gap:"1rem",
+              width:"100%",
+              padding:".5rem"
+            }}>
+      <Typography fontSize={".9rem"} textAlign={"center"}>Garantia Propietaria</Typography>
+      </Box>
+           )}
+           
+            
             </Grid2>
            
             
             {tipoGarantia ? 
             (<Grid2 sx={{padding:".5rem", display:"flex", flexDirection:"column", justifyContent:"start", }}>
               
-              <Typography>
+
+              <Typography fontSize={"1.2rem"}>
                Garantia Propietaria
               </Typography>
             
@@ -447,7 +526,7 @@ const GaranteForm = () => {
             :
             (<Grid2 sx={{ padding:".5rem", display:"flex", flexDirection:"column", justifyContent:"start"}}>
               
-              <Typography>
+              <Typography fontSize={"1.2rem"}>
                 Datos Laborales
               </Typography>
             
@@ -540,8 +619,13 @@ const GaranteForm = () => {
 
   
           <Box sx={{display:"flex", width:"100%", justifyContent:"flex-end"}}>
-        <Button  type="submit" variant="contained" color="primary">
-            cargar garante
+        <Button  
+          type="submit" 
+          variant="contained" 
+          color="primary"
+          disabled={isSubmitting}
+        >
+            {isSubmitting ? "Creando garante..." : "Cargar garante"}
         </Button>
         </Box>
           </Grid2>

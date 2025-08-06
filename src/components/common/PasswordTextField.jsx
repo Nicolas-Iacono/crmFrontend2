@@ -23,6 +23,7 @@ export const PasswordTextField = ({ handleChange, handleBlur, values }) => {
       value={values.password}
       type={showPassword ? "text" : "password"}
       fullWidth
+      sx={{ borderRadius: 2, backgroundColor:"white", color:"#2E2C97" }}
       InputProps={{
         endAdornment: (
           <InputAdornment position="end">
@@ -30,6 +31,7 @@ export const PasswordTextField = ({ handleChange, handleBlur, values }) => {
               {showPassword ? <VisibilityOff /> : <Visibility />}
             </IconButton>
           </InputAdornment>
+          
         ),
       }}
     />

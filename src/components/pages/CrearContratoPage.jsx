@@ -12,7 +12,7 @@ import {
   IconButton,
   Card,
   CardContent,
-  Grid as Grid2,
+  Grid2,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -173,9 +173,9 @@ const CrearContratoPage = () => {
     gasEmpresa: '',
     gasPorcentaje: 100,
     luzEmpresa: '',
-    luzPorcentaje: 50,
+    luzPorcentaje: 100,
     municipalEmpresa: '',
-    municipalPorcentaje: 25,
+    municipalPorcentaje: 100,
     activo: true,
     nombreUsuario: userState.name
   });
@@ -191,29 +191,35 @@ const CrearContratoPage = () => {
     setLoading(prev => ({ ...prev, propietarios: true }));
     setError(prev => ({ ...prev, propietarios: null }));
     try {
-      const result = await PropietarioApi.getPropietariosPerLocalUser(userState.name);
+      const result = await PropietarioApi.buscarPropietarioPorUsuario(userState.name);
       if (result && result.data) {
-        setPropietarios(result.data);
+        setPropietarios(Array.isArray(result.data) ? result.data : []);
+      } else {
+        setPropietarios([]);
       }
     } catch (err) {
       console.error('Error fetching propietarios:', err);
       setError(prev => ({ ...prev, propietarios: err.message }));
+      setPropietarios([]);
     } finally {
       setLoading(prev => ({ ...prev, propietarios: false }));
     }
   };
-
+console.log("propietarios", propietarios);
   const fetchInquilinos = async () => {
     setLoading(prev => ({ ...prev, inquilinos: true }));
     setError(prev => ({ ...prev, inquilinos: null }));
     try {
-      const result = await InquilinosApi.getInquilinosPerLocalUser(userState.name);
+      const result = await InquilinosApi.buscarInquilinoPorUsuario(userState.name);
       if (result && result.data) {
-        setInquilinos(result.data);
+        setInquilinos(Array.isArray(result.data) ? result.data : []);
+      } else {
+        setInquilinos([]);
       }
     } catch (err) {
       console.error('Error fetching inquilinos:', err);
       setError(prev => ({ ...prev, inquilinos: err.message }));
+      setInquilinos([]);
     } finally {
       setLoading(prev => ({ ...prev, inquilinos: false }));
     }
@@ -223,9 +229,12 @@ const CrearContratoPage = () => {
     setLoading(prev => ({ ...prev, propiedades: true }));
     setError(prev => ({ ...prev, propiedades: null }));
     try {
-      const result = await PropiedadApi.getPropiedadesPerLocalUser(userState.name);
+      const result = await PropiedadApi.buscarPropiedadesPorUsuario(userState.name);
       if (result && result.data) {
-        setPropiedades(result.data);
+       
+        setPropiedades(Array.isArray(result.data) ? result.data : []);
+      }else{
+        setPropiedades([]);
       }
     } catch (err) {
       console.error('Error fetching propiedades:', err);
@@ -354,9 +363,9 @@ const CrearContratoPage = () => {
       gasEmpresa: '',
       gasPorcentaje: 100,
       luzEmpresa: '',
-      luzPorcentaje: 50,
+      luzPorcentaje: 100,
       municipalEmpresa: '',
-      municipalPorcentaje: 25,
+      municipalPorcentaje: 100,
       activo: true,
       nombreUsuario: userState.name
     });
@@ -531,17 +540,18 @@ const CrearContratoPage = () => {
       // Crear contrato
       const response = await contratoApi.crearContrato(formData);
       
-      if (response && (response.id || response.status === 201)) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Contrato creado',
-          text: 'El contrato ha sido creado exitosamente'
-        }).then(() => {
-          navigate('/contratos');
-        });
-      } else {
-        throw new Error('Error al crear el contrato: Respuesta inválida del servidor');
-      }
+      // Log the response for debugging
+      console.log('Contract creation response:', response);
+      
+      // If we reach this point without an exception, the contract was created successfully
+      // The API call would have thrown an error if it failed
+      Swal.fire({
+        icon: 'success',
+        title: 'Contrato creado',
+        text: 'El contrato ha sido creado exitosamente'
+      }).then(() => {
+        navigate('/contratos');
+      });
     } catch (error) {
       console.error('Error creating contract:', error);
       let errorMessage = 'Ocurrió un error al crear el contrato';
@@ -572,11 +582,14 @@ const CrearContratoPage = () => {
     p.email.toLowerCase().includes(search.propietario.toLowerCase())
   );
 
-  const filteredInquilinos = inquilinos.filter(i => 
-    i.nombre.toLowerCase().includes(search.inquilino.toLowerCase()) ||
-    i.apellido.toLowerCase().includes(search.inquilino.toLowerCase()) ||
-    i.email.toLowerCase().includes(search.inquilino.toLowerCase())
-  );
+  const filteredInquilinos = Array.isArray(inquilinos)
+  ? inquilinos.filter(i =>
+      i.nombre.toLowerCase().includes(search.inquilino.toLowerCase()) ||
+      i.apellido.toLowerCase().includes(search.inquilino.toLowerCase()) ||
+      i.email.toLowerCase().includes(search.inquilino.toLowerCase())
+    )
+  : [];
+
 
   const filteredPropiedades = propiedades.filter(p => 
     p.direccion.toLowerCase().includes(search.propiedad.toLowerCase()) ||
@@ -606,7 +619,7 @@ const CrearContratoPage = () => {
     <Box sx={{ 
       p: 3, 
       minHeight: '100vh',
-      backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.default : '#f5f5f5'
+      backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.default : ' #f5f5f5'
     }}>
       <Box sx={{ 
         display: 'flex', 
@@ -637,9 +650,9 @@ const CrearContratoPage = () => {
             
           },
           '& .MuiStepIcon-root': {
-            color: theme.palette.mode === 'dark' ? "#2E2C97" : '#2E2C97',
+            color: theme.palette.mode === 'dark' ? " #2E2C97" : ' #2E2C97',
             '&.Mui-active': {
-              color: theme.palette.mode === 'dark' ? "#C22961" : '#C22961',
+              color: theme.palette.mode === 'dark' ? " #C22961" : ' #C22961',
             },
             '&.Mui-completed': {
               color: theme.palette.success.main,
@@ -1427,7 +1440,7 @@ const CrearContratoPage = () => {
                     />
                     
                     <TextField
-                      label="Actualización (%)"
+                      label="Actulizar cada (meses)"
                       name="actualizacion"
                       type="number"
                       InputProps={{

@@ -38,23 +38,24 @@ const PropiedadesForm = () => {
   }, []);
 
   useEffect(() => {
-    fetchPropietarios();
-  }, []);
-
   const fetchPropietarios = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/propietario/all`);;
-      // Handle both array response and nested data object
-      const propietariosArray = Array.isArray(response.data) ? response.data : 
-                            (response.data && response.data.data && Array.isArray(response.data.data)) ? response.data.data : [];
-      console.log("Propietarios recibidos:", propietariosArray);
-      setPropietarios({ data: propietariosArray });
+        const response = await PropietarioApi.buscarPropietarioPorUsuario(user.name);
+        const propietariosObtenidos = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data?.data && Array.isArray(response.data.data)) 
+          ? response.data.data 
+          : [];
+      
+      setPropietarios({ data: propietariosObtenidos });
     } catch (error) {
       console.error('Error fetching propietarios:', error);
     }
   };
+    fetchPropietarios();
+  }, [user]);
 
-
+  console.log(propietarios)
   const initialValues = {
     direccion: '',
     localidad: '',
@@ -63,7 +64,7 @@ const PropiedadesForm = () => {
     disponibilidad: false,
     tipo: "",
     inventario: "",
-    id_propietario: 0,
+    id_propietario: '',
     nombreUsuario:user.name
   };
   console.log(user.name)
@@ -133,7 +134,7 @@ const PropiedadesForm = () => {
         onSubmit={onSubmit}
         enableReinitialize={true}
       >
-        {({ values, handleChange, handleBlur }) => {
+        {({ values, handleChange, handleBlur,isSubmitting }) => {
           // Actualizar el recuento de palabras cada vez que cambie el campo inventario
           useEffect(() => {
             const wordCount = values.inventario.length ;
@@ -198,6 +199,14 @@ const PropiedadesForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.direccion}
+                    sx={{ 
+                
+                    
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      
+                      }
+                    }}
                   />
                   <ErrorMessage name="direccion" component="div" style={{ color: 'red' }} />
                 </Box>
@@ -211,6 +220,14 @@ const PropiedadesForm = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   value={values.localidad}
+                  sx={{ 
+                
+                    
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                    
+                    }
+                  }}
                 />
                 <ErrorMessage name="localidad" component="div" style={{ color: 'red' }} />
               </Box>
@@ -224,6 +241,14 @@ const PropiedadesForm = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   value={values.partido}
+                  sx={{ 
+                
+                    
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                    
+                    }
+                  }}
                 />
                 <ErrorMessage name="partido" component="div" style={{ color: 'red' }} />
               </Box>
@@ -237,12 +262,20 @@ const PropiedadesForm = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   value={values.provincia}
+                  sx={{ 
+                
+                    
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                    
+                    }
+                  }}
                 />
                 <ErrorMessage name="provincia" component="div" style={{ color: 'red' }} />
               </Box>
 
-              <Grid2 sx={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"2rem"}}> 
-              <Box sx={{ marginTop: '.5rem',width:"45%"}}>
+              <Grid2 sx={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"2rem", flexDirection:"column"}}> 
+              <Box sx={{ marginTop: '.5rem',width:"100%"}}>
                     
                     <Field name="tipo">
                       {({ field, form }) => (
@@ -256,7 +289,15 @@ const PropiedadesForm = () => {
                             onChange={(e) => {
                               form.setFieldValue("tipo", e.target.value);
                             }}
-                          >
+                            sx={{ 
+                              mb: 2,
+                              borderRadius: '8px',
+                              
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '8px',
+                              
+                              }
+                            }}>
                             {tipos.map((option) => (
                               <MenuItem key={option.value} value={option.value}>
                                 {option.label}
@@ -267,12 +308,15 @@ const PropiedadesForm = () => {
                       )}
                     </Field>
                   </Box>
-                  <Box sx={{marginTop:".5rem", width:"45%"}}>
+                  <Box sx={{marginTop:".5rem", width:"100%", padding:"1rem 0", border:"1px solid rgb(31, 36, 90)",display:"flex", flexDirection:"column",
+                    justifyContent:"center", alignItems:"center", gap:"1rem", borderRadius:"1rem", boxShadow:"0px 0px 10px 1px rgba(130, 130, 130, 0.85)"
+                  }}>
                     <Typography variant="h6" sx={{ 
                       color: 'primary.main', 
                       fontWeight: 600, 
                       mb: 1,
-                      fontSize: { xs: '0.9rem', sm: '1rem' }
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
+                      padding:"1rem "
                     }}>
                       Seleccionar Propietario
                     </Typography>
@@ -285,13 +329,15 @@ const PropiedadesForm = () => {
                       onChange={(e) => setSearchTermPropietario(e.target.value)}
                       sx={{ 
                         mb: 2,
+                        width:"90%",
                         '& .MuiOutlinedInput-root': {
                           borderRadius: '8px',
+                        
                         }
                       }}
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position="start">
+                          <InputAdornment position="start" sx={{}}>
                             <SearchIcon color="primary" />
                           </InputAdornment>
                         ),
@@ -300,7 +346,7 @@ const PropiedadesForm = () => {
                     />
                     
                     <FormControl fullWidth>
-                      <InputLabel id="propietario-label">Propietario</InputLabel>
+                      <InputLabel id="propietario-label" sx={{paddingLeft:"1.5rem"}}>Propietario</InputLabel>
                       <Field
                         name="id_propietario"
                         as={Select}
@@ -309,49 +355,62 @@ const PropiedadesForm = () => {
                         onChange={handleChange}
                         onBlur={handleBlur}
                         value={values.id_propietario}
+                        sx={{
+                          width:"90%",
+                          margin:"0 auto",
+                          
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                            
+                          },
+                          '& .MuiSelect-select': {
+                            padding: '12px',
+                            
+                          },
+                        }}
                       >
-                       {propietarios.data ? 
-                         (propietarios.data.length > 0 ? (
-                           propietarios.data
-                             .filter((propietario) => propietario.usuarioDtoSalida && propietario.usuarioDtoSalida.username === user.name)
-                             .filter((propietario) => {
-                               if (searchTermPropietario === '') return true;
-                               
-                               const nombre = propietario.nombre || "";
-                               const apellido = propietario.apellido || "";
-                               const dni = propietario.dni || "";
-                               const email = propietario.email || "";
-                               const telefono = propietario.telefono || "";
-                               
-                               const termino = searchTermPropietario.toLowerCase();
-                               
-                               return nombre.toLowerCase().includes(termino) ||
-                                     apellido.toLowerCase().includes(termino) ||
-                                     dni.toLowerCase().includes(termino) ||
-                                     email.toLowerCase().includes(termino) ||
-                                     telefono.toLowerCase().includes(termino);
-                             })
-                             .map((propietario) => (
-                               <MenuItem key={propietario.id} value={propietario.id}>
-                                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                   <Typography variant="body1">{`${propietario.nombre} ${propietario.apellido}`}</Typography>
-                                   <Typography variant="caption" color="text.secondary">
-                                     {propietario.dni && `DNI: ${propietario.dni}`} 
-                                     {propietario.telefono && ` • Tel: ${propietario.telefono}`}
-                                   </Typography>
-                                 </Box>
-                               </MenuItem>
-                             ))
-                         ) : (
-                           <MenuItem disabled value="">
-                             No hay propietarios disponibles
-                           </MenuItem>
-                         )
-                       ) : (
-                         <MenuItem disabled value="">
-                           Cargando propietarios...
-                         </MenuItem>
-                       )}
+                      {propietarios ? 
+  (propietarios.data?.length > 0 ? (
+    propietarios.data
+      .filter((propietario) => {
+        if (searchTermPropietario === '') return true;
+
+        const nombre = propietario.nombre || "";
+        const apellido = propietario.apellido || "";
+        const dni = propietario.dni || "";
+        const email = propietario.email || "";
+        const telefono = propietario.telefono || "";
+
+        const termino = searchTermPropietario.toLowerCase();
+
+        return nombre.toLowerCase().includes(termino) ||
+               apellido.toLowerCase().includes(termino) ||
+               dni.toLowerCase().includes(termino) ||
+               email.toLowerCase().includes(termino) ||
+               telefono.toLowerCase().includes(termino);
+      })
+      .map((propietario) => (
+        <MenuItem key={propietario.id} value={propietario.id}>
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="body1">{`${propietario.nombre} ${propietario.apellido}`}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {propietario.dni && `DNI: ${propietario.dni}`} 
+              {propietario.telefono && ` • Tel: ${propietario.telefono}`}
+            </Typography>
+          </Box>
+        </MenuItem>
+      ))
+  ) : (
+    <MenuItem disabled value="">
+      No hay propietarios disponibles
+    </MenuItem>
+  )
+) : (
+  <MenuItem disabled value="">
+    Cargando propietarios...
+  </MenuItem>
+)}
+
                       </Field>
                     </FormControl>
                     <ErrorMessage name="id_propietario" component="div" style={{ color: 'red' }} />
@@ -371,6 +430,14 @@ const PropiedadesForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.inventario}
+                    sx={{ 
+                
+                    
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      
+                      }
+                    }}
                   />
                   <Box sx={{ color: 'gray', fontSize: '0.875rem', marginTop: '0.5rem' }}>
                     {alert ? (
@@ -387,8 +454,8 @@ const PropiedadesForm = () => {
                 </Box>
 
                 <Box sx={{ marginTop: "1rem" }}>
-                  <Button type="submit" variant="contained" color="primary">
-                    Enviar
+                  <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
+                  {isSubmitting ? "Creando propiedad..." : "Crear propiedad"}
                   </Button>
                 </Box>
               </Box>

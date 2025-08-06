@@ -27,27 +27,32 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import { useTheme } from '@mui/material';
 import NotaContratoForm from '../NotaContratoForm';
 import NotasContratoList from '../NotasContratoList';
+import PutMontoForm from '../PutMontoForm';
+import { useNavigate } from 'react-router-dom';
 
-const ModalContract = ({selectedContract, handleCloseDetailModal,detailModalOpen,handleWhatsAppClick,handleEmailClick,handleGenerateReceipt,contractNote, setContractNote, handleSaveNote}) => {
+
+const ModalContract = ({selectedContract, setSelectedContract, handleCloseDetailModal, detailModalOpen, handleWhatsAppClick, handleEmailClick, handleGenerateReceipt, contractNote, setContractNote, handleSaveNote}) => {
+const navigate = useNavigate();
  
  const [actualizacionData , setActualizacionData] = useState({});
+
     const theme = useTheme();
-   console.log("📦 actualizacionData en modal:", actualizacionData);
    
    const actualizacion = async () => {
-    try {
-      if (!selectedContract || !selectedContract.id) {
-        console.warn("No hay contrato seleccionado o falta ID");
-        return;
-      }
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/verificar-actualizacion/${selectedContract.id}`);
-      console.log("📦 Respuesta de la API:", response.data);
-      setActualizacionData(response.data); // Asumiendo que tienes un estado para almacenar los datos de la actualización
-    } catch (error) {
-      console.error("Error al obtener la actualización:", error);
+  try {
+    if (!selectedContract || !selectedContract.id) {
+      console.warn("No hay contrato seleccionado o falta ID");
+      return;
     }
-  };
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/verificar-actualizacion/${selectedContract.id}`);
+    setActualizacionData(response.data); // Asumiendo que tienes un estado para almacenar los datos de la actualización
+  } catch (error) {
+    console.error("Error al obtener la actualización:", error);
+  }
+};
 
+
+ 
   // Llamar a la función de actualización cuando el componente se monte o cambie el contrato
   useEffect(() => {
     if (detailModalOpen && selectedContract?.id) {
@@ -57,7 +62,7 @@ const ModalContract = ({selectedContract, handleCloseDetailModal,detailModalOpen
 
   
    
-console.log(actualizacionData)
+
    
    
    return (
@@ -148,8 +153,8 @@ console.log(actualizacionData)
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                     <AttachMoneyIcon sx={{ mr: 1, color: 'green' }} />
                     <Typography variant="body1" fontWeight={500}>
-                      Monto: ${selectedContract.montoAlquiler?.toLocaleString() || 'No especificado'}
-                    </Typography>
+  Monto: ${selectedContract.montoAlquiler?.toLocaleString() || 'No especificado'}
+</Typography>
                   </Box>
                   
                  
@@ -192,6 +197,8 @@ console.log(actualizacionData)
     )}
   </Box>
 )}
+<PutMontoForm selectedContract={selectedContract} setSelectedContract={setSelectedContract}/>
+
             </Paper>
             
             {/* Sección Propietario */}
@@ -361,14 +368,14 @@ console.log(actualizacionData)
             
             {/* Sección Notas */}
             <NotaContratoForm idContrato={selectedContract?.id} />
-            <NotasContratoList idContrato={selectedContract?.id} />
+            <NotasContratoList idContrato={selectedContract?.id} contrato={selectedContract} />
           </Box>
         </DialogContent>
         
         <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
           <Button
             variant="contained"
-            onClick={() => handleGenerateReceipt(selectedContract)}
+            onClick={() => navigate(`/recibos/${selectedContract.id}`)}
             startIcon={<ReceiptIcon />}
             sx={{
               mr: 'auto',

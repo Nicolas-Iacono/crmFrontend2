@@ -19,17 +19,26 @@ import {
   Grid2,
   Divider,
   IconButton,
+  Collapse,
   TextField,
   InputAdornment,
   Fab,
-  Tooltip
+  Tooltip,
+  Button,
 } from '@mui/material';
 import PropietarioApi from '../api/propietarios';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import HomeIcon from '@mui/icons-material/Home';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Swal from 'sweetalert2';
 import axios from 'axios';
+import PlayerCard from '../common/cards/PlayerCard';
+
 
 const PropietariosPage = () => {
   const theme = useTheme();
@@ -39,11 +48,47 @@ const PropietariosPage = () => {
   const [error, setError] = useState(null);
   const [propietarios, setPropietarios] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedCards, setExpandedCards] = useState({});
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedPropietarioId, setSelectedPropietarioId] = useState(null);
   const [user, setUser] = useState({
     name: '',
     authorities: '',
   });
-  
+  const filteredPropietarios = propietarios.filter((propietario) => {
+    if (propietario.usuario === null) {
+      return false;
+    }
+    if (user.authorities !== "ROLE_ADMIN" && propietario.usuario.username !== user.name) {
+      return false;
+    }
+    return true;
+  }).filter((propietario) => {
+    if (searchTerm === '') return true;
+    
+    const nombre = propietario.nombre || "";
+    const apellido = propietario.apellido || "";
+    const email = propietario.email || "";
+    const telefono = propietario.telefono || "";
+    const dni = propietario.dni || "";
+    
+    const termino = searchTerm.toLowerCase();
+    
+    return nombre.toLowerCase().includes(termino) ||
+           apellido.toLowerCase().includes(termino) ||
+           email.toLowerCase().includes(termino) ||
+           telefono.toLowerCase().includes(termino) ||
+           dni.toLowerCase().includes(termino);
+  });
+
+
+
+  const [paginaActual, setPaginaActual] = useState(1);
+const tarjetasPorPagina = 6;
+const indiceInicio = (paginaActual - 1) * tarjetasPorPagina;
+const indiceFin = indiceInicio + tarjetasPorPagina;
+const propietariosPaginados = filteredPropietarios.slice(indiceInicio, indiceFin);
+const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
   useEffect(() => {
     if (localStorage.getItem("username")) {
       setUser({
@@ -80,33 +125,90 @@ const PropietariosPage = () => {
     }
   }, [user.name]); // Dependency on user.name to refetch when it changes
 
+  const handleMenuClick = (event, propietarioId) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedPropietarioId(propietarioId);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedPropietarioId(null);
+  };
+
+  const confirmDeletePropietario = (propietarioId) => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "No podrás revertir esta acción",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await PropietarioApi.deletePropietario(propietarioId);
+          setPropietarios(propietarios.filter(p => p.id !== propietarioId));
+          Swal.fire(
+            '¡Eliminado!',
+            'El propietario ha sido eliminado.',
+            'success'
+          )
+        } catch (error) {
+          Swal.fire(
+            'Error',
+            'No se pudo eliminar el propietario.',
+            'error'
+          )
+        }
+      }
+    });
+  };
+
+  const handleDelete = () => {
+    handleMenuClose();
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "No podrás revertir esta acción",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await PropietarioApi.deletePropietario(selectedPropietarioId);
+          setPropietarios(propietarios.filter(p => p.id !== selectedPropietarioId));
+          Swal.fire(
+            '¡Eliminado!',
+            'El propietario ha sido eliminado.',
+            'success'
+          )
+        } catch (error) {
+          Swal.fire(
+            'Error',
+            'No se pudo eliminar el propietario.',
+            'error'
+          )
+        }
+      }
+    });
+  };
+
+
+  const handleToggleCard = (propietarioId) => {
+    setExpandedCards(prevExpandedCards => ({
+      ...prevExpandedCards,
+      [propietarioId]: !prevExpandedCards[propietarioId]
+    }));
+  };
+
   console.log(propietarios)
 
-  const filteredPropietarios = propietarios.filter((propietario) => {
-    if (propietario.usuario === null) {
-      return false;
-    }
-    if (user.authorities !== "ROLE_ADMIN" && propietario.usuario.username !== user.name) {
-      return false;
-    }
-    return true;
-  }).filter((propietario) => {
-    if (searchTerm === '') return true;
-    
-    const nombre = propietario.nombre || "";
-    const apellido = propietario.apellido || "";
-    const email = propietario.email || "";
-    const telefono = propietario.telefono || "";
-    const dni = propietario.dni || "";
-    
-    const termino = searchTerm.toLowerCase();
-    
-    return nombre.toLowerCase().includes(termino) ||
-           apellido.toLowerCase().includes(termino) ||
-           email.toLowerCase().includes(termino) ||
-           telefono.toLowerCase().includes(termino) ||
-           dni.toLowerCase().includes(termino);
-  });
+ 
 
   const renderMobileView = (propietariosFiltrados) => (
     <Box sx={{ 
@@ -162,80 +264,100 @@ const PropietariosPage = () => {
                   }
                 }}
               >
-                <CardContent sx={{ p: { xs: 2, sm: 3, } }}>
-                  <Typography variant="h6" sx={{ 
-                    color: 'text.primary',
-                    fontWeight: 600, 
-                    mb: 1,
-                    fontSize: { xs: '1.1rem', sm: '1.25rem' }
-                  }}>
-                    {propietario.nombre} {propietario.apellido}
-                  </Typography>
-                  <Divider sx={{ my: 1.5 }} />
-                  <Grid2 
-                    container 
-                    spacing={{ xs: 1.5, sm: 2 }}
-                    sx={{ pt: 0.5, display: 'flex', flexDirection: 'column' }}
-                  >
-                    <Grid2 xs={12}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: 'text.secondary',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                         
-                          fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                        }}
-                      >
-                        📱 {propietario.telefono}
-                      </Typography>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => handleToggleCard(propietario.id)}>
+                    <Typography variant="h6" sx={{
+                      color: 'text.primary',
+                      fontWeight: 600,
+                      fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                    }}>
+                      {propietario.nombre} {propietario.apellido}
+                    </Typography>
+                    <Box>
+                    <IconButton
+                      aria-label="settings"
+                      onClick={(e) => { 
+                        e.stopPropagation(); // Evita que se expanda/colapse la card
+                        handleMenuClick(e, propietario.id);
+                      }}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                    <IconButton 
+                      size="small"
+                      onClick={() => handleToggleCard(propietario.id)}
+                      aria-expanded={expandedCards[propietario.id] || false}
+                      aria-label="show more"
+                    >
+                    </IconButton>
+                  </Box>
+                  </Box>
+                  <Collapse in={expandedCards[propietario.id] || false} timeout="auto" unmountOnExit>
+                    <Divider sx={{ my: 1.5 }} />
+                    <Grid2
+                      container
+                      spacing={{ xs: 1.5, sm: 2 }}
+                      sx={{ pt: 0.5, display: 'flex', flexDirection: 'column' }}
+                    >
+                      <Grid2 xs={12}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'text.secondary',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            fontSize: { xs: '0.875rem', sm: '0.9375rem' }
+                          }}
+                        >
+                          📱 {propietario.telefono}
+                        </Typography>
+                      </Grid2>
+                      <Grid2 xs={12}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'text.secondary',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            fontSize: { xs: '0.875rem', sm: '0.9375rem' }
+                          }}
+                        >
+                          ✉️ {propietario.email}
+                        </Typography>
+                      </Grid2>
+                      <Grid2 xs={12}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'text.secondary',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            fontSize: { xs: '0.875rem', sm: '0.9375rem' }
+                          }}
+                        >
+                          🏠 {propietario.direccionResidencial}
+                        </Typography>
+                      </Grid2>
+                      <Grid2 xs={12}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'text.primary',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            fontWeight: 500,
+                            fontSize: { xs: '0.875rem', sm: '0.9375rem' }
+                          }}
+                        >
+                          👤 {propietario.usuarioDtoSalida.username}
+                        </Typography>
+                      </Grid2>
                     </Grid2>
-                    <Grid2 xs={12}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: 'text.secondary',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                        }}
-                      >
-                        ✉️ {propietario.email}
-                      </Typography>
-                    </Grid2>
-                    <Grid2 xs={12}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: 'text.secondary',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                        }}
-                      >
-                        🏠 {propietario.direccionResidencial}
-                      </Typography>
-                    </Grid2>
-                    <Grid2 xs={12}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: 'text.primary',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          fontWeight: 500,
-                          fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                        }}
-                      >
-                        👤 {propietario.usuarioDtoSalida.username}
-                      </Typography>
-                    </Grid2>
-                  </Grid2>
+                  </Collapse>
                 </CardContent>
               </Card>
             </Grid2>
@@ -250,8 +372,10 @@ const PropietariosPage = () => {
       width: '100%', 
       overflowX: 'auto',
       display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center'
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap:"wrap",
+      gap:"1rem",
     }}>
       {propietariosFiltrados.length === 0 ? (
         <Box sx={{ 
@@ -260,7 +384,7 @@ const PropietariosPage = () => {
           p: 4,
           bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
           borderRadius: 3,
-          maxWidth: 400,
+          maxWidth: "20rem",
           mx: 'auto',
           boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 12px rgba(0,0,0,0.08)',
         }}>
@@ -275,83 +399,51 @@ const PropietariosPage = () => {
           </Typography>
         </Box>
       ) : (
+
+        <>
         <TableContainer component={Paper} sx={{ 
           width: '100%',
-          overflowX: 'auto',
           borderRadius: 2,
+          maxWidth:"100%",
+          display:"flex",
+          flexDirection:"row",
+          flexWrap:"wrap",
+          gap:"1rem",
+          justifyContent:"start",
+          alignItems:"center",
+          padding:"1rem",
           boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
           '& .MuiTableCell-root': {
             color: theme.palette.mode === 'dark' ? '#fff' : 'inherit'
-          }
+          },
+          backgroundColor:theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgb(250, 254, 254)',
         }}>
-          <Table aria-label="propietarios table">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                  color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                  fontWeight: 600 
-                }}>ID</TableCell>
-                <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                  color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                  fontWeight: 600 
-                }}>Nombre</TableCell>
-                <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                  color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                  fontWeight: 600 
-                }}>Apellido</TableCell>
-                <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                  color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                  fontWeight: 600 
-                }}>Teléfono</TableCell>
-                <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                  color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                  fontWeight: 600 
-                }}>Email</TableCell>
-                <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                  color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                  fontWeight: 600 
-                }}>Dirección</TableCell>
-                <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                  color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                  fontWeight: 600 
-                }}>Usuario</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {propietariosFiltrados.map((propietario) => (
-                <TableRow 
-                  key={propietario.id}
-                  sx={{ 
-                    '&:hover': { 
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.01)',
-                      transition: 'all 0.2s ease-in-out'
-                    },
-                    '&:nth-of-type(odd)': {
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.01)' : 'rgba(0, 0, 0, 0.01)'
-                    }
-                  }}
-                >
-                  <TableCell>{propietario.id}</TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>{propietario.nombre}</TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>{propietario.apellido}</TableCell>
-                  <TableCell>{propietario.telefono}</TableCell>
-                  <TableCell>{propietario.email}</TableCell>
-                  <TableCell>{propietario.direccionResidencial}</TableCell>
-                  <TableCell sx={{ fontWeight: 500, color: 'text.primary' }}>
-                    {propietario.usuarioDtoSalida.username}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {propietariosPaginados.map((propietario) => (
+            <PlayerCard
+              key={propietario.id}
+              id={propietario.id}
+              nombre={`${propietario.nombre} ${propietario.apellido}`}
+              direccion={propietario.direccionResidencial}
+              telefono={propietario.telefono}
+              email={propietario.email}
+              onDelete={confirmDeletePropietario}
+            />
+          ))}
         </TableContainer>
+         <Box display="flex" justifyContent="center" mt={2}>
+         {Array.from({ length: totalPaginas }, (_, i) => (
+           <Button
+             key={i + 1}
+             variant={paginaActual === i + 1 ? 'contained' : 'outlined'}
+             onClick={() => setPaginaActual(i + 1)}
+             sx={{ mx: 0.5 }}
+           >
+             {i + 1}
+           </Button>
+         ))}
+       </Box>
+    </>
+
       )}
     </Box>
   );
@@ -551,8 +643,19 @@ const PropietariosPage = () => {
             <Typography>Error al cargar los propietarios: {error}</Typography>
           </Box>
         ) : (
-          isMobile ? renderMobileView(filteredPropietarios) : renderDesktopView(filteredPropietarios)
+          isMobile 
+  ? renderMobileView(propietariosPaginados) 
+  : renderDesktopView(propietariosPaginados)
         )}
+        <Menu
+          id="simple-menu"
+          anchorEl={anchorEl}
+          keepMounted
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={handleDelete}>Eliminar</MenuItem>
+        </Menu>
       </Box>
     </Box>
   );

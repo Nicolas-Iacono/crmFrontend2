@@ -40,6 +40,7 @@ import {
   Snackbar,
   Alert
 } from '@mui/material';
+import { useAuth } from '../../context/GlobalAuth';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PersonIcon from '@mui/icons-material/Person';
@@ -71,12 +72,12 @@ const ReciboForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams(); // Obtenemos el ID del contrato de los parámetros de URL
-  
+  const { usuarioFetch } = useAuth();
   // Estados para manejar el contrato y la carga
   const [contrato, setContrato] = useState(location.state?.contrato || null);
   const [loadingContrato, setLoadingContrato] = useState(!contrato && !!id);
   const formValues = location.state?.formValues || {};
-  
+
   // Estados para la gestión de recibos, carga y errores
   const [recibos, setRecibos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,8 +87,7 @@ const ReciboForm = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [openModal, setOpenModal] = useState(false);
   const [selectedRecibo, setSelectedRecibo] = useState(null);
-
-
+  const logo = usuarioFetch?.logo;
   useEffect(() => {
     if (contrato) {
       setRecibos(contrato.recibos);
@@ -132,7 +132,7 @@ const ReciboForm = () => {
     fechaEmision: new Date().toISOString().split('T')[0],
     fechaVencimiento: (() => {
       const date = new Date();
-      date.setDate(date.getDate() + 10);
+      date.setDate(date.getDate() + 5);
       return date.toISOString().split('T')[0];
     })(),
     periodo: formValues?.periodo || '',
@@ -436,15 +436,36 @@ const ReciboForm = () => {
 
       console.log('Respuesta del servidor:', response.data);
       const newRecibo = response.data.data || response.data;
+      console.log('newRecibo:', newRecibo);
+      console.log('newRecibo.id:', newRecibo.id);
+      console.log('newRecibo.numeroRecibo:', newRecibo.numeroRecibo);
+      
+      // Intentar extraer el ID de diferentes posibles ubicaciones en la respuesta
+      let reciboId = newRecibo.id || newRecibo.reciboId || response.data.id;
+      
+      // Si aún no tenemos ID, intentar extraerlo de la URL de respuesta o headers
+      if (!reciboId && response.headers && response.headers.location) {
+        const locationMatch = response.headers.location.match(/\/recibo\/(\d+)/);
+        if (locationMatch) {
+          reciboId = parseInt(locationMatch[1]);
+          console.log('ID extraído de location header:', reciboId);
+        }
+      }
+      
+      // Verificar que tenemos un ID válido del backend
+  
+      
+      console.log('ID final asignado al recibo:', reciboId);
+      
       const reciboNormalizado = {
-        id: newRecibo.id || 0,
-        numeroRecibo: newRecibo.numeroRecibo || newRecibo.id || 0,
-        fechaEmision: newRecibo.fechaEmision || new Date().toISOString(),
-        fechaVencimiento: newRecibo.fechaVencimiento || new Date().toISOString(),
-        periodo: newRecibo.periodo || 'No especificado',
-        concepto: newRecibo.concepto || 'No especificado',
-        montoTotal: parseFloat(newRecibo.montoTotal || 0),
-        estado: newRecibo.estado || false,
+        id: reciboId || 0,
+        numeroRecibo: newRecibo.numeroRecibo || formData.numeroRecibo || newRecibo.id || 0,
+        fechaEmision: newRecibo.fechaEmision || formData.fechaEmision,
+        fechaVencimiento: newRecibo.fechaVencimiento || formData.fechaVencimiento || new Date().toISOString(),
+        periodo: newRecibo.periodo || formData.periodo || 'No especificado',
+        concepto: newRecibo.concepto || formData.concepto || 'No especificado',
+        montoTotal: parseFloat(newRecibo.montoTotal || formData.montoTotal || 0),
+        estado: newRecibo.estado !== undefined ? Boolean(newRecibo.estado) : false,
         impuestos: Array.isArray(newRecibo.impuestos) ? newRecibo.impuestos.map(imp => ({
           id: imp.id || 0,
           tipoImpuesto: imp.tipoImpuesto || 'Otro',
@@ -507,9 +528,17 @@ const ReciboForm = () => {
 
   const handleUpdateEstado = async (recibo) => {
     try {
+      // Validar que el recibo tenga un ID válido
+      if (!recibo.id || recibo.id === 0) {
+        console.error('Error: Recibo no tiene un ID válido:', recibo);
+        alert('Error: No se puede actualizar el estado. El recibo no tiene un ID válido.');
+        return;
+      }
+
       const nuevoEstado = !recibo.estado;
 
       console.log(`Actualizando recibo ${recibo.id} a estado: ${nuevoEstado ? 'Pagado' : 'Pendiente'}`);
+      console.log('Recibo completo:', recibo);
 
       const response = await axios.put(`${import.meta.env.VITE_API_URL}/recibo/estado`, 
         { 
@@ -621,7 +650,7 @@ const ReciboForm = () => {
 
       // Subtítulo
       doc.setFontSize(12);
-      doc.text('IACONO TROFA NICOLAS - COL:1179', 105, 22, { align: 'center' });
+      doc.text(`${usuarioFetch?.nombreNegocio} - COL: ${usuarioFetch?.matricula}`, 105, 22, { align: 'center' });
 
       // Espacio para logo
       const logoWidth = 30;
@@ -630,16 +659,16 @@ const ReciboForm = () => {
       const logoY = 32;
 
       // Agregar la imagen al PDF
-      doc.addImage(logoInmo, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      doc.addImage(logo, 'PNG', logoX, logoY, logoWidth, logoHeight);
 
       // Información de la empresa
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('IACONO TROFA PROPIEDADES', 55, 45);
+      doc.text(`${usuarioFetch?.nombreNegocio}`, 55, 45);
       doc.setFont('helvetica', 'normal');
-      doc.text('Corrientes N°321, Quilmes Oeste', 55, 50);
-      doc.text('Partido de Quilmes, Buenos Aires', 55, 55);
+      doc.text( `${usuarioFetch?.razonSocial}, ${usuarioFetch?.localidad}`, 55, 50);
+      doc.text(`${usuarioFetch?.partido}, ${usuarioFetch?.provincia}`, 55, 55);
 
       // Línea separadora
       doc.setDrawColor(220, 220, 220);

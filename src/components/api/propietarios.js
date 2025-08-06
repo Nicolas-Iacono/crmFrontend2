@@ -19,18 +19,32 @@ export const PropietarioApi =  {
     throw new Error("Error al crear propietario", error);
     }
   },
-  buscarPropietarioPorUsuario: (username) => axios.get(`${URL_PROPIETARIO}/${username}`),
+  buscarPropietarioPorUsuario: (username) => {
+    console.log(`${URL_PROPIETARIO}/${username}`);
+    return axios.get(`${URL_PROPIETARIO}/${username}`);
+  },
+  
   getPropietariosPerLocalUser : async (username) => {
     if (!username) {
       console.error('Username is required for getPropietariosPerLocalUser');
       return { data: null, isLoading: false, error: 'Username is required' };
     }
     try {
-      const response = await axios.get(`${URL_PROPIETARIO}/${username}`);
+      const response = await axios.get(`${URL_PROPIETARIO}/enum/${username}`);
       return { data: response.data, isLoading: false, error: null };
     } catch (error) {
       console.error('Error fetching propietarios por usuario:', error);
       return { data: null, isLoading: false, error: error.message };
+    }
+  },
+
+  deletePropietario: async (id) => {
+    try {
+      const response = await axios.delete(`${URL_PROPIETARIO}/delete/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al eliminar propietario:', error);
+      throw new Error("Error al eliminar propietario", error);
     }
   }
 }

@@ -16,6 +16,7 @@ export const usuarioApi =  {
   login:async(usuario) => {
     try{
       const response = await axios.post(`${URL_USER}/login`, usuario);
+      console.log(response.data)
       return response.data;
     }catch (error){
       console.error('Error de login:', error);

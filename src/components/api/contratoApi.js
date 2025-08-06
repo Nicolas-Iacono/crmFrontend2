@@ -16,9 +16,7 @@ export const contratoApi = {
   },
   crearContrato: async (contrato) => {
     try {
-      console.log("API sending contract data:", contrato);
       const response = await axios.post(`${URL_CONTRATO}/create`, contrato);
-      console.log("API received response:", response);
       return response.data;
     } catch (error) {
       console.error("Error al crear contrato: ", error);
@@ -66,7 +64,7 @@ export const contratoApi = {
       return { data: null, isLoading: false, error: 'Username is required' };
     }
     try {
-      const response = await axios.get(`${URL_CONTRATO}/${username}`);
+      const response = await axios.get(`${URL_CONTRATO}/enum/${username}`);
       return { data: response.data, isLoading: false, error: null };
     } catch (error) {
       console.error('Error fetching contratos por usuario:', error);

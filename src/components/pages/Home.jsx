@@ -24,6 +24,9 @@ import PropiedadesApi from "../api/propiedades";
 import PropietarioApi from "../api/propietarios";
 import GarantesApi from "../api/garanteApi";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../context/GlobalAuth";
+
 
 const Home = () => {
   const theme = useTheme();
@@ -32,7 +35,8 @@ const Home = () => {
     name: '',
     authorities: '',
   });
-
+  const { usuarioFetch } = useAuth();
+  console.log(usuarioFetch)
   console.log(user.name)
   useEffect(() => {
     if (localStorage.getItem("username")) {
@@ -46,139 +50,105 @@ const Home = () => {
   const navigate = useNavigate();
   const { data, error, isLoading } = contratoApi.ultimosContratos();
   
-  const [propiedadesData, setPropiedadesData] = useState(null);
-  const [propiedadesError, setPropiedadesError] = useState(null);
-  const [propiedadesLoading, setPropiedadesLoading] = useState(true);
   
-  const [propietarioData, setPropietarioData] = useState(null);
-  const [propietarioError, setPropietarioError] = useState(null); 
-  const [propietarioLoading, setPropietarioLoading] = useState(true);
-  
-  const [iniquilinoData, setInquilinoData] = useState(null);
-  const [iniquilinoError, setInquilinoError] = useState(null);
-  const [inquilinoLoading, setInquilinoLoading] = useState(true);
-  
-  const [garanteData, setGaranteData] = useState(null);
-  const [garanteError, setGaranteError] = useState(null);
-  const [garanteLoading, setGaranteLoading] = useState(true);
-  
-  const [contratoData, setContratoData] = useState(null);
-  const [contratoError, setContratoError] = useState(null);
-  const [contratoLoading, setContratoLoading] = useState(true);
 
-  console.log(propietarioData)
+
  
   // Fetch data when user is available
   useEffect(() => {
-    async function fetchData() {
-      if (typeof user.name === 'string' && user.name) {
-        
-        //Fecth contratos
-        setContratoLoading(true);
-        const contratoResult = await contratoApi.getContratosPerLocalUser(user.name);
-        setContratoData(contratoResult.data);
-        setContratoError(contratoResult.error);
-        setContratoLoading(false);
-
-
-        // Fetch propiedades
-        setPropiedadesLoading(true);
-        const propResult = await PropiedadesApi.getPropiedadesPerLocalUser(user.name);
-        setPropiedadesData(propResult.data);
-        setPropiedadesError(propResult.error);
-        setPropiedadesLoading(false);
-        
-        // Fetch propietarios
-        setPropietarioLoading(true);
-        const ownerResult = await PropietarioApi.getPropietariosPerLocalUser(user.name);
-        setPropietarioData(ownerResult.data);
-        setPropietarioError(ownerResult.error);
-        setPropietarioLoading(false);
-        
-        // Fetch inquilinos
-        setInquilinoLoading(true);
-        const tenantResult = await InquilinosApi.getInquilinosPerLocalUser(user.name);
-        setInquilinoData(tenantResult.data);
-        setInquilinoError(tenantResult.error);
-        setInquilinoLoading(false);
-        
-        // Fetch garantes
-        setGaranteLoading(true);
-        const garanteResult = await GarantesApi.getGarantesPerLocalUser(user.name);
-        setGaranteData(garanteResult.data);
-        setGaranteError(garanteResult.error);
-        setGaranteLoading(false);
+    // if (!user?.name) return;
+  
+    // const fetchCounts = async () => {
+    //   try {
+    //     const responses = await Promise.all([
+    //       axios.get(`${import.meta.env.VITE_API_URL}/propietario/enum/${user.name}`),
+    //       axios.get(`${import.meta.env.VITE_API_URL}/propiedad/enum/${user.name}`),
+    //       axios.get(`${import.meta.env.VITE_API_URL}/inquilino/enum/${user.name}`),
+    //       axios.get(`${import.meta.env.VITE_API_URL}/contrato/enum/${user.name}`),
+    //     ]);
+  
+    //     setNumPropietario(responses[0].data);
+    //     setNumPropiedad(responses[1].data);
+    //     setNumInquilino(responses[2].data);
+    //     setNumContrato(responses[3].data);
+    //   } catch (error) {
+    //     console.error("Error al obtener los contadores:", error);
+    //   }
+    // };
+    // fetchCounts();
+    const fetchUltimosContratos = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/latest`);
+        setUltimosContratos(response.data);
+      } catch (error) {
+        console.error("Error al obtener los últimos contratos:", error);
       }
-    }
-    
-    fetchData();
-  }, [user.name]); // Only re-run when user.name changes
+    };
+    fetchUltimosContratos();
+  }, [user?.name]);
  
   const [ultimosContratos,setUltimosContratos] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [propietarios, setPropietarios] = useState([]);
-  const [numPropietarios, setNumPropietarios] = useState(0);
+  const [numPropietario, setNumPropietario] = useState(0);
 
   const [inquilinos, setInquilinos] = useState([]);
 
-  const [numInquilinos, setNumInquilinos] = useState(0);
+  const [numInquilino, setNumInquilino] = useState(0);
 
   const [propiedades, setPropiedades] = useState([]);
-  const [numPropiedades, setNumPropiedades] = useState(0);
+  const [numPropiedad, setNumPropiedad] = useState(0);
   const [garantes, setGarantes] = useState([]);
-  const [numGarantes, setNumGarantes] = useState(0);
+  const [numGarante, setNumGarante] = useState(0);
 
   const [contratos, setContratos] = useState([]);
-  const [numContratos, setNumContratos] = useState(0);
+  const [numContrato, setNumContrato] = useState(0);
 
   useEffect(() => {
-    const fetchDataAndCount = async () => {
-      try {
-        
-        // Verificar si el usuario está definido y tiene un nombre
-        if (!user?.name) {
-          return; // Salir temprano si no hay usuario
-        }
-        
-        // Realizar todas las llamadas a la API con manejo de errores individual
-        const results = await Promise.allSettled([
-          PropietarioApi.getPropietariosPerLocalUser(user.name),
-          PropiedadesApi.getPropiedadesPerLocalUser(user.name),
-          InquilinosApi.getInquilinosPerLocalUser(user.name),
-          GarantesApi.getGarantesPerLocalUser(user.name),
-          contratoApi.getContratosPerLocalUser(user.name),
-          contratoApi.ultimosContratos()
-        ]);
-        
-        // Extraer respuestas o valores predeterminados en caso de error
-        const [
-          propietarioResponse,
-          propiedadesResponse,
-          inquilinoResponse,
-          garanteResponse,
-          contratoResponse,
-          ultimosContratosResponse
-        ] = results.map(result => 
-          result.status === 'fulfilled' ? result.value : { data: [], error: result.reason, isLoading: false }
-        );
-        
-        
-        // Procesar y actualizar los estados con validación
-        setNumPropietarios(propietarioResponse?.data?.length || 0);
-        setNumPropiedades(propiedadesResponse?.data?.length || 0);
-        setNumInquilinos(inquilinoResponse?.data?.length || 0);
-        setNumGarantes(garanteResponse?.data?.length || 0);
-        setNumContratos(contratoResponse?.data?.length || 0);
-        setUltimosContratos(ultimosContratosResponse?.data || []);
+    if (!user?.name) return;
   
-      } catch (err) {
+    const setters = {
+      propietario: setNumPropietario,
+      propiedad: setNumPropiedad,
+      inquilino: setNumInquilino,
+      contrato: setNumContrato,
+    };
+  
+    const fetchCounts = async () => {
+      try {
+        await Promise.all(
+          Object.keys(setters).map(async (tipo) => {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/${tipo}/enum/${user.name}`);
+            setters[tipo](response.data);
+          })
+        );
+      } catch (error) {
+        console.error("Error al obtener los contadores:", error);
       }
     };
   
-    fetchDataAndCount();
-  }, [user]); // Dependencia actualizada para re-ejecutar cuando el usuario cambie
+    const fetchUltimosContratos = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/latest`);
+        const lc = response.data;
+        if(lc.length > 0){
+          lc.map((contrato) => {
+            contrato.usuarioDtoSalida.username === user.name ? setUltimosContratos([...ultimosContratos, contrato]) : null;
+          })
+        }
+        
+      } catch (error) {
+        console.error("Error al obtener los últimos contratos:", error);
+      }
+    };
+  
+    fetchCounts();
+    fetchUltimosContratos();
+  }, [user?.name]);
+  
+console.log(ultimosContratos)
 
   const irHacia = (url) =>{
     navigate(url);
@@ -280,7 +250,7 @@ const Home = () => {
                 fontSize: { xs: "1.5rem", md: "2rem" },
                 fontWeight: 600
               }}>
-                {numPropietarios}
+                {numPropietario}
               </Typography>
             </Box>
           </Paper>
@@ -335,7 +305,7 @@ const Home = () => {
                 fontSize: { xs: "1.5rem", md: "2rem" },
                 fontWeight: 600
               }}>
-                {numInquilinos}
+                {numInquilino}
               </Typography>
             </Box>
           </Paper>
@@ -390,7 +360,7 @@ const Home = () => {
                 fontSize: { xs: "1.5rem", md: "2rem" },
                 fontWeight: 600
               }}>
-                {numPropiedades}
+                {numPropiedad}
               </Typography>
             </Box>
           </Paper>
@@ -445,7 +415,7 @@ const Home = () => {
                 fontSize: { xs: "1.5rem", md: "2rem" },
                 fontWeight: 600
               }}>
-                {numContratos}
+                {numContrato}
               </Typography>
             </Box>
           </Paper>
@@ -570,30 +540,21 @@ const Home = () => {
                           backgroundColor: "#f1f5f9",
                           color: "#1a237e"
                         }}>Contrato</TableCell>
-                        <TableCell sx={{ 
-                          fontWeight: 600,
-                          backgroundColor: "#f1f5f9",
-                          color: "#1a237e"
-                        }}>Fecha Inicial</TableCell>
+    
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {ultimosContratos
-                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                        .filter((contrato) => contrato.usuarioDtoSalida.username === user.name)
-                        .map((contrato) => (
-                          <TableRow 
-                            key={contrato.id}
-                            hover
-                            sx={{
-                              cursor: "pointer",
-                              "&:hover": { backgroundColor: "#f5f5f5" }
-                            }}
-                          >
-                            <TableCell>{contrato.id}</TableCell>
-                            <TableCell>{contrato.nombreContrato}</TableCell>
-                            <TableCell>{contrato.fecha_inicio}</TableCell>
-                          </TableRow>
+                          .filter(
+                            (contrato) =>
+                              contrato.usuarioDtoSalida?.username?.toLowerCase() === (user.name || "").toLowerCase()
+                          )
+                          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                          .map((contrato) => (
+                            <TableRow key={contrato.id}>
+                              <TableCell>{contrato.id}</TableCell>
+                              <TableCell>{contrato.nombreContrato}</TableCell>
+                            </TableRow>
                         ))}
                     </TableBody>
                   </Table>

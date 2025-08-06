@@ -13,13 +13,14 @@ export const PropiedadesApi =  {
       return { data: null, isLoading: false, error: error.message };
     }
   },
+  buscarPropiedadesPorUsuario: (username) => axios.get(`${URL_PROPIEDADES}/${username}`),
     getPropiedadesPerLocalUser : async (username) => {
       if (!username) {
         console.error('Username is required for getPropiedadesPerLocalUser');
         return { data: null, isLoading: false, error: 'Username is required' };
       }
       try {
-        const response = await axios.get(`${URL_PROPIEDADES}/${username}`);
+        const response = await axios.get(`${URL_PROPIEDADES}/enum/${username}`);
         return { data: response.data, isLoading: false, error: null };
       } catch (error) {
         console.error('Error fetching propiedades por usuario:', error);

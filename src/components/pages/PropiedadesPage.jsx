@@ -106,7 +106,7 @@ const PropiedadesPage = () => {
   });
   
   // Número de propiedades por página
-  const itemsPerPage = 4;
+  const itemsPerPage = isMobile ? 4 : 6;
 
   useEffect(() => {
     if (localStorage.getItem("username")) {
@@ -590,81 +590,173 @@ useEffect(() => {
                   </Box>
                 ) : (
                   <TableContainer component={Paper} sx={{ 
-                    width: '100%',
+                    width: '120%',
                     overflowX: 'auto',
                     borderRadius: 2,
+                    padding:"1rem 2rem",
+                    display:"flex",
+                    flexDirection:"row",
+                    alignItems:"start",
+                    justifyContent:"flex-start",
+                    flexWrap:"wrap",
+                    gap:"1rem",
                     boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
                     '& .MuiTableCell-root': {
                       color: theme.palette.mode === 'dark' ? '#fff' : 'inherit'
                     }
                   }}>
-                    <Table aria-label="propiedades table">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ 
-                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                            color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                            fontWeight: 600 
-                          }}>Tipo</TableCell>
-                          <TableCell sx={{ 
-                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                            color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                            fontWeight: 600 
-                          }}>Dirección</TableCell>
-                          <TableCell sx={{ 
-                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                            color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                            fontWeight: 600 
-                          }}>Propietario</TableCell>
-                          <TableCell sx={{ 
-                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                            color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                            fontWeight: 600 
-                          }}>Habitaciones</TableCell>
-                          <TableCell sx={{ 
-                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                            color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                            fontWeight: 600 
-                          }}>Baños</TableCell>
-                          <TableCell sx={{ 
-                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : theme.palette.primary.main, 
-                            color: theme.palette.mode === 'dark' ? '#fff' : '#fff',
-                            fontWeight: 600 
-                          }}>Estado</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {propiedadesPaginadas.map((propiedad) => (
-                          <TableRow
-                            key={propiedad.id}
-                            sx={{ 
-                              '&:hover': { 
-                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.01)',
-                                transition: 'all 0.2s ease-in-out'
-                              },
-                              '&:nth-of-type(odd)': {
-                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.01)' : 'rgba(0, 0, 0, 0.01)'
-                              }
-                            }}
-                          >
-                            <TableCell>{propiedad.id}</TableCell>
-                            <TableCell>{propiedad.direccion}, {propiedad.ciudad}</TableCell>
-                            <TableCell>{propiedad.propietarioContratoDtoSalida ? 
-                                          `${propiedad.propietarioContratoDtoSalida.nombre} ${propiedad.propietarioContratoDtoSalida.apellido}` : ''}</TableCell>
-                            <TableCell>{propiedad.cantHabitaciones}</TableCell>
-                            <TableCell>{propiedad.cantBaños}</TableCell>
-                            <TableCell>
-                              <Chip 
-                                label={propiedad.disponibilidad ? "Disponible" : "No disponible"} 
-                                color={propiedad.disponibilidad ? "success" : "error"}
-                                size="small"
-                                sx={{ fontWeight: 500 }}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <Box sx={{ 
+                    width: "100%", 
+                    display: 'flex', 
+                    justifyContent: 'flex-start',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingLeft:"2rem",
+                  }}>
+                    <Grid2 
+                      container 
+                      spacing={2} 
+                      sx={{
+                        display:"flex",
+                        justifyContent: { xs: 'center', sm: 'flex-start' },
+                        ml: { xs: -1, sm: -2 },
+                        gap:"1rem 4rem",
+                      }}
+                    >
+                      {propiedadesPaginadas.map((propiedad) => (
+  <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`}>  
+    <Card
+      sx={{
+        mb: 2,
+        width: { xs: '19rem', sm: '20rem' },
+        borderRadius: 3,
+        overflow: 'hidden',
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+        boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
+        },
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        cursor: 'pointer',
+      }}
+      onClick={() => {
+        setSelectedPropiedad(propiedad);
+        setModalOpen(true);
+      }}
+    >
+      {/* Barra de estado */}
+      <Box
+        sx={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: '8px',
+          height: '100%',
+          bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
+        }}
+      />
+      {/* Imagen principal */}
+      <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        {/* Botón agregar imagen */}
+        <Tooltip title="Agregar imagen">
+          <span>
+            <IconButton
+              size="small"
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                bgcolor: 'rgba(255,255,255,0.7)',
+                boxShadow: 1,
+                zIndex: 2,
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddImageClick(propiedad.id);
+              }}
+              disabled={uploadingId === propiedad.id}
+            >
+              <AddPhotoAlternateIcon color="primary" fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        {/* Input file oculto global */}
+        {uploadingId === propiedad.id && (
+          <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+            <CircularProgress size={32} />
+          </Box>
+        )}
+        {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
+          <img
+            src={propiedad.imagenes[0].imageUrl}
+            alt={propiedad.direccion}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary', fontSize: 16 }}>
+            Sin imagen
+          </Box>
+        )}
+      </Box>
+      {/* Header con icono y tipo */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
+        <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
+        <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+          {propiedad.tipoPropiedad || propiedad.tipo}
+        </Typography>
+        <Chip
+          icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
+          label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
+          color={propiedad.disponibilidad ? 'success' : 'warning'}
+          size="small"
+          sx={{ fontWeight: 500, ml: 2 }}
+        />
+      </Box>
+      <Divider sx={{ my: 1.5 }} />
+      {/* Info organizada con iconos */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+        >
+          <HomeIcon fontSize="small" />
+          {propiedad.direccion}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+        >
+          <LocationOnIcon fontSize="small" />
+          {propiedad.localidad}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+        >
+          <MapIcon fontSize="small" />
+          {propiedad.partido}, {propiedad.provincia}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+        >
+          <PersonIcon fontSize="small" />
+          {propiedad.usuarioDtoSalida
+            ? `${propiedad.usuarioDtoSalida.username}`
+            : 'No asignado'}
+        </Typography>
+       
+      </Box>
+    </Card>
+  </Grid2>
+))}
+                    </Grid2>
+                  </Box>
                   </TableContainer>
                 )}
               </>
