@@ -3,9 +3,9 @@ import { Header } from './Header';
 import { Outlet } from 'react-router-dom';
 import Grid2 from '@mui/material/Grid2';
 import Box from '@mui/material/Box';
-import Dashboard from './Dashboard';
 import NavigationMenu from './NavigattionMenu';
 import { useTheme, useMediaQuery, ThemeProvider, createTheme } from '@mui/material';
+import AppTour from '../common/tour/AppTour';
 
 export const Layout = () => {
   const [darkMode, setDarkMode] = useState(() => {
@@ -47,6 +47,8 @@ export const Layout = () => {
   return (
     <ThemeProvider theme={theme}>
       <Header toggleTheme={toggleTheme} darkMode={darkMode} />
+      {/* Onboarding tour (first visit) */}
+      <AppTour />
       
       {isMobile ? (
         <Box sx={{ 
@@ -63,38 +65,22 @@ export const Layout = () => {
         <Box sx={{ 
           display: 'flex', 
           flexDirection: 'column', 
-          minHeight: '140vh',
-          bgcolor: 'background.default',
+          minHeight: '100vh',
           width: '100%',
-          overflow: 'hidden' // Prevenir scroll horizontal
+          overflow: 'hidden',// Prevenir scroll horizontal
+          fontFamily: 'Poppins, sans-serif',
         }}>
-          <Grid2 container sx={{ flexGrow: 1, display: "flex", position: "relative", width: '100%' }}>
-            <Box sx={{ 
-              minWidth: "100px", 
-              height: "100vh", 
-              width: { md: "20%", xs: "1%" },
-              position: "fixed",
-              left: 0,
-              top: 0,
-              paddingTop: "64px" // Espacio para el header
-            }}>
-              <Dashboard />
-            </Box>
-
-            <Grid2 
-              item 
-              xs={12} 
-              sx={{ 
-                width: "100%", 
-                display: "flex", 
-                justifyContent: "center", 
-                alignItems: "flex-start", 
-                mt: "5rem",
-                ml: { md: "10%" }, // Margen izquierdo para compensar el Dashboard
-                pr: "1rem",
-                boxSizing: "border-box"
-              }}
-            >
+                    <Grid2 
+            container 
+            sx={{ 
+              justifyContent: "center", 
+              pt: '10px', // Adjusted padding for the header
+              px: 0, 
+              flexGrow: 1,
+              width: '100vw',
+            }}
+          >
+            <Grid2 item xs={12} sx={{maxWidth: '100%'}}>
               <Outlet />
             </Grid2>
           </Grid2>

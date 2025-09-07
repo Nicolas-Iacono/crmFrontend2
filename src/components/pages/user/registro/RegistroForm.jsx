@@ -1,19 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Formik, Form, Field } from 'formik';
 import { Box, Button, TextField, Typography, Stack, Modal, IconButton, Grid2} from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+import { Close as CloseIcon, Google as GoogleIcon } from '@mui/icons-material';
 import Swal from 'sweetalert2';
 import { usuarioApi } from '../../../api/usuarioApi';
 import logoinmoListopng from "../../../../assets/logoinmo512.png"
-
+import GoogleLogin  from "../../../../assets/logoGoogle.png"
+import ButtonLoginGoogle from "../../../common/BotonGoogle/GoogleLoginButton"
+import axios from 'axios';
+import { registroSchema } from '../../../common/validationsForms/registroSchema';
 const RegistroForm = () => {
   const [openModal, setOpenModal] = useState(false);
+  const [openError, setOpenError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
 
   const initialValues = {
     username: '',
     password: '',
     nombreNegocio: '',
     email: '',
+    telefono: '',
     cuit: '',
     razonSocial: '',
     partido: '',
@@ -21,6 +28,41 @@ const RegistroForm = () => {
     localidad: '',
     matricula: ''
   }
+function debounceAsync(fn, delay) {
+  let timer;
+  return (...args) =>
+    new Promise((resolve) => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const result = await fn(...args);
+        resolve(result);
+      }, delay);
+    });
+}
+
+// validador "crudo"
+async function validateUsernameRaw(value) {
+  if (!value) return "El username es obligatorio";
+  if (value.trim().length < 4) return "El username debe tener al menos 4 caracteres";
+  // podés agregar aquí la misma regex que en Yup si querés reforzar
+  try {
+    const { data } = await axios.get(
+      `${import.meta.env.VITE_API_URL}/usuario/check-username`,
+      { params: { username: value.trim() } }
+    );
+    console.log(data)
+    if (!data?.available) return "El username ya está en uso";
+    return undefined; // válido -> sin error
+  } catch {
+    // no bloquees al usuario si el check falla; mostrale un mensaje suave
+    return "No se pudo validar el username";
+  }
+}
+
+  const validateUsernameDebounced = useMemo(
+    () => debounceAsync(validateUsernameRaw, 500),
+    []
+  );
 
   const handleOpenModal = () => {
     setOpenModal(true);
@@ -42,11 +84,12 @@ const RegistroForm = () => {
       handleCloseModal(); // Cerrar modal después del éxito
     } catch (error) {
       console.error(`Error al registrar usuario: ${error.message}`);
-      Swal.fire({
-        title: 'Error',
-        text: 'Error al registrar usuario',
-        icon: 'error',
-      })
+      if (error.response?.data?.error) {
+        setErrorMsg(error.response.data.error);
+      } else {
+        setErrorMsg(error.message);
+      }
+      setOpenError(true);
     } finally {
       setSubmitting(false); // Desactiva el estado de "submitting"
     }
@@ -105,7 +148,10 @@ const RegistroForm = () => {
         >
           Iniciar Registro
         </Button>
+
+      
       </Box>
+    
 
       {/* Modal con formulario de registro */}
       <Modal
@@ -186,24 +232,39 @@ const RegistroForm = () => {
               
               <Formik
                 initialValues={initialValues}
+                validationSchema={registroSchema}
                 onSubmit={onSubmit}
               >
-                {({ values, handleChange, handleBlur, isSubmitting }) => (
+                {({ values, handleChange, handleBlur, isSubmitting, errors, touched }) => (
                   <Form>
         <Grid2 container spacing={2} sx={{ display:"flex", flexDirection:{ xs: "column", md: "row" }, alignItems:"center", justifyContent:"center" }}>
           {/* Primera columna */}
-          <Grid2 item xs={12} md={6}>
+          <Grid2 xs={12} md={6}>
             <Stack spacing={2}>
               <Field
                 name="username"
                 as={TextField}
-                label="Nombre"
+                label="Username"
                 variant="outlined"
                 fullWidth
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.username}
-                sx={{ borderRadius: 2 }}
+                placeholder="Nombre de usuario"
+                error={touched.username && Boolean(errors.username)}
+                helperText={touched.username && errors.username}
+                validate={(value) => validateUsernameDebounced(value)}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.username && !errors.username && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
               <Field
                 name="password"
@@ -215,7 +276,20 @@ const RegistroForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.password}
-                sx={{ borderRadius: 2 }}
+                placeholder="Tu contraseña"
+                error={touched.password && Boolean(errors.password)}
+                helperText={touched.password && errors.password}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.password && !errors.password && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
               <Field
                 name="nombreNegocio"
@@ -226,7 +300,19 @@ const RegistroForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.nombreNegocio}
-                sx={{ borderRadius: 2 }}
+                placeholder="Nombre de la inmobiliaria"
+                error={touched.nombreNegocio && Boolean(errors.nombreNegocio)}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.nombreNegocio && !errors.nombreNegocio && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
               <Field
                 name="email"
@@ -237,7 +323,42 @@ const RegistroForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.email}
-                sx={{ borderRadius: 2 }}
+                placeholder="ejemplo@gmail.com"
+                error={touched.email && Boolean(errors.email)}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.email && !errors.email && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
+              />
+               <Field
+                name="Telefono"
+                as={TextField}
+                label="Telefono"
+                variant="outlined"
+                fullWidth
+                onChange={handleChange}
+                onBlur={handleBlur}
+                value={values.telefono}
+                placeholder="+54 9 11 12345678"
+                error={touched.telefono && Boolean(errors.telefono)}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.telefono && !errors.telefono && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
               <Field
                 name="cuit"
@@ -248,13 +369,26 @@ const RegistroForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.cuit}
-                sx={{ borderRadius: 2 }}
+                placeholder="Ej: 20-12345678-1"
+                error={touched.cuit && Boolean(errors.cuit)}
+                helperText={touched.cuit && errors.cuit}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.cuit && !errors.cuit && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
             </Stack>
           </Grid2>
 
           {/* Segunda columna */}
-          <Grid2 item xs={12} md={6}>
+          <Grid2 xs={12} md={6}>
             <Stack spacing={2}>
               <Field
                 name="razonSocial"
@@ -265,7 +399,20 @@ const RegistroForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.razonSocial}
-                sx={{ borderRadius: 2 }}
+                placeholder="Ej: Corrientes 321"
+                error={touched.razonSocial && Boolean(errors.razonSocial)}
+                helperText={touched.razonSocial && errors.razonSocial}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.razonSocial && !errors.razonSocial && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
               <Field
                 name="partido"
@@ -276,7 +423,19 @@ const RegistroForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.partido}
-                sx={{ borderRadius: 2 }}
+                error={touched.partido && Boolean(errors.partido)}
+                helperText={touched.partido && errors.partido}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.partido && !errors.partido && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
               <Field
                 name="provincia"
@@ -287,7 +446,19 @@ const RegistroForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.provincia}
-                sx={{ borderRadius: 2 }}
+                error={touched.provincia && Boolean(errors.provincia)}
+                helperText={touched.provincia && errors.provincia}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.provincia && !errors.provincia && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
               <Field
                 name="localidad"
@@ -298,7 +469,19 @@ const RegistroForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.localidad}
-                sx={{ borderRadius: 2 }}
+                error={touched.localidad && Boolean(errors.localidad)}
+                helperText={touched.localidad && errors.localidad}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.localidad && !errors.localidad && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
               <Field
                 name="matricula"
@@ -309,13 +492,26 @@ const RegistroForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 value={values.matricula}
-                sx={{ borderRadius: 2 }}
+                placeholder="Ej: 12345"
+                error={touched.matricula && Boolean(errors.matricula)}
+                helperText={touched.matricula && errors.matricula}
+                sx={{
+                  borderRadius: 2,
+                  ...(touched.matricula && !errors.matricula && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'green' },
+                      '&:hover fieldset': { borderColor: 'green' },
+                      '&.Mui-focused fieldset': { borderColor: 'green' },
+                    },
+                    '& label.Mui-focused': { color: 'green' },
+                  }),
+                }}
               />
             </Stack>
           </Grid2>
 
           {/* Botón de envío */}
-          <Grid2 item xs={12}>
+          <Grid2 xs={12}>
             <Box sx={{ mt: 2 }}>
               <Button
                 type="submit"

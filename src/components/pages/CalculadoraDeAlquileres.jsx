@@ -3,7 +3,7 @@ import { Box } from "@mui/material";
 
 const CalculadoraDeAlquileres = () => {
     return (
-        <Box sx={{ width: '100%', height: '100vh' 
+        <Box sx={{ width: {xs:"100%",md:"100VW"}, height: '100vh' 
 
         }}>
 

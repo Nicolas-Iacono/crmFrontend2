@@ -4,6 +4,7 @@ import { Box, Button, TextField, Typography, Link, Paper} from '@mui/material'
 import usuarioApi from '../../../api/usuarioApi'
 import { useAuth } from '../../../context/GlobalAuth'
 import { useNavigate } from 'react-router-dom'
+import { showStyledError } from '../../../../utils/swalConfig';
 import Swal from 'sweetalert2'
 import PasswordTextField from '../../../common/PasswordTextField'
 import logoinmoListopng from "../../../../assets/logoinmoListopng.png"
@@ -52,19 +53,11 @@ const ir = (url) =>{
         }, 1000)
       } else {
         console.log("Inicio de sesión fallido: ", response)
-        Swal.fire(
-          'Error al iniciar sesión',
-          response.message || 'Credenciales incorrectas',
-          'error'
-        )
+        showStyledError('Error al iniciar sesión', response.message || 'Credenciales incorrectas');
       }
     } catch (error) {
       console.error('Error durante el inicio de sesión:', error)
-      Swal.fire(
-        'Error al iniciar sesión',
-        error.message || 'Ocurrió un error',
-        'error'
-      )
+      showStyledError('Error al iniciar sesión', error.message || 'Ocurrió un error');
     } finally {
       setSubmitting(false)
     }

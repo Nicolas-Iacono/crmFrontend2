@@ -40,7 +40,22 @@ export const PropiedadesApi =  {
     throw new Error("Error al crear propiedad", error);
     }
   },
-  buscarPropiedadPorUsuario: (username) => axios.get(`${URL_PROPIEDADES}/${username}`)
+    buscarPropiedadPorUsuario: (username) => axios.get(`${URL_PROPIEDADES}/${username}`),
+
+  asignarPropietario: async (propiedadId, propietarioId) => {
+    try {
+      const response = await axios.put(`${URL_PROPIEDADES}/propiedad/${propiedadId}/asignar-propietario/${propietarioId}`, null, {
+        params: {
+          propiedadId,
+          propietarioId
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al asignar propietario:', error);
+      throw new Error("Error al asignar propietario", error);
+    }
+  }
 
 }
 

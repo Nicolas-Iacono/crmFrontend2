@@ -13,7 +13,7 @@ export const NuevoInquilino = () => {
   return (
     <Box
       sx={{
-        width: '90%',
+        width: {xs:"90%", md:"100vw"},
         minHeight: '100vh',
         bgcolor: 'background.default',
         color: 'text.primary',
@@ -23,13 +23,14 @@ export const NuevoInquilino = () => {
         pt: { xs: 2, md: 4 },
         pb: { xs: 8, md: 4 },
         px: { xs: 2, md: 0 },
-        position: 'relative'
+        position: 'relative',
+        marginTop: {xs:0, md:"2rem"}
       }}
     >
       {!isMobile && (
-        <Box sx={{ display: 'flex', gap: 2, marginTop: "2rem" }}>
+        <Box sx={{ display: 'flex', gap: 2, marginTop: {xs:2, md:"2rem"} }}>
 
-          <Box sx={{ position: 'absolute', top: 0, right: 60 }}>
+          <Box sx={{ position: 'absolute', top: 0, right: 60, }}>
         <Tooltip title="Ir al inicio" placement="bottom">
           <IconButton
             onClick={() => navigate('/')}
@@ -71,20 +72,21 @@ export const NuevoInquilino = () => {
        </Tooltip>
        </Box>
       </Box>
-      )}
-      <Grid2
+      )} 
+      <Grid2 
         sx={{
-          width: { xs: '100%', md: '50%' },
+          width: { xs: '100%', md: '90%' },
           mx: 'auto',
           p: { xs: '1.5rem', md: '2rem' },
           borderRadius: '10px',
           bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'white',
-          boxShadow: theme.palette.mode === 'dark' ? '0 2px 12px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.08)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-start',
           gap: 2,
-          minHeight: { xs: 'calc(100vh - 7rem)', md: 'auto' }
+          minHeight: { xs: 'calc(100vh - 7rem)', md: 'auto' },
+          backgroundColor:"background.default",
+        
         }}
       >
         <InquilinoForm />

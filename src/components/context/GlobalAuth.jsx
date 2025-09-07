@@ -19,14 +19,28 @@ const [isUser, setIsUser] = useState(false);
 const [isAdmin, setIsAdmin] = useState(false);
 const [isLogged, setIsLogged] = useState(false);
 const [logo, setLogo] = useState(null);
+const [logoTimestamp, setLogoTimestamp] = useState(Date.now());
 const navigate = useNavigate();
   const [usuarioFetch, setUsuarioFetch] = useState(null);
+  const [hasCalendarEvents, setHasCalendarEvents] = useState(false); // Add state for calendar event notifications
 
+const checkCalendarEvents = (username) => {
+  axios.get(`${import.meta.env.VITE_API_URL}/contrato/${username}`)
+    .then(response => {
+      setHasCalendarEvents(response.data.length > 0);
+    })
+    .catch(error => {
+      console.error('Error checking calendar events:', error);
+    });
+};
 
 useEffect(() => {
   if (user?.username) {
     axios.get(`${import.meta.env.VITE_API_URL}/usuario/username/${user.username}`)
-      .then(res => setUsuarioFetch(res.data))
+      .then(res => {
+        setUsuarioFetch(res.data);
+        checkCalendarEvents(user.username); // Check events after fetching user
+      })
       .catch(err => {
         console.error('Error fetching usuario:', err);
         setUsuarioFetch(null);
@@ -54,21 +68,21 @@ useEffect(() => {
     setIsLogged(true);
   }
 
-  setIsLoading(false); // ✅ terminamos de chequear
+  setIsLoading(false); // terminamos de chequear
 }, []);
 
-const login = (jwt, username, logo) => { // Add logo to login params
+const login = (jwt, username, logo) => {
   const decodedToken = jwtDecode(jwt);
   const authorities = decodedToken.authorities.split(',');
-  setUser({jwt, username, authorities, logo}); // Set logo in user state on login
+  setUser({jwt, username, authorities, logo});
   localStorage.setItem('token', jwt);
   localStorage.setItem('username', username);
   localStorage.setItem('authorities', authorities);
-  if (logo) localStorage.setItem('logo', logo); // Store logo in localStorage
+  if (logo) localStorage.setItem('logo', logo);
   setIsAdmin(authorities.includes("ROLE_ADMIN"));
   setIsLogged(true);
-  navigate('/contratos')
-  
+  checkCalendarEvents(username); // Check events on login
+  navigate('/contratos');
 }
 
 const logout = () => {
@@ -89,19 +103,25 @@ const logout = () => {
 const updateUserProfile = (userData) => {
     setUser(prevUser => ({
       ...prevUser,
-      ...userData // Update user with new data, including logo
+      ...userData
     }));
+
+    setUsuarioFetch(prevFetch => ({
+      ...prevFetch,
+      ...userData
+    }));
+
     if (userData.logo) {
       localStorage.setItem('logo', userData.logo);
+      setLogoTimestamp(Date.now()); // Update timestamp to bust cache
     }
-    // Potentially update other localStorage items if needed, e.g., username if it can change
     if (userData.username) {
       localStorage.setItem('username', userData.username);
     }
   };
 
   return (
-    <AuthUserContext.Provider value={{user, login, logout, isAdmin, isLogged, isLoading, updateUserProfile, usuarioFetch, logo}}> 
+    <AuthUserContext.Provider value={{user, token: user.jwt, login, logout, isAdmin, isLogged, isLoading, updateUserProfile, usuarioFetch, logo, hasCalendarEvents, setHasCalendarEvents, logoTimestamp}}> 
       {children}
     </AuthUserContext.Provider>
   )

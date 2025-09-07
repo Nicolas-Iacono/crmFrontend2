@@ -55,6 +55,7 @@ import PropiedadApi from '../api/propiedades';
 import GaranteApi from '../api/garanteApi';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/GlobalAuth';
+import CreateContractTour from '../common/tour/CreateContractTour';
 
 // Slide transition for dialogs
 const Transition = React.forwardRef(function Transition(props, ref) {
@@ -618,15 +619,18 @@ console.log("propietarios", propietarios);
   return (
     <Box sx={{ 
       p: 3, 
+      width:{xs:"90%",md:"100%"},
       minHeight: '100vh',
-      backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.default : ' #f5f5f5'
+      backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.default : ' white'
     }}>
+      <CreateContractTour />
       <Box sx={{ 
         display: 'flex', 
         alignItems: 'center', 
         mb: 4,
         borderBottom: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
-        pb: 2
+        pb: 2,
+        marginTop:{xs:"0",md:"2rem"}
       }}>
         <IconButton
           onClick={() => navigate(-1)}
@@ -634,7 +638,7 @@ console.log("propietarios", propietarios);
         >
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.text.primary }} data-tour="crearcontrato-title">
           Crear Nuevo Contrato
         </Typography>
       </Box>
@@ -660,6 +664,7 @@ console.log("propietarios", propietarios);
             }
           }
         }}
+        data-tour="crearcontrato-stepper"
       >
         {steps.map((label) => (
           <Step key={label}>
@@ -731,6 +736,7 @@ console.log("propietarios", propietarios);
               <Button
                 variant="contained"
                 onClick={handleSubmit}
+                data-tour="crearcontrato-submit"
                 sx={{
                   backgroundColor: theme.palette.mode === 'dark' ? theme.palette.primary.main : '#1a237e',
                   color: theme.palette.mode === 'dark' ? 'white' : 'white',
@@ -787,6 +793,7 @@ console.log("propietarios", propietarios);
                       variant="contained"
                       startIcon={<AddIcon />}
                       onClick={() => setOpenPropietarioDialog(true)}
+                      data-tour="crearcontrato-new-propietario"
                       sx={{
                         backgroundColor: theme.palette.mode === 'dark' ? theme.palette.primary.main : '#1a237e',
                         color: theme.palette.mode === 'dark' ? 'white' : 'white',
@@ -1779,6 +1786,7 @@ console.log("propietarios", propietarios);
           <Button
             variant="contained"
             onClick={handleNext}
+            data-tour="crearcontrato-next"
             sx={{
               backgroundColor: theme.palette.mode === 'dark' ? theme.palette.primary.main : '#1a237e',
               color: theme.palette.mode === 'dark' ? 'white' : 'white',

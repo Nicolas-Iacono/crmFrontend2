@@ -24,9 +24,6 @@ const GaranteForm = ({ onSuccess }) => {
   });
   const [isUserLoaded, setIsUserLoaded] = useState(false);
 
-  console.log('localUser', localUser.name)
-  console.log("-------------------------------")
-  console.log('localStorage :', localStorage.getItem('username'))
 
 
   useEffect(() => {

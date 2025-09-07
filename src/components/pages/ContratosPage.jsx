@@ -53,6 +53,7 @@ import NotaContratoForm from '../common/NotaContratoForm';
 import NotasContratoList from '../common/NotasContratoList';
 import ModalContract from '../common/popUps/ModalContract';
 import EditIcon from '@mui/icons-material/Edit';
+import ContractsTour from '../common/tour/ContractsTour';
 const ContratosPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -303,7 +304,7 @@ const ContratosPage = () => {
     const currentContratos = contratosFiltrados.slice(startIndex, endIndex);
 
     return (
-      <Box sx={{ width: '90%', mx: 'auto' }}>
+      <Box sx={{ width: {xs:"90%",md:"100vw"}, mx: 'auto'}}>
         {currentContratos.map((contrato) => (
           <Card 
             key={contrato.id} 
@@ -438,7 +439,7 @@ const ContratosPage = () => {
     const currentContratos = contratosFiltrados.slice(startIndex, endIndex);
 
     return (
-      <Box sx={{ width: '100%' }}>
+      <Box sx={{ width: '100%',padding:{xs:"0",md:"1rem"} }}>
         <Grid2 container spacing={3}>
           {currentContratos.map((contrato) => (
             <Grid2 item xs={12} sm={6} md={4} key={contrato.id}>
@@ -451,6 +452,7 @@ const ContratosPage = () => {
                   boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
                   overflow: 'visible',
                   position: 'relative',
+                  width: '100%',
                   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                   '&:hover': {
                     transform: 'translateY(-3px)',
@@ -671,19 +673,23 @@ const ContratosPage = () => {
       sx={{
         backgroundColor: theme.palette.background.default,
         minHeight: '100vh',
-        pt: { xs: 3, sm: 4 }
+        width: { xs: '100%', md: '100vw' },
+        pt: { xs: 3, sm: 4 },
       }}
     >
+      <ContractsTour />
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        width: { xs: '90%', md: '100%' },
+        width: { xs: '90%', md: '90%' },
         mx: 'auto',
         mt: { xs: 3, md: 4 },
-        mb: { xs: 3, md: 3 }
+        mb: { xs: 3, md: 3 },
+        margin:"2rem" 
       }}>
         <Typography 
+          data-tour="contracts-title"
           variant="h4" 
           sx={{
             fontWeight: 600,
@@ -700,7 +706,8 @@ const ContratosPage = () => {
               color="primary"
               size="small"
               aria-label="add"
-              onClick={() => navigate('/nuevo-contrato')}
+              data-tour="contracts-add"
+              onClick={() => navigate('/contratos/crear')}
               sx={{
                 boxShadow: theme.shadows[1],
                 '&:hover': {
@@ -763,11 +770,12 @@ const ContratosPage = () => {
       ) : (
         <>
           <Box sx={{ 
-            width: { xs: "90%", md: "100%" }, 
+            width: { xs: "90%", md: "90%" }, 
             mx: "auto",
             mb: 3
           }}>
             <TextField
+              data-tour="contracts-search"
               fullWidth
               variant="outlined"
               placeholder="Buscar contratos..."
@@ -794,7 +802,7 @@ const ContratosPage = () => {
             <Box sx={{ 
               textAlign: 'center', 
               mt: 4,
-              color: 'text.secondary'
+              color: 'text.secondary',
             }}>
               <Typography>No se encontraron contratos</Typography>
             </Box>
@@ -803,6 +811,8 @@ const ContratosPage = () => {
               {isMobile ? (
                 <>
                   {renderMobileView(contratosFiltrados)}
+                  {/* Mobile pagination anchor */}
+                  <Box sx={{ display: 'flex', justifyContent: 'center' }} data-tour="contracts-pagination" />
                   {selectedContract && (
                     <TextEditor 
                       contrato={selectedContract} 
@@ -812,8 +822,10 @@ const ContratosPage = () => {
                   )}
                 </>
               ) : (
-                                <>
+                <>
                   {renderDesktopView(contratosFiltrados)}
+                  {/* Desktop pagination anchor */}
+                  <Box sx={{ display: 'flex', justifyContent: 'center' }} data-tour="contracts-pagination" />
                   {selectedContract && (
                     <TextEditor 
                       contrato={selectedContract} 

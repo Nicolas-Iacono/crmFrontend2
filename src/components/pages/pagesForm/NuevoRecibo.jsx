@@ -13,6 +13,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HomeIcon from '@mui/icons-material/Home';
+import NewReceiptTour from '../../common/tour/NewReceiptTour';
 
 const NuevoRecibo = () => {
   const theme = useTheme();
@@ -77,6 +78,7 @@ const NuevoRecibo = () => {
         position: 'relative'
       }}
     >
+      <NewReceiptTour />
       {!isMobile && (
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Box sx={{ position: 'absolute', top: 0, right: 60 }}>
@@ -176,7 +178,7 @@ const NuevoRecibo = () => {
         >
           {({ values, handleChange, handleSubmit }) => (
             <Form onSubmit={handleSubmit}>
-              <Typography variant="h6" align="center" marginBottom={2}>
+              <Typography variant="h6" align="center" marginBottom={2} data-tour="newreceipt-title">
                 Generar Recibo
               </Typography>
 
@@ -189,6 +191,7 @@ const NuevoRecibo = () => {
                       name="contrato"
                       value={values.contrato}
                       onChange={handleChange}
+                      data-tour="newreceipt-contrato"
                     >
                       {loading ? (
                         <MenuItem disabled>Cargando contratos...</MenuItem>
@@ -215,6 +218,7 @@ const NuevoRecibo = () => {
                       name="periodo"
                       value={values.periodo}
                       onChange={handleChange}
+                      data-tour="newreceipt-periodo"
                     >
                       {periodos.map((periodo) => (
                         <MenuItem key={periodo} value={periodo}>
@@ -234,6 +238,7 @@ const NuevoRecibo = () => {
                     fullWidth
                     value={values.numeroRecibo}
                     onChange={handleChange}
+                    inputProps={{ 'data-tour': 'newreceipt-numero' }}
                   />
                 </Grid>
 
@@ -248,6 +253,7 @@ const NuevoRecibo = () => {
                     onChange={handleChange}
                     placeholder={contratos.find(c => c.id.toString() === values.contrato)?.montoAlquiler || ""}
                     helperText="Si se deja vacío, se usará el monto del contrato"
+                    inputProps={{ 'data-tour': 'newreceipt-monto' }}
                   />
                 </Grid>
 
@@ -289,6 +295,7 @@ const NuevoRecibo = () => {
                     variant="contained"
                     color="primary"
                     fullWidth
+                    data-tour="newreceipt-submit"
                   >
                     Generar Recibo
                   </Button>

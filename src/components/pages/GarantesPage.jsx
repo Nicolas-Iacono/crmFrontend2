@@ -20,6 +20,7 @@ import {
   Tooltip,
   Fab,
   Divider,
+  Collapse,
 } from '@mui/material';
 import GarantesApi from '../api/garanteApi';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
@@ -32,6 +33,8 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import BadgeIcon from '@mui/icons-material/Badge';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -47,6 +50,7 @@ const GarantesPage = () => {
   const [error, setError] = useState(null);
   const [garantes, setGarantes] = useState({ data: [] });
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedCards, setExpandedCards] = useState({});
   const [user, setUser] = useState({
     name: '',
     authorities: '',
@@ -85,6 +89,13 @@ const GarantesPage = () => {
       fetchGarantes();
     }
   }, [user]); // Ejecutar cuando el usuario cambie
+
+  const handleToggleCard = (id) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
   const eliminarGarante = async (id) => {
     try {
@@ -133,7 +144,7 @@ const GarantesPage = () => {
 
   return (
     <Box sx={{ 
-      width: "100%", 
+      width: "100vw", 
       minHeight: "100vh",
       pt: { xs: 3, sm: 4 },
       pb: { xs: 8, sm: 4 },
@@ -157,7 +168,8 @@ const GarantesPage = () => {
             width: '100%',
             alignItems: 'center',
             justifyContent: 'space-between',
-            mb: { xs: 2, sm: 3 }
+            mb: { xs: 2, sm: 3 },
+            marginTop:{xs:"0rem", md:"2rem"}
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -270,124 +282,52 @@ const GarantesPage = () => {
             ) : (
               <>
                 {isMobile ? (
-                  <Box sx={{ 
-                    width: "100%", 
-                    display: 'flex', 
-                    justifyContent: 'center' 
-                  }}>
-                    <Grid2 
-                      container 
-                      spacing={2} 
-                      sx={{ 
-                        justifyContent: { xs: 'center', sm: 'flex-start' },
-                        ml: { xs: -1, sm: -2 }
-                      }}
+                  <Box sx={{ width: '100%' }}>
+                  {filteredGarantes.map(garante => (
+                    <Paper 
+                      key={garante.id} 
+                      sx={{ mb: 2, borderRadius: 2, boxShadow: 1, '&:hover': { boxShadow: 3 }, bgcolor: 'background.paper' }}
                     >
-                      {filteredGarantes.map((garante) => (
-                        <Grid2 item key={garante.id}>
-                          <Card 
-                            sx={{ 
-                              mb: 2, 
-                              width: { xs: '19rem', sm: '20rem' },
-                              borderRadius: 3,
-                              overflow: 'hidden',
-                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-                              boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-                              transition: 'transform 0.2s, box-shadow 0.2s',
-                              '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
-                              },
-                              position: 'relative'
-                            }}
-                          >
-                            <CardContent>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="h6" sx={{ 
-                                  color: 'text.primary',
-                                  fontWeight: 600, 
-                                  mb: 1,
-                                  fontSize: { xs: '1.1rem', sm: '1.25rem' }
-                                }}>
-                                  {garante.nombre} {garante.apellido}
-                                </Typography>
-                                <IconButton 
-                                  onClick={() => eliminarGarante(garante.id)}
-                                  sx={{ 
-                                    color: 'error.main',
-                                    '&:hover': {
-                                      bgcolor: theme.palette.mode === 'dark' 
-                                        ? 'rgba(255, 87, 87, 0.1)' 
-                                        : 'rgba(211, 47, 47, 0.1)'
-                                    }
-                                  }}
-                                >
-                                  <DeleteForeverIcon />
-                                </IconButton>
-                              </Box>
-                              <Divider sx={{ my: 1.5 }} />
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                                <Typography 
-                                  variant="body2" 
-                                  sx={{ 
-                                    color: 'text.secondary',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                    fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                                  }}
-                                >
-                                  <EmailIcon fontSize="small" />
-                                  {garante.email || 'Email no disponible'}
-                                </Typography>
-                                <Typography 
-                                  variant="body2" 
-                                  sx={{ 
-                                    color: 'text.secondary',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                    fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                                  }}
-                                >
-                                  <PhoneIcon fontSize="small" />
-                                  {garante.telefono || 'Teléfono no disponible'}
-                                </Typography>
-                                {garante.dni && (
-                                  <Typography 
-                                    variant="body2" 
-                                    sx={{ 
-                                      color: 'text.secondary',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 1,
-                                      fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                                    }}
-                                  >
-                                    <BadgeIcon fontSize="small" />
-                                    {garante.dni}
-                                  </Typography>
-                                )}
-                                <Typography 
-                                  variant="body2" 
-                                  sx={{ 
-                                    color: 'text.secondary',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                    fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                                  }}
-                                >
-                                  <LocationOnIcon fontSize="small" />
-                                  {garante.calle ? `${garante.calle} ${garante.numero || ''}` : 'Dirección no disponible'}
-                                </Typography>
-                              </Box>
-                            </CardContent>
-                          </Card>
-                        </Grid2>
-                      ))}
-                    </Grid2>
-                  </Box>
+                      <Box 
+                        sx={{ p: 2,display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                        onClick={() => handleToggleCard(garante.id) }
+                      >
+                        <Typography variant="h6">{garante.nombre} {garante.apellido}</Typography>
+                        <IconButton
+                          onClick={(e) => { e.stopPropagation(); handleToggleCard(garante.id); }}
+                          sx={{
+                            transform: expandedCards[garante.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.3s',
+                          }}
+                        >
+                          <ExpandMoreIcon />
+                        </IconButton>
+                      </Box>
+                      <Collapse in={!!expandedCards[garante.id]}>
+                        <Divider sx={{ my: 1.5 }} />
+                        <Box sx={{p:2, pt: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                          <Typography><strong>DNI:</strong> {garante.dni || 'No disponible'}</Typography>
+                          <Typography><strong>Email:</strong> {garante.email || 'No disponible'}</Typography>
+                          <Typography><strong>Teléfono:</strong> {garante.telefono || 'No disponible'}</Typography>
+                          <Typography><strong>Dirección:</strong> {garante.direccionResidencial || 'No disponible'}</Typography>
+                          <Typography><strong>Usuario:</strong> {garante.usuarioDtoSalida?.username || 'No asignado'}</Typography>
+                        </Box>
+                        <Box sx={{padding: 0, display: 'flex', flexDirection: 'row' ,height: '4rem',width:"100%"}}>
+                        <Box sx={{ borderRadius: "0 0 0 10px",display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 1.5 , backgroundColor: 'rgb(28, 110, 13)',width:"50%"}}>
+                          <IconButton href={`https://wa.me/${garante.telefono}`} target="_blank" sx={{ color: 'white' }}>
+                            <WhatsAppIcon   sx={{ fontSize: 45 }}/>
+                          </IconButton>
+                        </Box>
+                        <Box sx={{ borderRadius: "0 0 10px 0",display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 1.5, backgroundColor: 'rgb(19, 21, 62)',width:"50%"}}>
+                          <IconButton href={`mailto:${garante.email}`} sx={{ color: 'white' }}>
+                            <EmailIcon sx={{ fontSize: 45 }}/>
+                          </IconButton>
+                        </Box>
+                        </Box>
+                      </Collapse>
+                    </Paper>
+                  ))}
+                </Box>
                 ) : (
                   <TableContainer component={Paper} sx={{ 
                     width: '100%',

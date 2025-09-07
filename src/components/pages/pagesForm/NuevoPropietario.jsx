@@ -12,7 +12,7 @@ export const NuevoPropietario = () => {
   return (
     <Box
       sx={{
-        width: '90%',
+        width: {xs:"90%", md:"100vw"},
         minHeight: '100vh',
         bgcolor: 'background.default',
         color: 'text.primary',
@@ -22,7 +22,8 @@ export const NuevoPropietario = () => {
         pt: { xs: 2, md: 4 },
         pb: { xs: 8, md: 4 },
         px: { xs: 2, md: 0 },
-        position: 'relative'
+        position: 'relative',
+        marginTop: {xs:0, md:"2rem"}
       }}
     >
       {!isMobile && (
@@ -49,12 +50,11 @@ export const NuevoPropietario = () => {
       )}
       <Grid2
         sx={{
-          width: { xs: '100%', md: '50%' },
+          width: { xs: '100%', md: '100vw' },
           mx: 'auto',
           p: { xs: '1.5rem', md: '2rem' },
           borderRadius: '10px',
-          bgcolor: 'background.paper',
-          boxShadow: theme.palette.mode === 'dark' ? '0 2px 12px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.08)',
+          bgcolor: 'background.default',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-start',

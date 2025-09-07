@@ -117,8 +117,8 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
         }}
       >
         <Box
-          sx={{
-            bgcolor: '#fff',
+          sx={(theme) => ({
+            bgcolor: theme.palette.mode === 'dark' ? 'rgb(31, 31, 31)' : 'rgb(253, 253, 253)',
             borderRadius: 3,
             boxShadow: 24,
             maxWidth: 540,
@@ -128,7 +128,7 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
-          }}
+          })}
         >
           <IconButton
             aria-label="close"
@@ -139,7 +139,8 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ChatBubbleOutlineIcon color="primary" />
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#1F2C61' }}>
+            <Typography variant="h6"  sx={(theme) => ({
+            color: theme.palette.mode === 'dark' ? 'rgb(188, 188, 188)' : '#1F2C61',fontWeight: 700 })}>
               {nota.motivo}
             </Typography>
           </Box>
@@ -148,11 +149,13 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
             <Chip size="small" label={nota.prioridad} variant="outlined" />
             <Chip size="small" label={nota.tipo} variant="outlined" />
           </Stack>
-          <Typography variant="body1" sx={{ whiteSpace: 'pre-line', fontSize: 16 }}>
+          <Typography variant="body1"  sx={(theme) => ({
+            color: theme.palette.mode === 'dark' ? 'rgb(188, 188, 188)' : '#1F2C61', whiteSpace: 'pre-line', fontSize: 16 })}>
             {nota.contenido}
           </Typography>
           {nota.observaciones && (
-            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+            <Typography variant="body2" color="text.secondary"  sx={(theme) => ({
+              color: theme.palette.mode === 'dark' ? 'rgb(188, 188, 188)' : '#1F2C61', fontStyle: 'italic' })}>
               Observaciones: {nota.observaciones}
             </Typography>
           )}

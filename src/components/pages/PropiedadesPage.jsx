@@ -43,6 +43,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import "../styles/garantesPage.css";
+import PropertiesTour from '../common/tour/PropertiesTour';
 
 const PropiedadesPage = () => {
   // Estado para el modal de detalle de propiedad
@@ -147,90 +148,100 @@ const PropiedadesPage = () => {
   }, [user.name]);
 
   const eliminarPropiedad = async (id) => {
-    try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/propiedad/delete/${id}`);
-      await Swal.fire({
-        title: 'Propiedad Eliminada!',
-        text: 'La propiedad fue eliminada correctamente',
-        icon: 'success',
-      });
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: "¡No podrás revertir esto!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, ¡elimínala!',
+      cancelButtonText: 'Cancelar'
+    });
 
-      setPropiedades((prevPropiedades) => 
-        prevPropiedades.filter((propiedad) => propiedad.id !== id)
-      );
-    } catch (error) {
-      console.error("Error al eliminar propiedad: ", error.response ? error.response.data : error.message);
-      Swal.fire({
-        title: 'Error',
-        text: 'No se pudo eliminar la propiedad.',
-        icon: 'error',
-      });
+    if (result.isConfirmed) {
+      try {
+        console.log("🚀 [PRODUCCION DEBUG] Eliminando propiedad:", id);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/propiedad/delete/${id}`);
+        await Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Propiedad eliminada',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          customClass: {
+            popup: 'swal2-smaller-toast',
+            backgroundColor:"background.default",
+            color:"rgb(99, 14, 173)"
+          }
+        });
+
+        setPropiedades((prevPropiedades) => 
+          prevPropiedades.filter((propiedad) => propiedad.id !== id)
+        );
+      } catch (error) {
+        console.error("Error al eliminar propiedad: ", error.response ? error.response.data : error.message);
+        Swal.fire(
+          'Error',
+          'No se pudo eliminar la propiedad.',
+          'error'
+        );
+      }
     }
   };
 
   const propiedadesFiltradas = useMemo(() => {
-    
-    if (!propiedades || !Array.isArray(propiedades) || propiedades.length === 0) {
+    if (!propiedades || !Array.isArray(propiedades)) {
       return [];
     }
-    
-    const filteredByUser = propiedades.filter(propiedad => {
-      if (!propiedad) {
-        return false;
-      }
-      
-      // Modificación: verificamos propietarioContratoDtoSalida en lugar de propietarioNombre
-      if (propiedad.propietarioContratoDtoSalida) {
-        // Para admins, mostramos todas; para usuarios normales solo las suyas
-        return user.authorities === "ROLE_ADMIN" || 
-               (propiedad.propietarioContratoDtoSalida.nombre && 
-                propiedad.propietarioContratoDtoSalida.nombre === user.name);
-      }
-      
-      // Si no hay propietarioContratoDtoSalida, mostramos la propiedad
-      return true;
-    });
-    
-    
-    // Luego filtramos por término de búsqueda
-    const filteredBySearch = filteredByUser.filter(propiedad => {
+
+    // Primero, filtra por término de búsqueda para reducir el número de iteraciones
+    const filteredBySearch = propiedades.filter(propiedad => {
+      // Asegurarse de que la propiedad no sea nula
+      if (!propiedad) return false;
+
       if (!searchTerm) return true;
-      
-      const direccion = propiedad.direccion || "";
-      const tipoPropiedad = propiedad.tipoPropiedad || "";
-      const propietarioNombre = propiedad.propietarioContratoDtoSalida ? 
-                               `${propiedad.propietarioContratoDtoSalida.nombre} ${propiedad.propietarioContratoDtoSalida.apellido}` : "";
-      const localidad = propiedad.localidad || "";
-      
+
       const searchTermLower = searchTerm.toLowerCase();
+      const { direccion = '', tipoPropiedad = '', localidad = '' } = propiedad;
       
-      return direccion.toLowerCase().includes(searchTermLower) ||
-             tipoPropiedad.toLowerCase().includes(searchTermLower) ||
-             propietarioNombre.toLowerCase().includes(searchTermLower) ||
-             localidad.toLowerCase().includes(searchTermLower);
+      // Usar `propietarioSalidaDto` que es el que se usa en el modal
+      const propietarioNombre = propiedad.propietarioSalidaDto
+        ? `${propiedad.propietarioSalidaDto.nombre} ${propiedad.propietarioSalidaDto.apellido}`
+        : '';
+
+      return (
+        direccion.toLowerCase().includes(searchTermLower) ||
+        tipoPropiedad.toLowerCase().includes(searchTermLower) ||
+        localidad.toLowerCase().includes(searchTermLower) ||
+        propietarioNombre.toLowerCase().includes(searchTermLower)
+      );
     });
-    
+
     return filteredBySearch;
-  }, [propiedades, searchTerm, user.authorities, user.name]);
-  
+
+  }, [propiedades, searchTerm, user.name, user.authorities]);
+
   // Calcular propiedades paginadas
   const propiedadesPaginadas = useMemo(() => {
     const startIndex = (page - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return propiedadesFiltradas.slice(startIndex, endIndex);
   }, [propiedadesFiltradas, page, itemsPerPage]);
+
   // Calcular el número total de páginas
   const totalPages = useMemo(() => {
     return Math.ceil(propiedadesFiltradas.length / itemsPerPage);
   }, [propiedadesFiltradas, itemsPerPage]);
-  
+
   // Manejar el cambio de página
   const handlePageChange = (event, newPage) => {
     setPage(newPage);
     // Scroll al inicio de la lista cuando cambia la página
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  console.log(propiedadesPaginadas)
 
   // Handler para borrar imagen usando la API
   const handleDeleteImagen = async (img, idx) => {
@@ -277,6 +288,7 @@ useEffect(() => {
 }, [propiedades]);
   return (
     <>
+    <PropertiesTour />
 <ModalImagenesPropiedad
   open={modalImagenesOpen}
   onClose={() => setModalImagenesOpen(false)}
@@ -301,14 +313,15 @@ useEffect(() => {
       )}
 
     <Box sx={{ 
-      width: "100%", 
+      width: "100vw", 
       minHeight: "100vh",
       pt: { xs: 3, sm: 4 },
       pb: { xs: 8, sm: 4 },
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      bgcolor: 'background.default'
+      bgcolor: 'background.default',
+      marginTop:{ xs: '0', sm: "0", md: "2rem" },
     }}>
       <Box 
         sx={{ 
@@ -342,6 +355,7 @@ useEffect(() => {
               <ArrowBackIcon />
             </IconButton>
             <Typography 
+              data-tour="propiedades-title"
               variant="h5" 
               sx={{ 
                 fontWeight: 600,
@@ -356,6 +370,7 @@ useEffect(() => {
               color="primary" 
               aria-label="add" 
               size="small"
+              data-tour="propiedades-add"
               onClick={() => navigate('/nueva-propiedad')}
             >
               <AddIcon />
@@ -364,6 +379,7 @@ useEffect(() => {
         </Box>
         
         <TextField
+          data-tour="propiedades-search"
           placeholder="Buscar por dirección, tipo, propietario..."
           variant="outlined"
           fullWidth
@@ -371,7 +387,7 @@ useEffect(() => {
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ 
             mb: 3,
-            width: { xs: '90%', sm: '80%' },
+            width: { xs: '90%', sm: '100%' },
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
             borderRadius: 1,
             '& .MuiOutlinedInput-root': {
@@ -454,9 +470,10 @@ useEffect(() => {
                         ml: { xs: -1, sm: -2 }
                       }}
                     >
-                      {propiedadesPaginadas.map((propiedad) => (
+                      {propiedadesPaginadas.map((propiedad, index) => (
   <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`}>  
     <Card
+      data-tour={index === 0 ? 'propiedades-card' : undefined}
       sx={{
         mb: 2,
         width: { xs: '19rem', sm: '20rem' },
@@ -492,6 +509,31 @@ useEffect(() => {
       />
       {/* Imagen principal */}
       <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        {/* Botón eliminar propiedad */}
+        <Tooltip title="Eliminar propiedad">
+          <span>
+            <IconButton
+              data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
+              size="small"
+              sx={{
+                position: 'absolute',
+                top: 8,
+                left: 8,
+                bgcolor: 'rgba(255,255,255,0.7)',
+                boxShadow: 1,
+                zIndex: 2,
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                eliminarPropiedad(propiedad.id);
+              }}
+            >
+              <DeleteForeverIcon color="error" fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+
         {/* Botón agregar imagen */}
         <Tooltip title="Agregar imagen">
           <span>
@@ -589,7 +631,7 @@ useEffect(() => {
                     </Grid2>
                   </Box>
                 ) : (
-                  <TableContainer component={Paper} sx={{ 
+                  <TableContainer component={Box} sx={{ 
                     width: '120%',
                     overflowX: 'auto',
                     borderRadius: 2,
@@ -600,10 +642,8 @@ useEffect(() => {
                     justifyContent:"flex-start",
                     flexWrap:"wrap",
                     gap:"1rem",
-                    boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-                    '& .MuiTableCell-root': {
-                      color: theme.palette.mode === 'dark' ? '#fff' : 'inherit'
-                    }
+                      
+                    backgroundColor:'background.default'
                   }}>
                     <Box sx={{ 
                     width: "100%", 
@@ -612,152 +652,181 @@ useEffect(() => {
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingLeft:"2rem",
+
                   }}>
                     <Grid2 
                       container 
                       spacing={2} 
                       sx={{
+                        width:"100%",
                         display:"flex",
                         justifyContent: { xs: 'center', sm: 'flex-start' },
                         ml: { xs: -1, sm: -2 },
-                        gap:"1rem 4rem",
+                        gap: '1rem 4rem',
+                        height: 'auto',
                       }}
                     >
-                      {propiedadesPaginadas.map((propiedad) => (
-  <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`}>  
-    <Card
-      sx={{
-        mb: 2,
-        width: { xs: '19rem', sm: '20rem' },
-        borderRadius: 3,
-        overflow: 'hidden',
-        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-        boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
-        },
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        cursor: 'pointer',
-      }}
-      onClick={() => {
-        setSelectedPropiedad(propiedad);
-        setModalOpen(true);
-      }}
-    >
-      {/* Barra de estado */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          width: '8px',
-          height: '100%',
-          bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
-        }}
-      />
-      {/* Imagen principal */}
-      <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        {/* Botón agregar imagen */}
-        <Tooltip title="Agregar imagen">
-          <span>
-            <IconButton
-              size="small"
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                bgcolor: 'rgba(255,255,255,0.7)',
-                boxShadow: 1,
-                zIndex: 2,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddImageClick(propiedad.id);
-              }}
-              disabled={uploadingId === propiedad.id}
-            >
-              <AddPhotoAlternateIcon color="primary" fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        {/* Input file oculto global */}
-        {uploadingId === propiedad.id && (
-          <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-            <CircularProgress size={32} />
-          </Box>
-        )}
-        {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
-          <img
-            src={propiedad.imagenes[0].imageUrl}
-            alt={propiedad.direccion}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary', fontSize: 16 }}>
-            Sin imagen
-          </Box>
-        )}
-      </Box>
-      {/* Header con icono y tipo */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
-        <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
-        <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-          {propiedad.tipoPropiedad || propiedad.tipo}
-        </Typography>
-        <Chip
-          icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
-          label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
-          color={propiedad.disponibilidad ? 'success' : 'warning'}
-          size="small"
-          sx={{ fontWeight: 500, ml: 2 }}
-        />
-      </Box>
-      <Divider sx={{ my: 1.5 }} />
-      {/* Info organizada con iconos */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <HomeIcon fontSize="small" />
-          {propiedad.direccion}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <LocationOnIcon fontSize="small" />
-          {propiedad.localidad}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <MapIcon fontSize="small" />
-          {propiedad.partido}, {propiedad.provincia}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <PersonIcon fontSize="small" />
-          {propiedad.usuarioDtoSalida
-            ? `${propiedad.usuarioDtoSalida.username}`
-            : 'No asignado'}
-        </Typography>
-       
-      </Box>
-    </Card>
-  </Grid2>
-))}
+                      {propiedadesPaginadas.map((propiedad, index) => (
+                        <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`}>
+                          <Card
+                            data-tour={index === 0 ? 'propiedades-card' : undefined}
+                            sx={{
+                              mb: 2,
+                              width: { xs: '19rem', sm: '20rem' },
+                              borderRadius: 3,
+                              overflow: 'hidden',
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                              boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
+                              transition: 'transform 0.2s, box-shadow 0.2s',
+                              '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
+                              },
+                              position: 'relative',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => {
+                              setSelectedPropiedad(propiedad);
+                              setModalOpen(true);
+                            }}
+                          >
+                            {/* Barra de estado */}
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                left: 0,
+                                top: 0,
+                                width: '8px',
+                                height: '100%',
+                                bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
+                              }}
+                            />
+                            {/* Imagen principal */}
+                            <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                              {/* Botón eliminar propiedad */}
+                              <Tooltip title="Eliminar propiedad">
+                                <span>
+                                  <IconButton
+                                    data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
+                                    size="small"
+                                    sx={{
+                                      position: 'absolute',
+                                      top: 8,
+                                      left: 8,
+                                      bgcolor: 'rgba(255,255,255,0.7)',
+                                      boxShadow: 1,
+                                      zIndex: 2,
+                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      eliminarPropiedad(propiedad.id);
+                                    }}
+                                  >
+                                    <DeleteForeverIcon color="error" fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+
+                              {/* Botón agregar imagen */}
+                              <Tooltip title="Agregar imagen">
+                                <span>
+                                  <IconButton
+                                    data-tour={index === 0 ? 'propiedades-card-addimg' : undefined}
+                                    size="small"
+                                    sx={{
+                                      position: 'absolute',
+                                      top: 8,
+                                      right: 8,
+                                      bgcolor: 'rgba(255,255,255,0.7)',
+                                      boxShadow: 1,
+                                      zIndex: 2,
+                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAddImageClick(propiedad.id);
+                                    }}
+                                    disabled={uploadingId === propiedad.id}
+                                  >
+                                    <AddPhotoAlternateIcon color="primary" fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                              {/* Input file oculto global */}
+                              {uploadingId === propiedad.id && (
+                                <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+                                  <CircularProgress size={32} />
+                                </Box>
+                              )}
+                              {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
+                                <img
+                                  src={propiedad.imagenes[0].imageUrl}
+                                  alt={propiedad.direccion}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary', fontSize: 16 }}>
+                                  Sin imagen
+                                </Box>
+                              )}
+                            </Box>
+                            {/* Header con icono y tipo */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
+                              <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
+                              <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                                {propiedad.tipoPropiedad || propiedad.tipo}
+                              </Typography>
+                              <Chip
+                                icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
+                                label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
+                                color={propiedad.disponibilidad ? 'success' : 'warning'}
+                                size="small"
+                                sx={{ fontWeight: 500, ml: 2 }}
+                              />
+                            </Box>
+                            <Divider sx={{ my: 1.5 }} />
+                            {/* Info organizada con iconos */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                              >
+                                <HomeIcon fontSize="small" />
+                                {propiedad.direccion}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                              >
+                                <LocationOnIcon fontSize="small" />
+                                {propiedad.localidad}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                              >
+                                <MapIcon fontSize="small" />
+                                {propiedad.partido}, {propiedad.provincia}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                              >
+                                <PersonIcon fontSize="small" />
+                                {propiedad.usuarioDtoSalida
+                                  ? `${propiedad.usuarioDtoSalida.username}`
+                                  : 'No asignado'}
+                              </Typography>
+                            </Box>
+                          </Card>
+                        </Grid2>
+                      ))}
                     </Grid2>
                   </Box>
-                  </TableContainer>
+                </TableContainer>
                 )}
               </>
             )}
@@ -765,12 +834,14 @@ useEffect(() => {
             {/* Componente de paginación */}
             {propiedadesFiltradas.length > 0 && (
               <Box sx={{ 
+                
                 mt: 4, 
                 display: 'flex', 
                 justifyContent: 'center',
                 width: '100%'
               }}>
                 <Pagination 
+                  data-tour="propiedades-pagination"
                   count={totalPages} 
                   page={page} 
                   onChange={handlePageChange}

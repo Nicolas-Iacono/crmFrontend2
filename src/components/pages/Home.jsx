@@ -26,8 +26,10 @@ import GarantesApi from "../api/garanteApi";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/GlobalAuth";
-
-
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import PersonIcon from '@mui/icons-material/Person';
+import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
+import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 const Home = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -48,45 +50,6 @@ const Home = () => {
   }, []);
   console.log(user)
   const navigate = useNavigate();
-  const { data, error, isLoading } = contratoApi.ultimosContratos();
-  
-  
-
-
- 
-  // Fetch data when user is available
-  useEffect(() => {
-    // if (!user?.name) return;
-  
-    // const fetchCounts = async () => {
-    //   try {
-    //     const responses = await Promise.all([
-    //       axios.get(`${import.meta.env.VITE_API_URL}/propietario/enum/${user.name}`),
-    //       axios.get(`${import.meta.env.VITE_API_URL}/propiedad/enum/${user.name}`),
-    //       axios.get(`${import.meta.env.VITE_API_URL}/inquilino/enum/${user.name}`),
-    //       axios.get(`${import.meta.env.VITE_API_URL}/contrato/enum/${user.name}`),
-    //     ]);
-  
-    //     setNumPropietario(responses[0].data);
-    //     setNumPropiedad(responses[1].data);
-    //     setNumInquilino(responses[2].data);
-    //     setNumContrato(responses[3].data);
-    //   } catch (error) {
-    //     console.error("Error al obtener los contadores:", error);
-    //   }
-    // };
-    // fetchCounts();
-    const fetchUltimosContratos = async () => {
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/latest`);
-        setUltimosContratos(response.data);
-      } catch (error) {
-        console.error("Error al obtener los últimos contratos:", error);
-      }
-    };
-    fetchUltimosContratos();
-  }, [user?.name]);
- 
   const [ultimosContratos,setUltimosContratos] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -105,18 +68,32 @@ const Home = () => {
 
   const [contratos, setContratos] = useState([]);
   const [numContrato, setNumContrato] = useState(0);
+  const[isLoading,setIsLoading] = useState(false);
+  const[error,setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUltimosContratos = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/latest`);
+        setUltimosContratos(response.data);
+      } catch (error) {
+        console.error("Error al obtener los últimos contratos:", error);
+      }
+    };
+    fetchUltimosContratos();
+  }, []);
 
   useEffect(() => {
     if (!user?.name) return;
-  
-    const setters = {
-      propietario: setNumPropietario,
-      propiedad: setNumPropiedad,
-      inquilino: setNumInquilino,
-      contrato: setNumContrato,
-    };
-  
+
     const fetchCounts = async () => {
+      const setters = {
+        propietario: setNumPropietario,
+        propiedad: setNumPropiedad,
+        inquilino: setNumInquilino,
+        contrato: setNumContrato,
+      };
+
       try {
         await Promise.all(
           Object.keys(setters).map(async (tipo) => {
@@ -128,26 +105,10 @@ const Home = () => {
         console.error("Error al obtener los contadores:", error);
       }
     };
-  
-    const fetchUltimosContratos = async () => {
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/latest`);
-        const lc = response.data;
-        if(lc.length > 0){
-          lc.map((contrato) => {
-            contrato.usuarioDtoSalida.username === user.name ? setUltimosContratos([...ultimosContratos, contrato]) : null;
-          })
-        }
-        
-      } catch (error) {
-        console.error("Error al obtener los últimos contratos:", error);
-      }
-    };
-  
+
     fetchCounts();
-    fetchUltimosContratos();
   }, [user?.name]);
-  
+
 console.log(ultimosContratos)
 
   const irHacia = (url) =>{
@@ -164,28 +125,46 @@ console.log(ultimosContratos)
   };
 
   return (
-    <Box sx={{
-      backgroundColor: "background.default",
+    <Box sx={(theme) => ({
+      ...(theme.palette.mode === "dark"
+        ? {
+            backgroundColor: "#1e1e22", // fallback
+            background: "linear-gradient(0deg,rgb(34, 52, 90) 0%,rgb(8, 15, 27) 100%)",
+          }
+        : {
+            backgroundColor: "#f4f6f8", // fallback
+            background: "linear-gradient(180deg, #f4f6f8 0%, #e8ebef 100%)",
+          }),
+  
       minHeight: "100vh",
-      width: { xs: "95%", md: "80%" },
+      width: { xs: "95%", md: "100vw" },
       padding: { xs: 1, md: 4 },
       paddingTop: { xs: "64px", md: "80px" },
       paddingBottom: { xs: "70px", md: "20px" },
       display: "flex",
       flexDirection: "column",
-      alignItems: { xs: "center", md: "end" },
-      margin: 0
-    }}>
+      alignItems: { xs: "center", md: "start" },
+      paddingLeft: { xs: 1, md: 0 },
+    })}>
       <Typography 
         variant="h4" 
-        sx={{
-          fontWeight: 600,
-          color: "#1a237e",
+       
+          sx={(theme) => ({
+            ...(theme.palette.mode === "dark"
+              ? {
+                  color:"rgb(80, 8, 175)"
+                }
+              : {
+                  color:" #1a237e"
+                }),
+         
           marginBottom: { xs: 3, md: 4 },
           fontSize: { xs: "1.75rem", md: "2.125rem" },
           width: "100%",
-          textAlign: { xs: "left", md: "left" }
-        }}
+          textAlign: { xs: "left", md: "left" },
+          marginLeft: { xs: 0, md: 4 },
+          fontFamily: "Poppins, sans-serif",
+        })}
       >
         Panel de Control
       </Typography>
@@ -195,10 +174,11 @@ console.log(ultimosContratos)
         spacing={{ xs: 2.5, md: 3 }} 
         sx={{ 
           marginBottom: { xs: 3, md: 4 },
-          justifyContent: { xs: "center", md: "flex-start" },
+          justifyContent: { xs: "center", md: "space-around" },
           width: "100%",
+          height: {xs:"auto",md:"250px"},
           px: { xs: 0, md: 0 },
-          flexDirection:{ xs: "column", md: "row" }
+          flexDirection:{ xs: "column", md: "row" },
         }}
       >
         {/* Propietarios Card */}
@@ -208,51 +188,103 @@ console.log(ultimosContratos)
           md={3} 
           sx={{
             display: "flex",
-            justifyContent: "center"
+            justifyContent: "center",
+            alignItems: {md:"center",xs:"flex-start"}
           }}
         >
           <Paper
             elevation={2}
             onClick={() => navigate("/propietarios")}
             sx={{
-              width: { xs: "100%", sm: "13rem" },
-              maxWidth: { xs: "100%", sm: "13rem" },
+              width: {  xs: '100%',  
+                sm: '75%',   
+                md: '13rem',   
+                lg: '15rem',  
+                xl: '20rem',
+              },
+              maxWidth: { xs: '100%',  
+                md: '20rem',   
+                },
               minHeight: { xs: "70px", sm: "auto" },
-              height: {xs:"40%",md:"100%"},
+              height: {xs:"40%",sm:"80%"},
               borderRadius: 3,
               overflow: "hidden",
               transition: "all 0.3s ease",
               background: "linear-gradient(135deg, #1a237e 0%, #283593 100%)",
               color: "white",
+              display: "flex",
+              flexDirection: "column",
               cursor: "pointer",
               "&:hover": {
                 transform: "translateY(-4px)",
                 boxShadow: "0 8px 20px -4px rgba(26, 35, 126, 0.3)"
               }
             }}
-          >
-            <Box sx={{ 
-              p: { xs: 2, md: 3 },
-              height: "100%",
-              display: "flex",
-              flexDirection: { xs: "row", md: "column" },
-              justifyContent: "space-between",
-              alignItems: "center"
+          > 
+        {isMobile ? (<>
+        <Box sx={{ 
+             p: { xs: 2, md: 1 },
+             height: "100%",
+             display: "flex",
+             flexDirection: { xs: "row", md: "column" },
+             justifyContent:{xs:"space-between",md:"center"},
+             alignItems: "center"
+              
             }}>
               <Typography variant="h6" sx={{ 
                 fontSize: { xs: "0.9rem", md: "1.25rem" },
-                fontWeight: 500,
-                mb: 1
+                fontWeight: 400,
+                mb: 1,
+                fontFamily: "Poppins, sans-serif",
               }}>
                 Propietarios
               </Typography>
               <Typography variant="h4" sx={{ 
                 fontSize: { xs: "1.5rem", md: "2rem" },
-                fontWeight: 600
+                fontWeight: 400,
+                fontFamily: "Poppins, sans-serif",
               }}>
                 {numPropietario}
               </Typography>
             </Box>
+            
+            </>)
+        :
+        (<>
+          <Box sx={{ 
+                p: { xs: 2, md: 1 },
+                height: "100%",
+                display: "flex",
+                flexDirection: { xs: "row", md: "row" },
+                justifyContent: {xs:"space-between",md:"space-around"},
+                alignItems: "start",
+                paddingTop: { xs: 0, md: 3 },
+                
+              }}>
+                <Typography variant="h6" sx={{ 
+                  fontSize: { xs: "0.9rem", md: "1.25rem" },
+                  fontWeight: 400,
+                  mb: 1,
+                  fontFamily: "Poppins, sans-serif",
+                }}>
+                  Propietarios
+                </Typography>
+                <Typography variant="h4" sx={{ 
+                  fontSize: { xs: "1.5rem", md: "2rem" },
+                  fontWeight: 400,
+                  fontFamily: "Poppins, sans-serif",
+                }}>
+                  {numPropietario}
+                </Typography>
+              </Box>
+              <Box sx={{width:"100%",
+                height:"130px", display:"flex", justifyContent:"flex-end",
+                 alignItems:"center", marginLeft:"-2rem" }}>
+                <PersonIcon sx={{ fontSize: 50 }} />
+              </Box>
+              </>)
+        }
+            
           </Paper>
         </Grid2>
 
@@ -263,108 +295,215 @@ console.log(ultimosContratos)
           md={3} 
           sx={{
             display: "flex",
-            justifyContent: "center"
+            justifyContent: "center",
+            alignItems: {md:"center",xs:"flex-start"}
           }}
         >
           <Paper
             elevation={2}
             onClick={() => navigate("/inquilinos")}
             sx={{
-              width: { xs: "100%", sm: "13rem" },
-              maxWidth: { xs: "100%", sm: "13rem" },
+              width: {  xs: '100%',  
+                sm: '75%',   
+                md: '13rem',   
+                lg: '15rem',  
+                xl: '20rem',
+              },
+              maxWidth: { xs: '100%',  
+                md: '20rem',   
+                },
               minHeight: { xs: "70px", sm: "auto" },
-              height: {xs:"40%",md:"100%"},
+              height: {xs:"40%",sm:"80%"},
               borderRadius: 3,
               overflow: "hidden",
               transition: "all 0.3s ease",
               background: "linear-gradient(135deg, #00796b 0%, #009688 100%)",
               color: "white",
+              display: "flex",
+              flexDirection: "column",
               cursor: "pointer",
               "&:hover": {
                 transform: "translateY(-4px)",
-                boxShadow: "0 8px 20px -4px rgba(0, 121, 107, 0.3)"
+                boxShadow: "0 8px 20px -4px rgba(26, 35, 126, 0.3)"
               }
             }}
-          >
-            <Box sx={{ 
-              p: { xs: 2, md: 3 },
-              height: "100%",
-              display: "flex",
-              flexDirection: { xs: "row", md: "column" },
-              justifyContent: "space-between",
-              alignItems: "center"
+          > 
+        {isMobile ? (<>
+        <Box sx={{ 
+             p: { xs: 2, md: 1 },
+             height: "100%",
+             display: "flex",
+             flexDirection: { xs: "row", md: "column" },
+             justifyContent:{xs:"space-between",md:"center"},
+             alignItems: "center"
+              
             }}>
               <Typography variant="h6" sx={{ 
                 fontSize: { xs: "0.9rem", md: "1.25rem" },
-                fontWeight: 500,
-                mb: 1
+                fontWeight: 400,
+                mb: 1,
+                fontFamily: "Poppins, sans-serif",
               }}>
                 Inquilinos
               </Typography>
               <Typography variant="h4" sx={{ 
                 fontSize: { xs: "1.5rem", md: "2rem" },
-                fontWeight: 600
+                fontWeight: 400,
+                fontFamily: "Poppins, sans-serif",
               }}>
                 {numInquilino}
               </Typography>
             </Box>
+            
+            </>)
+        :
+        (<>
+          <Box sx={{ 
+                p: { xs: 2, md: 1 },
+                height: "100%",
+                display: "flex",
+                flexDirection: { xs: "row", md: "row" },
+                justifyContent: {xs:"space-between",md:"space-around"},
+                alignItems: "start",
+                paddingTop: { xs: 0, md: 3 },
+                
+              }}>
+                <Typography variant="h6" sx={{ 
+                  fontSize: { xs: "0.9rem", md: "1.25rem" },
+                  fontWeight: 400,
+                  mb: 1,
+                  fontFamily: "Poppins, sans-serif",
+                }}>
+                  Inquilinos
+                </Typography>
+                <Typography variant="h4" sx={{ 
+                  fontSize: { xs: "1.5rem", md: "2rem" },
+                  fontWeight: 400,
+                  fontFamily: "Poppins, sans-serif",
+                }}>
+                  {numInquilino}
+                </Typography>
+              </Box>
+              <Box sx={{width:"100%",
+                height:"130px", display:"flex", justifyContent:"flex-end",
+                 alignItems:"center", marginLeft:"-2rem" }}>
+                <PeopleAltIcon sx={{ fontSize: 50 }} />
+              </Box>
+              </>)
+        }
+            
           </Paper>
         </Grid2>
 
+
         {/* Propiedades Card */}
+
         <Grid2 
           xs={15} 
           sm={6} 
           md={3} 
           sx={{
             display: "flex",
-            justifyContent: "center"
+            justifyContent: "center",
+            alignItems: {md:"center",xs:"flex-start"}
           }}
         >
           <Paper
             elevation={2}
             onClick={() => navigate("/propiedades")}
             sx={{
-              width: { xs: "100%", sm: "13rem" },
-              maxWidth: { xs: "100%", sm: "13rem" },
+              width: {  xs: '100%',  
+                sm: '75%',   
+                md: '13rem',   
+                lg: '15rem',  
+                xl: '20rem',
+              },
+              maxWidth: { xs: '100%',  
+                md: '20rem',   
+                },
               minHeight: { xs: "70px", sm: "auto" },
-              height: {xs:"40%",md:"100%"},
+              height: {xs:"40%",sm:"80%"},
               borderRadius: 3,
               overflow: "hidden",
               transition: "all 0.3s ease",
               background: "linear-gradient(135deg, #c62828 0%, #d32f2f 100%)",
               color: "white",
+              display: "flex",
+              flexDirection: "column",
               cursor: "pointer",
               "&:hover": {
                 transform: "translateY(-4px)",
-                boxShadow: "0 8px 20px -4px rgba(198, 40, 40, 0.3)"
+                boxShadow: "0 8px 20px -4px rgba(26, 35, 126, 0.3)"
               }
             }}
-          >
-            <Box sx={{ 
-              p: { xs: 2, md: 3 },
-              height: "100%",
-              display: "flex",
-              flexDirection: { xs: "row", md: "column" },
-              justifyContent: "space-between",
-              alignItems: "center"
+          > 
+        {isMobile ? (<>
+        <Box sx={{ 
+             p: { xs: 2, md: 1 },
+             height: "100%",
+             display: "flex",
+             flexDirection: { xs: "row", md: "column" },
+             justifyContent:{xs:"space-between",md:"center"},
+             alignItems: "center"
+              
             }}>
               <Typography variant="h6" sx={{ 
                 fontSize: { xs: "0.9rem", md: "1.25rem" },
-                fontWeight: 500,
-                mb: 1
+                fontWeight: 400,
+                mb: 1,
+                fontFamily: "Poppins, sans-serif",
               }}>
                 Propiedades
               </Typography>
               <Typography variant="h4" sx={{ 
                 fontSize: { xs: "1.5rem", md: "2rem" },
-                fontWeight: 600
+                fontWeight: 400,
+                fontFamily: "Poppins, sans-serif",
               }}>
                 {numPropiedad}
               </Typography>
             </Box>
+            
+            </>)
+        :
+        (<>
+          <Box sx={{ 
+                p: { xs: 2, md: 1 },
+                height: "100%",
+                display: "flex",
+                flexDirection: { xs: "row", md: "row" },
+                justifyContent: {xs:"space-between",md:"space-around"},
+                alignItems: "start",
+                paddingTop: { xs: 0, md: 3 },
+                
+              }}>
+                <Typography variant="h6" sx={{ 
+                  fontSize: { xs: "0.9rem", md: "1.25rem" },
+                  fontWeight: 400,
+                  mb: 1,
+                  fontFamily: "Poppins, sans-serif",
+                }}>
+                  Propiedades
+                </Typography>
+                <Typography variant="h4" sx={{ 
+                  fontSize: { xs: "1.5rem", md: "2rem" },
+                  fontWeight: 400,
+                  fontFamily: "Poppins, sans-serif",
+                }}>
+                  {numPropiedad}
+                </Typography>
+              </Box>
+              <Box sx={{width:"100%",
+                height:"130px", display:"flex", justifyContent:"flex-end",
+                 alignItems:"center", marginLeft:"-2rem" }}>
+                <MapsHomeWorkIcon sx={{ fontSize: 50 }} />
+              </Box>
+              </>)
+        }
+            
           </Paper>
         </Grid2>
+
 
         {/* Contratos Card */}
         <Grid2 
@@ -373,53 +512,106 @@ console.log(ultimosContratos)
           md={3} 
           sx={{
             display: "flex",
-            justifyContent: "center"
+            justifyContent: "center",
+            alignItems: {md:"center",xs:"flex-start"}
           }}
         >
           <Paper
             elevation={2}
             onClick={() => navigate("/contratos")}
             sx={{
-              width: { xs: "100%", sm: "13rem" },
-              maxWidth: { xs: "100%", sm: "13rem" },
+              width: {  xs: '100%',  
+                sm: '75%',   
+                md: '13rem',   
+                lg: '15rem',  
+                xl: '20rem',
+              },
+              maxWidth: { xs: '100%',  
+                md: '20rem',   
+                },
               minHeight: { xs: "70px", sm: "auto" },
-              height: {xs:"40%",md:"100%"},
+              height: {xs:"40%",sm:"80%"},
               borderRadius: 3,
               overflow: "hidden",
               transition: "all 0.3s ease",
               background: "linear-gradient(135deg, #f57c00 0%, #fb8c00 100%)",
               color: "white",
+              display: "flex",
+              flexDirection: "column",
               cursor: "pointer",
               "&:hover": {
                 transform: "translateY(-4px)",
-                boxShadow: "0 8px 20px -4px rgba(245, 124, 0, 0.3)"
+                boxShadow: "0 8px 20px -4px rgba(26, 35, 126, 0.3)"
               }
             }}
-          >
-            <Box sx={{ 
-              p: { xs: 2, md: 3 },
-              height: "100%",
-              display: "flex",
-              flexDirection: { xs: "row", md: "column" },
-              justifyContent: "space-between",
-              alignItems: "center"
+          > 
+        {isMobile ? (<>
+        <Box sx={{ 
+             p: { xs: 2, md: 1 },
+             height: "100%",
+             display: "flex",
+             flexDirection: { xs: "row", md: "column" },
+             justifyContent:{xs:"space-between",md:"center"},
+             alignItems: "center"
+              
             }}>
               <Typography variant="h6" sx={{ 
                 fontSize: { xs: "0.9rem", md: "1.25rem" },
-                fontWeight: 500,
-                mb: 1
+                fontWeight: 400,
+                mb: 1,
+                fontFamily: "Poppins, sans-serif",
               }}>
                 Contratos
               </Typography>
               <Typography variant="h4" sx={{ 
                 fontSize: { xs: "1.5rem", md: "2rem" },
-                fontWeight: 600
+                fontWeight: 400,
+                fontFamily: "Poppins, sans-serif",
               }}>
                 {numContrato}
               </Typography>
             </Box>
+            
+            </>)
+        :
+        (<>
+          <Box sx={{ 
+                p: { xs: 2, md: 1 },
+                height: "100%",
+                display: "flex",
+                flexDirection: { xs: "row", md: "row" },
+                justifyContent: {xs:"space-between",md:"space-around"},
+                alignItems: "start",
+                paddingTop: { xs: 0, md: 3 },
+                
+              }}>
+                <Typography variant="h6" sx={{ 
+                  fontSize: { xs: "0.9rem", md: "1.25rem" },
+                  fontWeight: 400,
+                  mb: 1,
+                  fontFamily: "Poppins, sans-serif",
+                }}>
+                  Contratos
+                </Typography>
+                <Typography variant="h4" sx={{ 
+                  fontSize: { xs: "1.5rem", md: "2rem" },
+                  fontWeight: 400,
+                  fontFamily: "Poppins, sans-serif",
+                }}>
+                  {numContrato}
+                </Typography>
+              </Box>
+              <Box sx={{width:"100%",
+                height:"130px", display:"flex", justifyContent:"flex-end",
+                 alignItems:"center", marginLeft:"-2rem" }}>
+                <TextSnippetIcon sx={{ fontSize: 50 }} />
+              </Box>
+              </>)
+        }
+            
           </Paper>
         </Grid2>
+
       </Grid2>
 
       <Grid2 
@@ -428,6 +620,7 @@ console.log(ultimosContratos)
         sx={{
           justifyContent: "center",
           width: "100%",
+          height:"100%",
           px: { xs: 0, md: 0 }
         }}
       >
@@ -435,21 +628,34 @@ console.log(ultimosContratos)
         <Grid2 item="true" xs={12} md={8} sx={{ width:"100%"}}>
           <Paper 
             elevation={5} 
-            sx={{ 
+            sx={(theme) => ({ 
+              ...(theme.palette.mode === "dark"
+                ? {
+                    background: "linear-gradient(180deg,rgb(54, 20, 100) 0%,rgb(25, 27, 39) 100%)",
+                  }
+                : {
+                    background: "white",
+                  }),
               borderRadius: 3, 
               overflow: "hidden",
-              width: isMobile ? "100%" : "72%",
-              maxWidth: "50rem",
-              background: "white",
+              width: isMobile ? "100%" : "100%",
+              maxWidth: "95%",
+              margin: "0 auto",
               transition: "box-shadow 0.3s ease",
               "&:hover": {
                 boxShadow: "0 8px 20px -4px rgba(0, 0, 0, 0.1)"
               }
-            }}
+            })}
           >
             <Box sx={{ 
+              ...(theme.palette.mode === "dark"
+                ? {
+                    backgroundColor: "rgb(33, 37, 71)", 
+                  }
+                : {
+                    backgroundColor: "#1a237e",
+                  }),
               padding: { xs: 2, md: 2.5 }, 
-              backgroundColor: "#1a237e", 
               color: "white",
               display: "flex",
               alignItems: "center",
@@ -499,10 +705,17 @@ console.log(ultimosContratos)
               </Box>
             ) : (
               <>
-                <TableContainer sx={{ 
+                <TableContainer sx={(theme) => ({ 
+                  ...(theme.palette.mode === "dark"
+                    ? {
+                        backgroundColor: "rgb(189, 193, 226)", 
+                      }
+                    : {
+                        backgroundColor: "white",
+                      }),
                   maxHeight: { xs: 350, md: 400 },
                   overflowX: "auto",
-                  backgroundColor: "white", 
+                  
                   borderRadius: 1,
                   boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                   width: "100%",
@@ -526,20 +739,36 @@ console.log(ultimosContratos)
                   '& .MuiTableRow-root:hover': {
                     backgroundColor: "#f8fafc"
                   }
-                }}>
+                })}>
                   <Table stickyHeader>
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ 
-                          fontWeight: 600,
-                          backgroundColor: "#f1f5f9",
-                          color: "#1a237e"
-                        }}>ID</TableCell>
-                        <TableCell sx={{ 
-                          fontWeight: 600,
-                          backgroundColor: "#f1f5f9",
-                          color: "#1a237e"
-                        }}>Contrato</TableCell>
+                        <TableCell sx={(theme) => ({ 
+                          ...(theme.palette.mode === "dark"
+                            ? {
+                              fontWeight: 600,
+                              backgroundColor: "#f1f5f9",
+                              color: " #1a237e"
+                            }
+                            : {
+                              fontWeight: 600,
+                              backgroundColor: " #f1f5f9",
+                              color: "#1a237e"
+                            }),
+                        })}>ID</TableCell>
+                        <TableCell sx={(theme) => ({ 
+                          ...(theme.palette.mode === "dark"
+                            ? {
+                              fontWeight: 600,
+                              backgroundColor: "#f1f5f9",
+                              color: " #1a237e"
+                            }
+                            : {
+                              fontWeight: 600,
+                              backgroundColor: " #f1f5f9",
+                              color: "#1a237e"
+                            }),
+                        })}>Contrato</TableCell>
     
                       </TableRow>
                     </TableHead>

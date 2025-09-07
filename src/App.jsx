@@ -30,6 +30,8 @@ import './styles/swal-toast.css';
 import { useAuth } from "./components/context/GlobalAuth";
 import { Navigate } from "react-router-dom";
 import CalculadoraDeAlquileres from "./components/pages/CalculadoraDeAlquileres";
+import CalendarioPage from "./components/pages/CalendarioPage";
+import AsignarPropietario from "./components/pages/pagesForm/AsignarPropietario";
 function App() {
     return (
       <EditorTextContextProvider>
@@ -62,34 +64,37 @@ function App() {
     }
   
     return (
-      <Routes>
-        {/* Rutas públicas (sin autenticación) */}
-        <Route path="/auth" element={<Registro />} />
-        <Route path="/login" element={<Login />} />
-
-        {/* Rutas protegidas */}
-        <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
-          <Route index element={<Home />} />
-          <Route path="users-controls" element={<UsersControl />} />
-          <Route path="propiedades" element={<PropiedadesPage />} />
-          <Route path="nueva-propiedad" element={<NuevaPropiedad />} />
-          <Route path="inquilinos" element={<InquilinosPage />} />
-          <Route path="nuevo-inquilino" element={<NuevoInquilino />} />
-          <Route path="propietarios" element={<PropietariosPage />} />
-          <Route path="nuevo-propietario" element={<NuevoPropietario />} />
-          <Route path="contratos" element={<ContratosPage />} />
-          <Route path="contratos/crear" element={<CrearContratoPage />} />
-          <Route path="nuevo-contrato" element={<NuevoContrato />} />
-          <Route path="recibo" element={<ReciboForm />} />
-          <Route path="recibos/:id" element={<ReciboForm />} />
-          <Route path="nuevo-servicio" element={<NuevoServicio />} />
-          <Route path="nuevo-recibo" element={<NuevoRecibo />} />
-          <Route path="garantes" element={<GarantesPage />} />
-          <Route path="nuevo-garante" element={<NuevoGarante />} />
-          <Route path="ajustes" element={<UserSettings />} />
-          <Route path="calculadora-de-alquileres" element={<CalculadoraDeAlquileres />} />
-        </Route>
-      </Routes>
+      <>
+        <Routes>
+          {/* Rutas públicas (sin autenticación) */}
+          <Route path="/auth" element={<Registro />} />
+          <Route path="/login" element={<Login />} />
+  
+          {/* Rutas protegidas */}
+          <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
+            <Route index element={<Home />} />
+            <Route path="users-controls" element={<UsersControl />} />
+            <Route path="propiedades" element={<PropiedadesPage />} />
+            <Route path="nueva-propiedad" element={<NuevaPropiedad />} />
+            <Route path="propiedades/asignar-propietario/:id" element={<AsignarPropietario />} />
+            <Route path="inquilinos" element={<InquilinosPage />} />
+            <Route path="nuevo-inquilino" element={<NuevoInquilino />} />
+            <Route path="propietarios" element={<PropietariosPage />} />
+            <Route path="nuevo-propietario" element={<NuevoPropietario />} />
+            <Route path="contratos" element={<ContratosPage />} />
+            <Route path="contratos/crear" element={<CrearContratoPage />} />
+            <Route path="recibo" element={<ReciboForm />} />
+            <Route path="recibos/:id" element={<ReciboForm />} />
+            <Route path="nuevo-servicio" element={<NuevoServicio />} />
+            <Route path="nuevo-recibo" element={<NuevoRecibo />} />
+            <Route path="garantes" element={<GarantesPage />} />
+            <Route path="nuevo-garante" element={<NuevoGarante />} />
+            <Route path="ajustes" element={<UserSettings />} />
+            <Route path="calculadora-de-alquileres" element={<CalculadoraDeAlquileres />} />
+            <Route path="calendario" element={<CalendarioPage />} />
+          </Route>
+        </Routes>
+      </>
     );
   }
   

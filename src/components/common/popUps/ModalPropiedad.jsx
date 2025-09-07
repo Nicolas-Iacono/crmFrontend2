@@ -1,9 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  Button,
   Typography,
   Box,
   Divider,
@@ -23,13 +25,14 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import CarouselPropiedad from './CarouselPropiedad';
 
 
-const ModalPropiedad = ({ open, onClose, propiedad }) => {
-  const theme = useTheme();
-  const [imgHeight, setImgHeight] = useState(500); // 14rem = 224px
+const ModalPropiedad = ({ open, onClose, propiedad = {} }) => {
+      const theme = useTheme();
+
+  const navigate = useNavigate();
+  const [imgHeight, setImgHeight] = useState(500);
   const dialogContentRef = useRef(null);
 
   useEffect(() => {
-    // Reiniciar altura y scroll al abrir el modal
     if (open) {
       setImgHeight(404);
       if (dialogContentRef.current) {
@@ -39,7 +42,6 @@ const ModalPropiedad = ({ open, onClose, propiedad }) => {
     const handleScroll = () => {
       if (!dialogContentRef.current) return;
       const scrollTop = dialogContentRef.current.scrollTop;
-      // Altura mínima 80px (5rem), máxima 224px (14rem)
       const minH = 400, maxH = 400;
       let newHeight = maxH - scrollTop;
       if (newHeight < minH) newHeight = minH;
@@ -50,24 +52,26 @@ const ModalPropiedad = ({ open, onClose, propiedad }) => {
     if (ref) ref.addEventListener('scroll', handleScroll);
     return () => { if (ref) ref.removeEventListener('scroll', handleScroll); };
   }, [open]);
-  if (!propiedad) return null;
+
+  if (!propiedad) {
+    return null;
+  }
+
   const {
     direccion,
     localidad,
     partido,
     provincia,
-    propietarioContratoDtoSalida,
-    tipoPropiedad,
     disponibilidad,
-    ambientes,
-    superficie,
-    descripcion,
-    precio,
-    // Agrega aquí otros campos relevantes
   } = propiedad;
-console.log(propiedad.propietarioSalidaDto.nombre)
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth key={open ? 'open' : 'closed'}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth key={open ? 'open' : 'closed'}
+    sx={{
+      '& .MuiDialog-paper': {
+        borderRadius:{xs:"10px", md:"20px"},
+        maxWidth:{xs:"100%", md:"80%"},
+      },
+    }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <HomeIcon color="primary" />
@@ -124,10 +128,16 @@ console.log(propiedad.propietarioSalidaDto.nombre)
           </Grid2>
           <Grid2 item xs={12} sm={6}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>Propietario</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PersonIcon fontSize="small" color="primary" />
-              <Typography>{propiedad.propietarioSalidaDto?.nombre} {propiedad.propietarioSalidaDto?.apellido}</Typography>
-            </Box>
+                        {propiedad.propietarioSalidaDto ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PersonIcon fontSize="small" color="primary" />
+                <Typography>{propiedad.propietarioSalidaDto?.nombre} {propiedad.propietarioSalidaDto?.apellido}</Typography>
+              </Box>
+            ) : (
+              <Button variant="contained" onClick={() => navigate(`/propiedades/asignar-propietario/${propiedad.id}`)}>
+                Asignar Propietario
+              </Button>
+            )}
           </Grid2>
           <Grid2 item xs={12} sm={6}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>Tipo de Propiedad</Typography>
@@ -142,9 +152,9 @@ console.log(propiedad.propietarioSalidaDto.nombre)
           <Grid2 item xs={12} sm={6}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>Disponibilidad</Typography>
             <Chip
-              label={disponibilidad === 'Disponible' ? 'Libre' : 'Alquilada'}
-              color={disponibilidad === 'Disponible' ? 'success' : 'warning'}
-              icon={disponibilidad === 'Disponible' ? <CheckCircleIcon /> : <CancelIcon />}
+              label={disponibilidad  ? 'Libre' : 'Alquilada'}
+              color={disponibilidad ? 'success' : 'warning'}
+              icon={disponibilidad  ? <CheckCircleIcon /> : <CancelIcon />}
               sx={{ fontWeight: 600 }}
             />
           </Grid2>

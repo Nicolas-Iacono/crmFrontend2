@@ -44,8 +44,8 @@ export const PlayerCard = ({ id, nombre, direccion, telefono, email, onDelete })
         backgroundColor: "white",
         boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
         borderRadius: "10px",
-        width: "19rem",
-        height: "14rem",
+        width: {xs:"19rem",md:"80%"},
+        height: {xs:"14rem",md:"11rem"},
         display: "flex",
         alignItems: "start",
         flexDirection: "row"
@@ -66,7 +66,7 @@ export const PlayerCard = ({ id, nombre, direccion, telefono, email, onDelete })
       </Box>
 
       <Grid2 sx={{
-        backgroundColor: "rgb(25, 26, 71)", height: "100%", width: "20%",
+        background: "linear-gradient(135deg, #1a237e 0%, #283593 100%)", height: "100%", width: {xs:"20%",md:"10%"},
         borderRadius: "10px 0 0 10px", padding: "1rem", display: "flex", flexDirection: "column"
       }}>
         <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "start", height: "100%", width: "100%", gap: "1rem", }}>

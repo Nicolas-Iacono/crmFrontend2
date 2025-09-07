@@ -1,0 +1,109 @@
+{
+    "id": "/?source=pwa",
+    "name": "Tuinmo",
+    "short_name": "Tuinmo",
+    "description": "Tuinmo permite llevar la gestión de una inmobiliaria desde cualquier lugar, automatizando la creación de contratos, control de propiedades, propietarios e inquilinos y generando recibos mes a mes en formato PDF para facilitar la revisión y el intercambio con clientes",
+    "lang": "es-AR",
+    "dir": "ltr",
+    "start_url": "/?source=pwa",
+    "scope": "/",
+    "display": "standalone",
+    "display_override": ["fullscreen", "standalone"],
+    "orientation": "portrait",
+    "background_color": "#8D2EE6",
+    "theme_color": "#8D2EE6",
+    "categories": ["business", "productivity"],
+    "icons": [
+      {
+        "src": "/assets/logoInmo192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "/assets/logoInmo512.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+    ],
+    "shortcuts": [
+      {
+        "name": "Home",
+        "short_name": "Home",
+        "url": "/?from=shortcut",
+        "description": "Ir al panel general"
+      },
+      {
+        "name": "Contratos",
+        "short_name": "Contratos",
+        "url": "/contratos?from=shortcut"
+      },
+      {
+        "name": "Nuevo contrato",
+        "short_name": "Nuevo contrato",
+        "url": "/contratos/crear?from=shortcut"
+      },
+      {
+        "name": "Propiedades",
+        "short_name": "Propiedades",
+        "url": "/propiedades?from=shortcut"
+      },
+      {
+        "name": "Nueva propiedad",
+        "short_name": "Nueva propiedad",
+        "url": "/nueva-propiedad?from=shortcut"
+      },
+      {
+        "name": "Inquilinos",
+        "short_name": "Inquilinos",
+        "url": "/inquilinos?from=shortcut"
+      },
+      {
+        "name": "Nuevo inquilino",
+        "short_name": "Nuevo inquilino",
+        "url": "/nuevo-inquilino?from=shortcut"
+      },
+      {
+        "name": "Propietarios",
+        "short_name": "Propietarios",
+        "url": "/propietarios?from=shortcut"
+      },
+      {
+        "name": "Nuevo propietario",
+        "short_name": "Nuevo propietario",
+        "url": "/nuevo-propietario?from=shortcut"
+      },
+      {
+        "name": "Garantes",
+        "short_name": "Garantes",
+        "url": "/garantes?from=shortcut"
+      },
+      {
+        "name": "Nuevo garante",
+        "short_name": "Nuevo garante",
+        "url": "/nuevo-garante?from=shortcut"
+      },
+      {
+        "name": "Recibos",
+        "short_name": "Recibos",
+        "url": "/recibo?from=shortcut"
+      },
+      {
+        "name": "Calendario",
+        "short_name": "Calendario",
+        "url": "/calendario?from=shortcut"
+      },
+      {
+        "name": "Ajustes",
+        "short_name": "Ajustes",
+        "url": "/ajustes?from=shortcut"
+      },{
+        "name": "Calculadora de alquileres",
+        "short_name": "Calculadora de alquileres",
+        "url": "/calculadora-de-alquileres?from=shortcut"
+      }
+    ],
+    "prefer_related_applications": false
+  }
+  

@@ -1,0 +1,49 @@
+/* Estilos base para el contenedor del calendario */
+.calendar-container {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Estilos para los botones de la barra de herramientas */
+.fc .fc-button {
+  font-size: 0.9em !important;
+  padding: 0.5em 1em !important;
+  border-radius: 6px !important;
+  text-transform: capitalize !important;
+}
+
+/* Estilos para el título */
+.fc .fc-toolbar-title {
+  font-size: 1.5em !important;
+  font-weight: 600 !important;
+}
+
+/* Estilos para los eventos */
+.fc-event {
+  border: none !important;
+  padding: 4px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.fc-event:hover {
+  opacity: 0.85;
+}
+
+/* Ajustes para la vista de día */
+.fc-daygrid-day-frame {
+  padding: 4px;
+}
+
+/* Ocultar el punto en los eventos de todo el día */
+.fc-daygrid-event-dot {
+  display: none;
+}
+
+/* Toast de SweetAlert2 personalizado */
+.swal2-smaller-toast.swal2-toast {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}

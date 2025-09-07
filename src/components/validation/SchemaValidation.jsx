@@ -32,7 +32,7 @@ export const SchemaValidation  = {
         partido: Yup.string().required('El partido es obligatorio'),
         provincia: Yup.string().required('La provincia es obligatoria'),
         disponibilidad: Yup.boolean(),
-        id_propietario: Yup.number().required('El propietario es obligatorio'),
+        id_propietario: Yup.number().nullable(),
         inventario: Yup.string().max(65535, 'El inventario no puede exceder los 65535 caracteres').required('El inventario es obligatorio'),
 
       })

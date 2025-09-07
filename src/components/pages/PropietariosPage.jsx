@@ -38,6 +38,9 @@ import MenuItem from '@mui/material/MenuItem';
 import Swal from 'sweetalert2';
 import axios from 'axios';
 import PlayerCard from '../common/cards/PlayerCard';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import EmailIcon from '@mui/icons-material/Email';
+import OwnersTour from '../common/tour/OwnersTour';
 
 
 const PropietariosPage = () => {
@@ -219,12 +222,13 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
     }}>
       {propietariosFiltrados.length === 0 ? (
         <Box sx={{ 
+          width:"100%",
           textAlign: 'center', 
           mt: 2,
           p: 4,
           bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
           borderRadius: 3,
-          maxWidth: 400,
+          maxWidth: {xs:400, md:"100vw"},
           mx: 'auto',
           boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 12px rgba(0,0,0,0.08)',
         }}>
@@ -239,150 +243,76 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
           </Typography>
         </Box>
       ) : (
-        <Grid2 
-          container 
-          spacing={{ xs: 2, sm: 3 }} 
-          sx={{ 
-            maxWidth: { xs: '100%', sm: 600 },
-            margin: '0 auto'
-          }}
+        <Box sx={{ width: '100%' }}>
+      {propietariosFiltrados.map(propietario => (
+        <Paper 
+          key={propietario.id} 
+          sx={{ mb: 2, borderRadius: 2, boxShadow: 1, '&:hover': { boxShadow: 3 }, bgcolor: 'background.paper' }}
         >
-          {propietariosFiltrados.map((propietario) => (
-            <Grid2 xs={12} sm={6} key={propietario.id}>
-              <Card 
-                sx={{
-                  height: '100%',
-                  width:"20rem",
-                  borderRadius: 3,
-                  overflow: 'hidden',
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-                  boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
-                  }
-                }}
-              >
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => handleToggleCard(propietario.id)}>
-                    <Typography variant="h6" sx={{
-                      color: 'text.primary',
-                      fontWeight: 600,
-                      fontSize: { xs: '1.1rem', sm: '1.25rem' }
-                    }}>
-                      {propietario.nombre} {propietario.apellido}
-                    </Typography>
-                    <Box>
-                    <IconButton
-                      aria-label="settings"
-                      onClick={(e) => { 
-                        e.stopPropagation(); // Evita que se expanda/colapse la card
-                        handleMenuClick(e, propietario.id);
-                      }}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
-                    <IconButton 
-                      size="small"
-                      onClick={() => handleToggleCard(propietario.id)}
-                      aria-expanded={expandedCards[propietario.id] || false}
-                      aria-label="show more"
-                    >
-                    </IconButton>
-                  </Box>
-                  </Box>
-                  <Collapse in={expandedCards[propietario.id] || false} timeout="auto" unmountOnExit>
-                    <Divider sx={{ my: 1.5 }} />
-                    <Grid2
-                      container
-                      spacing={{ xs: 1.5, sm: 2 }}
-                      sx={{ pt: 0.5, display: 'flex', flexDirection: 'column' }}
-                    >
-                      <Grid2 xs={12}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: 'text.secondary',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                          }}
-                        >
-                          📱 {propietario.telefono}
-                        </Typography>
-                      </Grid2>
-                      <Grid2 xs={12}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: 'text.secondary',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                          }}
-                        >
-                          ✉️ {propietario.email}
-                        </Typography>
-                      </Grid2>
-                      <Grid2 xs={12}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: 'text.secondary',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                          }}
-                        >
-                          🏠 {propietario.direccionResidencial}
-                        </Typography>
-                      </Grid2>
-                      <Grid2 xs={12}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: 'text.primary',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            fontWeight: 500,
-                            fontSize: { xs: '0.875rem', sm: '0.9375rem' }
-                          }}
-                        >
-                          👤 {propietario.usuarioDtoSalida.username}
-                        </Typography>
-                      </Grid2>
-                    </Grid2>
-                  </Collapse>
-                </CardContent>
-              </Card>
-            </Grid2>
-          ))}
-        </Grid2>
+          <Box 
+            sx={{ p: 2,display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => handleToggleCard(propietario.id) }
+          >
+            <Typography variant="h6">{propietario.nombre} {propietario.apellido}</Typography>
+            <IconButton
+              onClick={(e) => { e.stopPropagation(); handleToggleCard(propietario.id); }}
+              sx={{
+                transform: expandedCards[propietario.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s',
+              }}
+            >
+              <ExpandMoreIcon />
+            </IconButton>
+          </Box>
+          <Collapse in={!!expandedCards[propietario.id]}>
+            <Divider sx={{ my: 1.5 }} />
+            <Box sx={{p:2, pt: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Typography><strong>DNI:</strong> {propietario.dni || 'No disponible'}</Typography>
+              <Typography><strong>Email:</strong> {propietario.email || 'No disponible'}</Typography>
+              <Typography><strong>Teléfono:</strong> {propietario.telefono || 'No disponible'}</Typography>
+              <Typography><strong>Dirección:</strong> {propietario.direccionResidencial || 'No disponible'}</Typography>
+              <Typography><strong>Usuario:</strong> {propietario.usuarioDtoSalida?.username || 'No asignado'}</Typography>
+            </Box>
+            <Box sx={{padding: 0, display: 'flex', flexDirection: 'row' ,height: '4rem',width:"100%"}}>
+            <Box sx={{ borderRadius: "0 0 0 10px",display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 1.5 , backgroundColor: 'rgb(28, 110, 13)',width:"50%"}}>
+              <IconButton href={`https://wa.me/${propietario.telefono}`} target="_blank" sx={{ color: 'white' }}>
+                <WhatsAppIcon   sx={{ fontSize: 45 }}/>
+              </IconButton>
+            </Box>
+            <Box sx={{ borderRadius: "0 0 10px 0",display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 1.5, backgroundColor: 'rgb(19, 21, 62)',width:"50%"}}>
+              <IconButton href={`mailto:${propietario.email}`} sx={{ color: 'white' }}>
+                <EmailIcon sx={{ fontSize: 45 }}/>
+              </IconButton>
+            </Box>
+            </Box>
+          </Collapse>
+        </Paper>
+      ))}
+    </Box>
       )}
     </Box>
   );
 
   const renderDesktopView = (propietariosFiltrados) => (
     <Box sx={{ 
-      width: '100%', 
+      width: '100vw', 
       overflowX: 'auto',
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
       flexWrap:"wrap",
       gap:"1rem",
+      height:"70vh",
+      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'background.default',
+    
     }}>
       {propietariosFiltrados.length === 0 ? (
         <Box sx={{ 
+          
           textAlign: 'center', 
           mt: 2,
           p: 4,
-          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'background.default',
           borderRadius: 3,
           maxWidth: "20rem",
           mx: 'auto',
@@ -401,22 +331,20 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
       ) : (
 
         <>
-        <TableContainer component={Paper} sx={{ 
+        <TableContainer component={Box} sx={{ 
           width: '100%',
           borderRadius: 2,
           maxWidth:"100%",
           display:"flex",
-          flexDirection:"row",
+          flexDirection:"column",
           flexWrap:"wrap",
           gap:"1rem",
           justifyContent:"start",
           alignItems:"center",
           padding:"1rem",
-          boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-          '& .MuiTableCell-root': {
-            color: theme.palette.mode === 'dark' ? '#fff' : 'inherit'
-          },
-          backgroundColor:theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgb(250, 254, 254)',
+         
+          backgroundColor:theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'background.default',
+          
         }}>
           {propietariosPaginados.map((propietario) => (
             <PlayerCard
@@ -430,18 +358,18 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
             />
           ))}
         </TableContainer>
-         <Box display="flex" justifyContent="center" mt={2}>
-         {Array.from({ length: totalPaginas }, (_, i) => (
-           <Button
-             key={i + 1}
-             variant={paginaActual === i + 1 ? 'contained' : 'outlined'}
-             onClick={() => setPaginaActual(i + 1)}
-             sx={{ mx: 0.5 }}
-           >
-             {i + 1}
-           </Button>
-         ))}
-       </Box>
+         <Box display="flex" justifyContent="center" mt={2} sx={{width:"100%",height:"2.5rem", marginTop:"-3rem"}} data-tour="owners-pagination">
+           {Array.from({ length: totalPaginas }, (_, i) => (
+             <Button
+               key={i + 1}
+               variant={paginaActual === i + 1 ? 'contained' : 'outlined'}
+               onClick={() => setPaginaActual(i + 1)}
+               sx={{ mx: 0.5 }}
+             >
+               {i + 1}
+             </Button>
+           ))}
+         </Box>
     </>
 
       )}
@@ -453,7 +381,7 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
       width: { xs: '90%', md: '80%' },
       mx: 'auto',
       pt: { xs: 3, md: 4 },
-      pb: 2
+      pb: 2,
     }}>
       <TextField
         fullWidth
@@ -529,6 +457,8 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
   }
 
   return (
+    <>
+    <OwnersTour />
     <Box sx={{ 
       width: "100%", 
       minHeight: "100vh",
@@ -555,6 +485,7 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
             width: '100%',
             alignItems: 'center',
             justifyContent: 'space-between',
+            marginTop:{xs:0,md:"2rem"},
             mb: { xs: 2, sm: 3 }
           }}
         >
@@ -571,6 +502,7 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
               <ArrowBackIcon />
             </IconButton>
             <Typography 
+              data-tour="owners-title"
               variant="h5" 
               sx={{ 
                 fontWeight: 600,
@@ -585,6 +517,7 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
               color="primary" 
               aria-label="add" 
               size="small"
+              data-tour="owners-add"
               onClick={() => navigate('/nuevo-propietario')}
             >
               <AddIcon />
@@ -593,6 +526,7 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
         </Box>
         
         <TextField
+          data-tour="owners-search"
           placeholder="Buscar por nombre, apellido, email..."
           variant="outlined"
           fullWidth
@@ -600,7 +534,8 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ 
             mb: 3,
-            width: { xs: '90%', sm: '80%' },
+            width: { xs: '90%', sm: '80%', md: '100%' },
+            
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
             borderRadius: 1,
             '& .MuiOutlinedInput-root': {
@@ -658,6 +593,7 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
         </Menu>
       </Box>
     </Box>
+    </>
   );
 };
 

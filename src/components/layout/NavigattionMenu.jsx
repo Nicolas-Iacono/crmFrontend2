@@ -8,7 +8,8 @@ import {
   Zoom,
   useTheme,
   Tooltip,
-  Typography
+  Typography,
+  Badge
 } from '@mui/material';
 import ArticleIcon from '@mui/icons-material/Article';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
@@ -16,8 +17,11 @@ import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
 import PersonIcon from '@mui/icons-material/Person';
 import GroupIcon from '@mui/icons-material/Group';
 import HomeIcon from '@mui/icons-material/Home';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { useAuth } from '../context/GlobalAuth';
 
 export default function NavigationMenu() {
+  const { hasCalendarEvents } = useAuth();
   const [value, setValue] = React.useState('recents');
   const [showPersonsMenu, setShowPersonsMenu] = React.useState(false);
   const theme = useTheme();
@@ -30,6 +34,7 @@ export default function NavigationMenu() {
       setValue(newValue);
       if (newValue === 'contratos') navigate('/');
       if (newValue === 'propiedades') navigate('/propiedades');
+      if (newValue === 'calendario') navigate('/calendario');
       setShowPersonsMenu(false);
     }
   };
@@ -175,6 +180,7 @@ export default function NavigationMenu() {
         onChange={handleChange}
       >
         <BottomNavigationAction
+          data-tour="nav-inicio"
           label="Inicio"
           value="contratos"
           icon={<ArticleIcon />}
@@ -186,6 +192,7 @@ export default function NavigationMenu() {
           }}
         />
         <BottomNavigationAction
+          data-tour="nav-personas"
           label="Personas"
           value="personas"
           icon={<AccountBoxIcon />}
@@ -197,9 +204,26 @@ export default function NavigationMenu() {
           }}
         />
         <BottomNavigationAction
+          data-tour="nav-propiedades"
           label="Propiedades"
           value="propiedades"
           icon={<MapsHomeWorkIcon />}
+          sx={{
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(35, 35, 35)',
+            '&.Mui-selected': {
+             color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(24, 21, 101)',
+            },
+          }}
+        />
+        <BottomNavigationAction
+          data-tour="nav-calendario"
+          label="Calendario"
+          value="calendario"
+          icon={
+            <Badge color="error" variant="dot" invisible={!hasCalendarEvents}>
+              <CalendarMonthIcon />
+            </Badge>
+          }
           sx={{
             color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(35, 35, 35)',
             '&.Mui-selected': {

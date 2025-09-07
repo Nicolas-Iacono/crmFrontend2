@@ -13,21 +13,23 @@ const NuevaPropiedad = () => {
   return (
     <Box
     sx={{
-      width: '90%',
-      minHeight: '100vh',
-      bgcolor: 'background.default',
+      width: '100vw',
+      height: '100%',
+      bgcolor: 'white',
       color: 'text.primary',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      pt: { xs: 2, md: 4 },
-      pb: { xs: 8, md: 4 },
-      px: { xs: 2, md: 0 },
-      position: 'relative'
+      pt: { xs: 0, md: 4 },
+      pb: { xs: 0, md: 4 },
+      position: 'relative',
+      marginTop:{ xs: '0', sm: "0", md: "2rem" },
+      backgroundColor:"background.default",
+      
     }}
   >
     {!isMobile && (
-      <Box sx={{ display: 'flex', gap: 2, marginTop: "2rem" }}>
+      <Box sx={{ display: 'flex', gap: 2, marginTop: "2rem"}}>
 
         <Box sx={{ position: 'absolute', top: 0, right: 60 }}>
       <Tooltip title="Ir al inicio" placement="bottom">
@@ -79,17 +81,21 @@ const NuevaPropiedad = () => {
      
       <Grid2
         sx={{
-          width: { xs: '100%', md: '50%' },
+          width: { xs: '100%',  
+            sm: '100%',   
+            md: '100%',   
+            lg: '80vw',  
+            xl: '80vw',},
           mx: 'auto',
           p: { xs: '1.5rem', md: '2rem' },
-          borderRadius: '10px',
-          bgcolor: 'background.paper',
+          borderRadius: {xs:"0",md:"10px"},
+          bgcolor: 'background.default',
           boxShadow: theme.palette.mode === 'dark' ? '0 2px 12px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.08)',
           display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          justifyContent: 'space-around',
+          flexDirection: { xs: 'column', md: 'column' },
+          justifyContent: 'center',
           gap: 2,
-          minHeight: { xs: 'calc(100vh - 7rem)', md: 'auto' }
+          minHeight: { xs: 'calc(100vh - 7rem)', md: 'auto' },
         }}
       >
         <PropiedadesForm />

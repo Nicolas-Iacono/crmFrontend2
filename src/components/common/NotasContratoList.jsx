@@ -54,7 +54,12 @@ const NotasContratoList = ({ idContrato, contrato }) => {
 
   return (
     <>
-    <Paper elevation={1} sx={{ p: 2, borderRadius: 2, mt: 2, bgcolor: '#f9fafe' }}>
+    <Paper elevation={1}  sx={(theme) => ({
+    bgcolor: theme.palette.mode === 'dark' ? 'rgb(31, 31, 31)' : 'rgb(253, 253, 253)',
+    p: 2,
+    borderRadius: 2,
+    mt: 2,
+  })}>
       <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#1F2C61' }}>
         Historial de notas
       </Typography>
@@ -73,11 +78,11 @@ const NotasContratoList = ({ idContrato, contrato }) => {
             <Box
               key={nota.id || idx}
               onClick={() => { setNotaSeleccionada(nota); setModalOpen(true); }}
-              sx={{
+              sx={(theme) => ({
+                bgcolor: theme.palette.mode === 'dark' ? 'rgb(31, 31, 31)' : 'rgb(253, 253, 253)',
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: { xs: 1, sm: 2 },
-                bgcolor: '#fff',
                 borderRadius: 2,
                 p: { xs: 1.2, sm: 2 },
                 boxShadow: 1,
@@ -86,8 +91,8 @@ const NotasContratoList = ({ idContrato, contrato }) => {
                 minWidth: 0,
                 cursor: 'pointer',
                 transition: 'box-shadow 0.2s',
-                '&:hover': { boxShadow: 4, bgcolor: '#f0f3fa' },
-              }}
+                '&:hover': { boxShadow: 4, bgcolor: theme.palette.mode === 'dark' ? 'rgb(31, 31, 31)' : 'rgb(253, 253, 253)' },
+              })}
             >
               <Avatar
                 sx={{

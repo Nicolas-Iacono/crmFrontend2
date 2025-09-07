@@ -65,6 +65,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import InfoIcon from '@mui/icons-material/Info';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import PriceChangeIcon from '@mui/icons-material/PriceChange';
+import ReceiptFormTour from '../../common/tour/ReceiptFormTour';
 
 const ReciboForm = () => {
   const theme = useTheme();
@@ -80,6 +81,8 @@ const ReciboForm = () => {
 
   // Estados para la gestión de recibos, carga y errores
   const [recibos, setRecibos] = useState([]);
+  const [filteredRecibos, setFilteredRecibos] = useState([]);
+  const [filtro, setFiltro] = useState('todos'); // 'todos', 'pagados', 'pendientes'
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -88,12 +91,24 @@ const ReciboForm = () => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedRecibo, setSelectedRecibo] = useState(null);
   const logo = usuarioFetch?.logo;
+
+  // Update recibos when contrato changes
   useEffect(() => {
     if (contrato) {
-      setRecibos(contrato.recibos);
+      setRecibos(contrato.recibos || []);
     }
   }, [contrato]);
 
+  // Filter recibos based on selected filter
+  useEffect(() => {
+    if (filtro === 'todos') {
+      setFilteredRecibos(recibos);
+    } else if (filtro === 'pagados') {
+      setFilteredRecibos(recibos.filter(recibo => recibo.estado === true));
+    } else if (filtro === 'pendientes') {
+      setFilteredRecibos(recibos.filter(recibo => recibo.estado === false));
+    }
+  }, [filtro, recibos]);
   // Función para mostrar mensajes en el Snackbar
   const showSnackbar = (message, severity = 'success') => {
     setSnackbarMessage(message);
@@ -270,7 +285,7 @@ const ReciboForm = () => {
       try {
         console.log('Obteniendo recibos para contrato ID:', contrato.id);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/recibo/all`);
-        
+        console.log(response)
         // Procesamiento uniforme de la respuesta (patrón común)
         const recibosData = Array.isArray(response.data) 
           ? response.data 
@@ -952,6 +967,7 @@ const ReciboForm = () => {
         minHeight: '100vh'
       }}
     >
+     <ReceiptFormTour />
      
 
       <Card 
@@ -988,7 +1004,7 @@ const ReciboForm = () => {
       </IconButton> 
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, marginTop:"1rem" }}>
             <ReceiptIcon sx={{ mr: 2, color: theme.palette.primary.main, fontSize: 32 }} />
-            <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
+            <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }} data-tour="reciboform-title">
               Generar Recibo
             </Typography>
           </Box>
@@ -1009,6 +1025,7 @@ const ReciboForm = () => {
                 alignItems: 'center',
                 color: theme.palette.primary.main
               }}
+              data-tour="reciboform-contract"
             >
               <DescriptionIcon sx={{ mr: 1 }} />
               Datos del Contrato
@@ -1143,6 +1160,7 @@ const ReciboForm = () => {
                   InputProps={{
                     startAdornment: <ReceiptIcon sx={{ mr: 1, color: theme.palette.primary.main }} />,
                   }}
+                  inputProps={{ 'data-tour': 'reciboform-numero' }}
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
               </Grid>
@@ -1159,6 +1177,7 @@ const ReciboForm = () => {
                   InputProps={{
                     startAdornment: <CalendarTodayIcon sx={{ mr: 1, color: theme.palette.primary.main }} />,
                   }}
+                  inputProps={{ 'data-tour': 'reciboform-fecha-emision' }}
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
               </Grid>
@@ -1175,6 +1194,7 @@ const ReciboForm = () => {
                   InputProps={{
                     startAdornment: <CalendarTodayIcon sx={{ mr: 1, color: theme.palette.primary.main }} />,
                   }}
+                  inputProps={{ 'data-tour': 'reciboform-fecha-vencimiento' }}
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
               </Grid>
@@ -1202,6 +1222,7 @@ const ReciboForm = () => {
                   value={formData.periodo}
                   onChange={handleChange}
                   placeholder="ej: Enero 2024"
+                  inputProps={{ 'data-tour': 'reciboform-periodo' }}
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
               </Grid>
@@ -1215,6 +1236,7 @@ const ReciboForm = () => {
                   onChange={handleChange}
                   multiline
                   rows={2}
+                  inputProps={{ 'data-tour': 'reciboform-concepto' }}
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
               </Grid>
@@ -1226,6 +1248,7 @@ const ReciboForm = () => {
                     value={formData.metodoPago}
                     onChange={handleChange}
                     label="Método de Pago"
+                    inputProps={{ 'data-tour': 'reciboform-metodopago' }}
                     sx={{ borderRadius: 2 }}
                   >
                     <MenuItem value="efectivo">Efectivo</MenuItem>
@@ -1237,7 +1260,7 @@ const ReciboForm = () => {
 
               {/* Impuestos Section */}
               <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }} data-tour="reciboform-impuestos">
                   <AccountBalanceIcon color="primary" />
                   Impuestos
                 </Typography>
@@ -1383,6 +1406,7 @@ const ReciboForm = () => {
                       boxShadow: theme.shadows[4]
                     }
                   }}
+                  data-tour="reciboform-submit"
                 >
                   {isLoading ? (
                     <CircularProgress size={24} color="inherit" />
@@ -1408,6 +1432,7 @@ const ReciboForm = () => {
                 fontWeight: 600,
                 mb: 3
               }}
+              data-tour="reciboform-list-title"
             >
               <ReceiptIcon color="primary" />
               Recibos Generados
@@ -1468,22 +1493,91 @@ const ReciboForm = () => {
               </Box>
             ) : isMobile ? (
               // Vista móvil con tarjetas
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {recibos.map((recibo, index) => (
-                  <Card 
-                    key={recibo.id || index}
-                    elevation={2}
+
+
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }} data-tour="reciboform-list">
+
+                <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, justifyContent: 'space-between', alignItems: 'center' }} data-tour="reciboform-filters">
+                  <Button 
+                    onClick={() => setFiltro('pagados')}
                     sx={{ 
-                      borderRadius: 2,
-                      overflow: 'hidden',
-                      transition: 'all 0.3s ease',
+                      textTransform: 'none', 
+                      fontSize: '1rem', 
+                      fontWeight: 500,
+                      height: '2rem',
+                      borderRadius: '16px',
+                      backgroundColor: filtro === 'pagados' ? 'rgba(50, 140, 55, 0.9)' : 'rgba(63, 163, 68, 0.84)',
+                      color: 'black', 
+                      width: '7rem', 
+                      border: '2px solid rgba(21, 99, 25, 0.84)',
                       '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                        backgroundColor: 'rgba(50, 140, 55, 0.9)'
                       }
                     }}
-                    onClick={() => handleOpenReciboModal(recibo)}
                   >
+                    Pagados
+                  </Button>
+                  <Button 
+                    onClick={() => setFiltro('pendientes')}
+                    sx={{ 
+                      textTransform: 'none', 
+                      fontSize: '1rem', 
+                      fontWeight: 500,
+                      height: '2rem',
+                      borderRadius: '16px',
+                      backgroundColor: filtro === 'pendientes' ? 'rgba(225, 153, 71, 0.9)' : 'rgba(245, 173, 91, 0.9)',
+                      color: 'black', 
+                      width: '7rem', 
+                      border: '2px solid rgba(228, 121, 0, 0.9)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(225, 153, 71, 0.9)'
+                      }
+                    }}
+                  >
+                    Pendientes
+                  </Button>
+                  <Button 
+                    onClick={() => setFiltro('todos')}
+                    sx={{ 
+                      textTransform: 'none', 
+                      fontSize: '1rem', 
+                      fontWeight: 500,
+                      height: '2rem',
+                      borderRadius: '16px',
+                      backgroundColor: filtro === 'todos' ? 'rgba(171, 115, 198, 0.9)' : 'rgba(191, 135, 218, 0.9)',
+                      color: 'black', 
+                      width: '7rem', 
+                      border: '2px solid rgba(108, 14, 151, 0.9)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(171, 115, 198, 0.9)'
+                      }
+                    }}
+                  >
+                    Todos
+                  </Button>
+                </Box>
+                {filteredRecibos.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 4, color: theme.palette.text.secondary }}>
+                    <Typography>No hay recibos que coincidan con el filtro seleccionado</Typography>
+                  </Box>
+                ) : (
+                  filteredRecibos.map((recibo, index) => (
+                    <Card 
+                      key={recibo.id || index}
+                      elevation={2}
+                      sx={{ 
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                        }
+                      }}
+                      onClick={() => handleOpenReciboModal(recibo)}
+                    >
+
                     <Box 
                       sx={{ 
                         backgroundColor: theme.palette.primary.main, 
@@ -1554,18 +1648,20 @@ const ReciboForm = () => {
                       </Box>
                     </CardContent>
                   </Card>
-                ))}
+                  ))
+                )}
               </Box>
             ) : (
               // Vista desktop con tabla
               <TableContainer 
-                component={Paper} 
-                sx={{ 
+                component={Paper}
+                sx={{
                   borderRadius: 2,
                   boxShadow: theme.shadows[1],
                   bgcolor: theme.palette.background.paper,
                   overflow: 'hidden'
                 }}
+                data-tour="reciboform-list"
               >
                 <Table>
                   <TableHead sx={{ bgcolor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100] }}>
@@ -1589,7 +1685,16 @@ const ReciboForm = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {recibos.map((recibo, index) => (
+                    {filteredRecibos.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                          <Typography variant="body1" color="text.secondary">
+                            No hay recibos que coincidan con el filtro seleccionado
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredRecibos.map((recibo, index) => (
                       <TableRow 
                         key={recibo.id || index}
                         sx={{ 
@@ -1665,8 +1770,9 @@ const ReciboForm = () => {
                           />
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
+                    ))
+                  )}
+                </TableBody>
                 </Table>
               </TableContainer>
             )}

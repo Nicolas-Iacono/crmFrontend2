@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/GlobalAuth';
-import { Box, Typography, Avatar, Paper, IconButton, Fab, Modal, Backdrop, Fade, TextField, Button, Divider } from '@mui/material';
+import { Box, Typography, Avatar, Paper, IconButton, Fab, Modal, Backdrop, Fade, TextField, Button, Divider, CircularProgress } from '@mui/material';
 import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
@@ -9,16 +9,20 @@ import ShareIcon from '@mui/icons-material/Share';
 import QRCode from 'react-qr-code';
 import Iframe from 'react-iframe';
 import EditIcon from '@mui/icons-material/Edit';
-
+import GoogleLoginButton from '../../common/BotonGoogle/GoogleLoginButton';
+import useGoogleLink from '../../../hooks/useGoogleLink';
+import { googleUserApi } from '../../api/googleUserApi';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const UserSettings = () => {
-  const { user, isLogged, updateUserProfile } = useAuth();
+  const { isLinked, isLoading, googleProfile, handleLink, handleUnlink } = useGoogleLink();
+  const { user, isLogged, updateUserProfile, logoTimestamp } = useAuth();
   const [usuarioFetch, setUsuarioFetch] = useState(null);
   const [openQR, setOpenQR] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({});
-
-  const handleOpenQR = () => setOpenQR(true);
+    const handleOpenQR = () => setOpenQR(true);
   const handleCloseQR = () => setOpenQR(false);
 
   const handleOpenEditModal = () => {
@@ -36,6 +40,8 @@ const UserSettings = () => {
     });
     setEditModalOpen(true);
   };
+
+ 
 
   const handleCloseEditModal = () => setEditModalOpen(false);
 
@@ -66,7 +72,9 @@ const UserSettings = () => {
       // You can add a user-facing error message here
     }
   };
-  
+
+
+
   useEffect(() => {
     if (user?.username) {
       axios.get(`${import.meta.env.VITE_API_URL}/usuario/username/${user.username}`)
@@ -77,6 +85,8 @@ const UserSettings = () => {
         });
     }
   }, [user?.username]);
+
+
 
   const subirLogo = async (idUsuario, archivo) => {
     const formData = new FormData();
@@ -101,12 +111,13 @@ const UserSettings = () => {
       throw error;
     }
   };
-console.log(usuarioFetch)
+
+  console.log(googleUserApi.getLinkStatus())
   // Placeholders en caso de que no existan los datos
   const nombreNegocio = usuarioFetch?.nombreNegocio || 'Nombre de usuario';
   const email = usuarioFetch?.email || 'usuario@email.com';
   const usuario = usuarioFetch?.username || 'Ciudad, País';
-  const profilePic = usuarioFetch?.logo || 'logo'; // Cambia por tu lógica
+  const profilePic = usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : googleProfile?.picture || ''; // Cache-busting
   const razonSocial = usuarioFetch?.razonSocial || 'Ciudad, País';
   const cuit = usuarioFetch?.cuit || 'Ciudad, País';
   const telefono = usuarioFetch?.telefono || 'Ciudad, País';
@@ -142,6 +153,7 @@ END:VCARD`
   return (
     <>
     <Box sx={{ 
+      width:{xs:"100%", md:"100vw"},
       bgcolor:"rgb(255, 255, 255)", 
       display:"flex", 
       justifyContent:"start", 
@@ -161,16 +173,25 @@ END:VCARD`
             justifyContent:"center",
             pt:4,
             pb:4,
-            gap:"2rem"
+            gap:"2rem",
             }}>
         {/* Header azul y foto de perfil */}
  <Typography variant="h6" color="white">Cuenta</Typography>
    
         <Box position="relative" display="flex" justifyContent="center" alignItems="center">
+    {isUploading && <CircularProgress size={98} sx={{ position: 'absolute', zIndex: 1, color: 'white' }} />}
   <Avatar
     src={profilePic}
     alt={nombreNegocio}
-    sx={{ width: 90, height: 90, border: '4px solid #fff', position: 'relative', backgroundSize:"contain", backgroundPosition:"center center", backgroundRepeat:"no-repeat" }}
+    sx={{ 
+      width: 90, 
+      height: 90, 
+      border: '4px solid #fff', 
+      opacity: isUploading ? 0.5 : 1,
+      backgroundSize:"contain", 
+      backgroundPosition:"center center", 
+      backgroundRepeat:"no-repeat"
+    }}
   />
   
   <label htmlFor="upload-logo">
@@ -179,18 +200,22 @@ END:VCARD`
       type="file"
       accept="image/*"
       style={{ display: 'none' }}
-      onChange={(e) => {
+      onChange={async (e) => {
         const file = e.target.files[0];
-        if (file) {
-          subirLogo(usuarioFetch.id, file)
-            .then(updatedUserData => {
-              setUsuarioFetch(updatedUserData);
-              updateUserProfile(updatedUserData); // Update global user state
-            })
-            .catch(error => {
-              console.error('Error after uploading logo:', error);
-              // Optionally, handle the error in the UI, e.g., show a notification
-            });
+        if (file && usuarioFetch?.id) {
+          setIsUploading(true);
+          try {
+            await subirLogo(usuarioFetch.id, file);
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/usuario/username/${user.username}`);
+            const updatedUserData = response.data;
+            console.log('User data after re-fetch:', updatedUserData);
+            setUsuarioFetch(updatedUserData);
+            updateUserProfile(updatedUserData);
+          } catch (error) {
+            console.error('Error during logo upload process:', error);
+          } finally {
+            setIsUploading(false);
+          }
         }
       }}
     />
@@ -291,7 +316,33 @@ END:VCARD`
                 allowFullScreen
               />
             </Box>
+            <Box sx={{ my: 4, p: 2, border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fafafa' }}>
+              <Typography variant="h6" gutterBottom>Vinculación con Google</Typography>
+              {isLoading ? (
+                <CircularProgress />
+              ) : isLinked && googleProfile ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width:"80%" }}>
+                  <Avatar src={googleProfile.picture} alt={googleProfile.name} />
+                  <Box>
+                    <Typography variant="body1" fontWeight="bold">{googleProfile.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">{googleProfile.email}</Typography>
+                  </Box>
+                  <IconButton variant="outlined" color="error" onClick={handleUnlink} sx={{ ml: 'auto' }}>
+                    
+                    <DeleteIcon sx={{ mr: 1 }} />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    Vincula tu cuenta de Google para un inicio de sesión más rápido y seguro.
+                  </Typography>
+                  <GoogleLoginButton onClick={handleLink} />
+                </Box>
+              )}
+            </Box>
 
+            
         </Box>
        
       {/* Botón para agregar imagen en la esquina inferior derecha */}
@@ -310,8 +361,8 @@ END:VCARD`
         width: 45,
         height: 45,
         position: 'fixed',
-        top: 15,
-        right: 20,
+        top: {xs:15,md: 75},
+        right: {xs:20,md: 20},
         bgcolor: 'rgb(229, 229, 229)',
         '&:hover': {
           bgcolor: 'rgb(155, 155, 155)',

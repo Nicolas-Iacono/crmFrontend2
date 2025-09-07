@@ -13,7 +13,7 @@ const NuevoGarante = () => {
   return (
     <Box
       sx={{
-        width: '90%',
+        width: {xs:"90%", md:"100vw"},
         minHeight: '100vh',
         bgcolor: 'background.default',
         color: 'text.primary',
@@ -31,14 +31,15 @@ const NuevoGarante = () => {
           <IconButton
             onClick={() => navigate('/')}
             sx={{
+              marginTop:{xs:"0rem", md:"2rem"},
               position: 'absolute',
               top: 20,
               right: 20,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'white',
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'background.default',
               color: 'text.primary',
               boxShadow: theme.palette.mode === 'dark' ? '0 2px 12px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.08)',
               '&:hover': {
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'white',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'background.default',
                 transform: 'translateY(-2px)',
                 boxShadow: theme.palette.mode === 'dark' ? '0 6px 16px rgba(0,0,0,0.3)' : '0 6px 16px rgba(0,0,0,0.12)'
               }
@@ -53,12 +54,11 @@ const NuevoGarante = () => {
       ) : (
         <Grid2
           sx={{
-            width: { xs: '100%', md: '50%' },
+            width: { xs: '100%', md: '60%' },
             mx: 'auto',
             p: { xs: '1.5rem', md: '2rem' },
             borderRadius: '10px',
-            bgcolor: 'white',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+            bgcolor: 'background.default',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-start',
