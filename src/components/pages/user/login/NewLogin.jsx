@@ -23,7 +23,7 @@ import {
   BusinessCenter,
   Person
 } from '@mui/icons-material';
-import logo from "../../../../assets/logo2.png";
+import logo from "../../../../assets/logoInmo192.png";
 import GoogleIcon from '@mui/icons-material/Google';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import AppleIcon from '@mui/icons-material/Apple';
@@ -153,7 +153,7 @@ const NewLogin = () => {
       <Fade in={true} timeout={800}>
         <LoginPaper elevation={isMobile ? 0 : 10}>
           <ImageSection>
-            <LogoImage src={logo} alt="CRM Inmobiliario" />
+            <LogoImage src={logo} alt="logo tuimo" />
             <Typography
               variant="h4"
               color="white"

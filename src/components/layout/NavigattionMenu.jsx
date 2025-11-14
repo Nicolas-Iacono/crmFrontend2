@@ -56,17 +56,17 @@ export default function NavigationMenu() {
 
   const menuItems = [
     {
-      title: 'Propietarios',
+      title: 'Inquilinos',
       icon: <PersonIcon />,
-      path: '/propietarios',
+      path: '/inquilinos',
       color: theme.palette.primary.main,
       hoverColor: theme.palette.primary.dark,
       delay: '0ms'
     },
     {
-      title: 'Inquilinos',
+      title: 'Propietarios',
       icon: <HomeIcon />,
-      path: '/inquilinos',
+      path: '/propietarios',
       color: theme.palette.secondary.main,
       hoverColor: theme.palette.secondary.dark,
       delay: '100ms'

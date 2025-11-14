@@ -16,7 +16,7 @@ import {
   useMediaQuery,
   Card,
   CardContent,
-  Grid2,
+  Grid,
   Divider,
   IconButton,
   Collapse,
@@ -25,6 +25,13 @@ import {
   Fab,
   Tooltip,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Chip,
+  TablePagination,
+  Checkbox,
 } from '@mui/material';
 import PropietarioApi from '../api/propietarios';
 import SearchIcon from '@mui/icons-material/Search';
@@ -38,10 +45,20 @@ import MenuItem from '@mui/material/MenuItem';
 import Swal from 'sweetalert2';
 import axios from 'axios';
 import PlayerCard from '../common/cards/PlayerCard';
+import MobilePropietarioCard from '../common/cards/MobilePropietarioCard';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email';
 import OwnersTour from '../common/tour/OwnersTour';
-
+import EditarPropietarioModal from '../common/modals/EditarPropietarioModal';
+import http from '../api/http';
+import { showSuccess, showError, showWarning } from '../alertas/showAlert';
+import CreateOwnerProfileModal from '../common/modals/CreateOwnerProfileModal.jsx';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DescriptionIcon from '@mui/icons-material/Description';
+import EditIcon from '@mui/icons-material/Edit';
+import DocumentManagerModal from '../common/DocumentManagerModal';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
 const PropietariosPage = () => {
   const theme = useTheme();
@@ -54,35 +71,50 @@ const PropietariosPage = () => {
   const [expandedCards, setExpandedCards] = useState({});
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedPropietarioId, setSelectedPropietarioId] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [propietarioToEdit, setPropietarioToEdit] = useState(null);
+  const [createOwnerOpen, setCreateOwnerOpen] = useState(false);
+  const [propietarioForProfile, setPropietarioForProfile] = useState(null);
+  const [ownerHasAccountOpen, setOwnerHasAccountOpen] = useState(false);
+  const [ownerHasAccountName, setOwnerHasAccountName] = useState('');
+  const [profileCreatedOwnerId, setProfileCreatedOwnerId] = useState(null);
+  const [creatingOwnerId, setCreatingOwnerId] = useState(null);
+  const [ownerHasAccountId, setOwnerHasAccountId] = useState(null);
+  const [ownerHasAccountCreds, setOwnerHasAccountCreds] = useState(null);
+  const [ownerHasAccountLoading, setOwnerHasAccountLoading] = useState(false);
+  const [ownerHasAccountError, setOwnerHasAccountError] = useState(null);
+  const [deletingOwnerUser, setDeletingOwnerUser] = useState(false);
   const [user, setUser] = useState({
     name: '',
     authorities: '',
   });
-  const filteredPropietarios = propietarios.filter((propietario) => {
-    if (propietario.usuario === null) {
-      return false;
-    }
-    if (user.authorities !== "ROLE_ADMIN" && propietario.usuario.username !== user.name) {
-      return false;
-    }
-    return true;
-  }).filter((propietario) => {
-    if (searchTerm === '') return true;
-    
-    const nombre = propietario.nombre || "";
-    const apellido = propietario.apellido || "";
-    const email = propietario.email || "";
-    const telefono = propietario.telefono || "";
-    const dni = propietario.dni || "";
-    
-    const termino = searchTerm.toLowerCase();
-    
-    return nombre.toLowerCase().includes(termino) ||
-           apellido.toLowerCase().includes(termino) ||
-           email.toLowerCase().includes(termino) ||
-           telefono.toLowerCase().includes(termino) ||
-           dni.toLowerCase().includes(termino);
-  });
+  // Documentos Propietario
+  const [docsOpen, setDocsOpen] = useState(false);
+  const [docsOwnerId, setDocsOwnerId] = useState(null);
+  const [docsOwnerName, setDocsOwnerName] = useState('');
+  const isAdmin = (user.authorities ?? '').includes('ROLE_ADMIN') || (user.authorities ?? '').includes('ROLE_SUPER_ADMIN');
+
+  const filteredPropietarios = propietarios
+    // filtro por dueño de datos (solo si no es admin)
+    .filter(p => {
+      if (!isAdmin) {
+        // si no hay username asociado, ocultalo
+        if (!p.usuarioUsername) return false;
+        return p.usuarioUsername === user.name;
+      }
+      return true;
+    })
+    // filtro por búsqueda
+    .filter(p => {
+      if (!searchTerm) return true;
+      const t = searchTerm.toLowerCase();
+      return (
+        `${p.nombre} ${p.apellido}`.toLowerCase().includes(t) ||
+        (p.email ?? '').toLowerCase().includes(t) ||
+        (p.telefono ?? '').toLowerCase().includes(t) ||
+        (p.dni ?? '').toLowerCase().includes(t)
+      );
+    });
 
 
 
@@ -104,20 +136,113 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
   const fetchPropietarios = async () => {
     try {
       setIsLoading(true);
-      const result = await axios.get(`${import.meta.env.VITE_API_URL}/propietario/${user.name}`);
-      if (result && result.data) {
-        // Handle both array response and nested data object
-        const propietariosArray = Array.isArray(result.data) ? result.data : 
-                             (result.data && result.data.data && Array.isArray(result.data.data)) ? result.data.data : [];
-        
-        console.log("Propietarios recibidos:", propietariosArray);
-        setPropietarios(propietariosArray);
+      const result = await http.get(`${import.meta.env.VITE_API_URL}/propietario/me`);
+      const arr = Array.isArray(result.data)
+        ? result.data
+        : (result.data?.data && Array.isArray(result.data.data)) ? result.data.data : [];
+
+      // 👇 normalizamos: NO guardamos password y unificamos username
+      const propietariosNorm = arr.map(p => ({
+        id: p.id,
+        nombre: p.nombre ?? '',
+        apellido: p.apellido ?? '',
+        email: p.email ?? '',
+        telefono: p.telefono ?? '',
+        dni: p.dni ?? '',
+        cuit:p.cuit ?? '',
+        nacionalidad:p.nacionalidad ?? '',
+        direccionResidencial: p.direccionResidencial ?? '',
+
+        // fuente priorizada: dto -> embed -> root
+        usuarioUsername: p.usuarioDtoSalida?.username ?? p.usuario?.username ?? p.username ?? null,
+        usuarioCuentaPropietarioId: p.usuarioCuentaPropietarioId ?? null,
+      }));
+
+      setPropietarios(propietariosNorm);
+    } catch (e) {
+      console.error('Error fetching propietarios:', e);
+      setError(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteOwnerUser = async () => {
+    const propietario = propietarios.find((x) => x.id === ownerHasAccountId);
+    const usuarioCuentaPropietarioId = propietario?.usuarioCuentaPropietarioId ?? propietario?.propietarioSalidaDto?.usuarioCuentaPropietarioId;
+    if (!usuarioCuentaPropietarioId) return;
+    try {
+      setDeletingOwnerUser(true);
+      const url = `${import.meta.env.VITE_API_URL}/propietario/usuario-propietario/${usuarioCuentaPropietarioId}`;
+      await http.delete(url);
+      showSuccess('Usuario del propietario eliminado');
+      // actualizar lista local
+      setPropietarios(prev => prev.map(p => p.id === ownerHasAccountId ? { ...p, usuarioCuentaPropietarioId: null } : p));
+      // limpiar credenciales mostradas
+      setOwnerHasAccountCreds(null);
+    } catch (e) {
+      showError('No se pudo eliminar el usuario del propietario');
+    } finally {
+      setDeletingOwnerUser(false);
+    }
+  };
+
+  const handleShowOwnerHasAccount = async (propietarioId) => {
+    const p = propietarios.find((x) => x.id === propietarioId);
+    setOwnerHasAccountName(`${p?.nombre ?? ''} ${p?.apellido ?? ''}`.trim());
+    setOwnerHasAccountId(propietarioId);
+    setOwnerHasAccountCreds(null);
+    setOwnerHasAccountError(null);
+    setOwnerHasAccountOpen(true);
+    // Solo buscar si tiene cuenta
+    const tieneCuenta = (p?.usuarioCuentaPropietarioId != null) || (p?.propietarioSalidaDto?.usuarioCuentaPropietarioId != null);
+    if (!tieneCuenta) return;
+    try {
+      setOwnerHasAccountLoading(true);
+      const url = `${import.meta.env.VITE_API_URL}/propietario/credenciales/${propietarioId}`;
+      const res = await http.get(url);
+      const data = res?.data?.data ?? res?.data ?? null;
+      setOwnerHasAccountCreds(data && (data.username || data.password) ? data : null);
+    } catch (e) {
+      setOwnerHasAccountError('No se pudieron obtener las credenciales.');
+    } finally {
+      setOwnerHasAccountLoading(false);
+    }
+  };
+
+  const handleOpenCreateOwnerProfile = (propietarioId) => {
+    const p = propietarios.find((x) => x.id === propietarioId);
+    if (p) {
+      setPropietarioForProfile(p);
+      setCreateOwnerOpen(true);
+    }
+  };
+
+  const handleCloseCreateOwnerProfile = () => {
+    setCreateOwnerOpen(false);
+    setPropietarioForProfile(null);
+  };
+
+  const handleSubmitCreateOwnerProfile = async (payload) => {
+    try {
+      const url = `${import.meta.env.VITE_API_URL}/propietario/register`;
+      // marcar en UI que este propietario está en creación
+      if (propietarioForProfile?.id != null) {
+        setCreatingOwnerId(propietarioForProfile.id);
       }
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching propietarios:', error);
-      setError(error);
-      setIsLoading(false);
+      await http.post(url, payload);
+      showSuccess('Perfil de propietario creado correctamente');
+      // marcar propietario como con cuenta sin recargar
+      if (propietarioForProfile?.id != null) {
+        setProfileCreatedOwnerId(propietarioForProfile.id);
+      }
+    } catch (e) {
+      console.error(e);
+      showError('No se pudo crear el perfil de propietario');
+    } finally {
+      // limpiar spinner de creación
+      setCreatingOwnerId(null);
+      handleCloseCreateOwnerProfile();
     }
   };
 
@@ -128,6 +253,48 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
     }
   }, [user.name]); // Dependency on user.name to refetch when it changes
 
+  // Cuando se crea un perfil de propietario, actualizar el array local para reflejar el tilde
+  useEffect(() => {
+    if (profileCreatedOwnerId != null) {
+      setPropietarios(prev => prev.map(p => (
+        p.id === profileCreatedOwnerId ? { ...p, usuarioCuentaPropietarioId: -1 } : p
+      )));
+      setProfileCreatedOwnerId(null);
+    }
+  }, [profileCreatedOwnerId]);
+
+  const goPrevPage = () => setPaginaActual((p) => Math.max(1, p - 1));
+  const goNextPage = () => setPaginaActual((p) => Math.min(totalPaginas || 1, p + 1));
+
+  // Desktop table: selection and pagination state
+  const [selected, setSelected] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleSelectAll = (event, data = []) => {
+    if (event.target.checked) {
+      const newSelected = data.map((g) => g.id);
+      setSelected(newSelected);
+      return;
+    }
+    setSelected([]);
+  };
+
+  const handleSelectOne = (id) => {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const isSelected = (id) => selected.includes(id);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const handleMenuClick = (event, propietarioId) => {
     setAnchorEl(event.currentTarget);
     setSelectedPropietarioId(propietarioId);
@@ -136,6 +303,80 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedPropietarioId(null);
+  };
+
+  // Handlers Documentos
+  const openOwnerDocs = (propietario) => {
+    if (!propietario) return;
+    setDocsOwnerId(propietario.id);
+    setDocsOwnerName(`${propietario.nombre ?? ''} ${propietario.apellido ?? ''}`.trim());
+    setDocsOpen(true);
+  };
+
+  const closeOwnerDocs = () => {
+    setDocsOpen(false);
+    setDocsOwnerId(null);
+    setDocsOwnerName('');
+  };
+
+  const fetchOwnerDocs = async (ownerId) => {
+    const token = localStorage.getItem('token') || '';
+    const url = `${import.meta.env.VITE_API_URL}/documentos/propietario/${ownerId}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : []);
+  };
+
+  const uploadOwnerDocs = async (ownerId, files) => {
+    const token = localStorage.getItem('token') || '';
+    const formData = new FormData();
+    // agregar múltiples archivos bajo la clave 'files'
+    Array.from(files).forEach((file) => {
+      formData.append('files', file);
+    });
+    // payload JSON bajo la clave 'data' (content-type application/json)
+    const payload = {
+      propietarioId: ownerId,
+      tipo: 'PDF',
+      nombreArchivo: files.length === 1 ? files[0].name : 'archivos_propietario'
+    };
+    formData.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+
+    await fetch(`${import.meta.env.VITE_API_URL}/documentos/upload`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+  };
+
+  const deleteOwnerDoc = async (docId) => {
+    const token = localStorage.getItem('token') || '';
+    await fetch(`${import.meta.env.VITE_API_URL}/documentos/${docId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  };
+
+  const handleEdit = (propietarioId = selectedPropietarioId) => {
+    // Buscar el propietario por ID
+    const propietario = propietarios.find(prop => prop.id === propietarioId);
+    if (propietario) {
+      setPropietarioToEdit(propietario);
+      setEditModalOpen(true);
+    }
+    if (selectedPropietarioId) {
+      handleMenuClose();
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setPropietarioToEdit(null);
+  };
+
+  const handlePropietarioUpdated = () => {
+    // Recargar la lista de propietarios después de actualizar
+    fetchPropietarios();
   };
 
   const confirmDeletePropietario = (propietarioId) => {
@@ -153,17 +394,9 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
         try {
           await PropietarioApi.deletePropietario(propietarioId);
           setPropietarios(propietarios.filter(p => p.id !== propietarioId));
-          Swal.fire(
-            '¡Eliminado!',
-            'El propietario ha sido eliminado.',
-            'success'
-          )
+         showSuccess('Propietario eliminado exitosamente');
         } catch (error) {
-          Swal.fire(
-            'Error',
-            'No se pudo eliminar el propietario.',
-            'error'
-          )
+         showError('No se pudo eliminar el propietario.');
         }
       }
     });
@@ -185,17 +418,9 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
         try {
           await PropietarioApi.deletePropietario(selectedPropietarioId);
           setPropietarios(propietarios.filter(p => p.id !== selectedPropietarioId));
-          Swal.fire(
-            '¡Eliminado!',
-            'El propietario ha sido eliminado.',
-            'success'
-          )
+          showSuccess('Propietario eliminado exitosamente')
         } catch (error) {
-          Swal.fire(
-            'Error',
-            'No se pudo eliminar el propietario.',
-            'error'
-          )
+         showError('No se pudo eliminar el propietario.')
         }
       }
     });
@@ -209,171 +434,144 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
     }));
   };
 
-  console.log(propietarios)
 
  
 
   const renderMobileView = (propietariosFiltrados) => (
-    <Box sx={{ 
-      p: { xs: 1, sm: 2 }, 
-      width: "90%",
-      display: 'flex',
-      justifyContent: 'center'
-    }}>
-      {propietariosFiltrados.length === 0 ? (
-        <Box sx={{ 
-          width:"100%",
-          textAlign: 'center', 
-          mt: 2,
-          p: 4,
-          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-          borderRadius: 3,
-          maxWidth: {xs:400, md:"100vw"},
-          mx: 'auto',
-          boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 12px rgba(0,0,0,0.08)',
-        }}>
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              color: 'text.secondary',
-              fontSize: { xs: '0.9375rem', sm: '1rem' }
-            }}
-          >
-            No se encontraron propietarios con los criterios de búsqueda.
-          </Typography>
-        </Box>
-      ) : (
-        <Box sx={{ width: '100%' }}>
-      {propietariosFiltrados.map(propietario => (
-        <Paper 
-          key={propietario.id} 
-          sx={{ mb: 2, borderRadius: 2, boxShadow: 1, '&:hover': { boxShadow: 3 }, bgcolor: 'background.paper' }}
-        >
-          <Box 
-            sx={{ p: 2,display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => handleToggleCard(propietario.id) }
-          >
-            <Typography variant="h6">{propietario.nombre} {propietario.apellido}</Typography>
-            <IconButton
-              onClick={(e) => { e.stopPropagation(); handleToggleCard(propietario.id); }}
-              sx={{
-                transform: expandedCards[propietario.id] ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.3s',
+    <>
+      <Box sx={{ 
+        p: { xs: 1, sm: 2 }, 
+        width: "100%",
+        display: 'flex',
+        justifyContent: 'center'
+      }}>
+        {propietariosFiltrados.length === 0 ? (
+          <Box sx={{ 
+            width:"100%",
+            textAlign: 'center', 
+            mt: 2,
+            p: 4,
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+            borderRadius: 3,
+            maxWidth: {xs:400, md:"100vw"},
+            mx: 'auto',
+            boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 12px rgba(0,0,0,0.08)',
+          }}>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                color: 'text.secondary',
+                fontSize: { xs: '0.9375rem', sm: '1rem' }
               }}
             >
-              <ExpandMoreIcon />
-            </IconButton>
+              No se encontraron propietarios con los criterios de búsqueda.
+            </Typography>
           </Box>
-          <Collapse in={!!expandedCards[propietario.id]}>
-            <Divider sx={{ my: 1.5 }} />
-            <Box sx={{p:2, pt: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Typography><strong>DNI:</strong> {propietario.dni || 'No disponible'}</Typography>
-              <Typography><strong>Email:</strong> {propietario.email || 'No disponible'}</Typography>
-              <Typography><strong>Teléfono:</strong> {propietario.telefono || 'No disponible'}</Typography>
-              <Typography><strong>Dirección:</strong> {propietario.direccionResidencial || 'No disponible'}</Typography>
-              <Typography><strong>Usuario:</strong> {propietario.usuarioDtoSalida?.username || 'No asignado'}</Typography>
-            </Box>
-            <Box sx={{padding: 0, display: 'flex', flexDirection: 'row' ,height: '4rem',width:"100%"}}>
-            <Box sx={{ borderRadius: "0 0 0 10px",display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 1.5 , backgroundColor: 'rgb(28, 110, 13)',width:"50%"}}>
-              <IconButton href={`https://wa.me/${propietario.telefono}`} target="_blank" sx={{ color: 'white' }}>
-                <WhatsAppIcon   sx={{ fontSize: 45 }}/>
-              </IconButton>
-            </Box>
-            <Box sx={{ borderRadius: "0 0 10px 0",display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 1.5, backgroundColor: 'rgb(19, 21, 62)',width:"50%"}}>
-              <IconButton href={`mailto:${propietario.email}`} sx={{ color: 'white' }}>
-                <EmailIcon sx={{ fontSize: 45 }}/>
-              </IconButton>
-            </Box>
-            </Box>
-          </Collapse>
-        </Paper>
-      ))}
-    </Box>
+        ) : (
+          <Box sx={{ width: '100%' }}>
+            {propietariosFiltrados.map(propietario => (
+              <Box key={propietario.id} sx={{ mb: 1 }}>
+                <MobilePropietarioCard
+                  propietario={propietario}
+                  isExpanded={!!expandedCards[propietario.id]}
+                  onToggle={handleToggleCard}
+                  onEdit={handleEdit}
+                  onDelete={confirmDeletePropietario}
+                  onCreateProfile={handleOpenCreateOwnerProfile}
+                  hasAccount={propietario?.usuarioCuentaPropietarioId != null || propietario?.propietarioSalidaDto?.usuarioCuentaPropietarioId != null}
+                  isCreating={creatingOwnerId === propietario.id}
+                  onHasAccount={handleShowOwnerHasAccount}
+                  onDocuments={openOwnerDocs}
+                />
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
+      {totalPaginas > 0 && (
+        <Box display="flex" justifyContent="center" mt={2} mb={3} sx={{ width: '100%', gap: 1 }}>
+          <Button variant="outlined" onClick={goPrevPage} disabled={paginaActual <= 1} startIcon={<NavigateBeforeIcon />}>Prev</Button>
+          <Chip label={`${paginaActual} / ${totalPaginas}`} sx={{ px: 1 }} />
+          <Button variant="outlined" onClick={goNextPage} disabled={paginaActual >= totalPaginas} endIcon={<NavigateNextIcon />}>Next</Button>
+        </Box>
       )}
-    </Box>
+      
+    </>
   );
 
   const renderDesktopView = (propietariosFiltrados) => (
-    <Box sx={{ 
-      width: '100vw', 
-      overflowX: 'auto',
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'center',
-      flexWrap:"wrap",
-      gap:"1rem",
-      height:"70vh",
-      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'background.default',
-    
-    }}>
-      {propietariosFiltrados.length === 0 ? (
-        <Box sx={{ 
-          
-          textAlign: 'center', 
-          mt: 2,
-          p: 4,
-          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'background.default',
-          borderRadius: 3,
-          maxWidth: "20rem",
-          mx: 'auto',
-          boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 12px rgba(0,0,0,0.08)',
-        }}>
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              color: 'text.secondary',
-              fontSize: { xs: '0.9375rem', sm: '1rem' }
-            }}
-          >
-            No se encontraron propietarios con los criterios de búsqueda.
-          </Typography>
-        </Box>
-      ) : (
-
-        <>
-        <TableContainer component={Box} sx={{ 
-          width: '100%',
-          borderRadius: 2,
-          maxWidth:"100%",
-          display:"flex",
-          flexDirection:"column",
-          flexWrap:"wrap",
-          gap:"1rem",
-          justifyContent:"start",
-          alignItems:"center",
-          padding:"1rem",
-         
-          backgroundColor:theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'background.default',
-          
-        }}>
-          {propietariosPaginados.map((propietario) => (
-            <PlayerCard
-              key={propietario.id}
-              id={propietario.id}
-              nombre={`${propietario.nombre} ${propietario.apellido}`}
-              direccion={propietario.direccionResidencial}
-              telefono={propietario.telefono}
-              email={propietario.email}
-              onDelete={confirmDeletePropietario}
-            />
-          ))}
-        </TableContainer>
-         <Box display="flex" justifyContent="center" mt={2} sx={{width:"100%",height:"2.5rem", marginTop:"-3rem"}} data-tour="owners-pagination">
-           {Array.from({ length: totalPaginas }, (_, i) => (
-             <Button
-               key={i + 1}
-               variant={paginaActual === i + 1 ? 'contained' : 'outlined'}
-               onClick={() => setPaginaActual(i + 1)}
-               sx={{ mx: 0.5 }}
-             >
-               {i + 1}
-             </Button>
-           ))}
-         </Box>
-    </>
-
-      )}
-    </Box>
+    <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: 2, boxShadow: 1 }}>
+      <TableContainer>
+        <Table size="medium" sx={{width: '100vw', minWidth: 950 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  indeterminate={selected.length > 0 && selected.length < propietariosFiltrados.length}
+                  checked={propietariosFiltrados.length > 0 && selected.length === propietariosFiltrados.length}
+                  onChange={(e) => handleSelectAll(e, propietariosFiltrados)}
+                  inputProps={{ 'aria-label': 'select all' }}
+                />
+              </TableCell>
+              <TableCell>Usuario</TableCell>
+              <TableCell sx={{ width: '3rem', minWidth: '3rem', maxWidth: '3rem' }}>CUIT</TableCell>
+              <TableCell sx={{ width: '6rem', minWidth: '6rem', maxWidth: '6rem' }}>Email</TableCell>
+              <TableCell>Teléfono</TableCell>
+              <TableCell sx={{ width: '7rem', minWidth: '7rem', maxWidth: '7rem' }}>Dirección</TableCell>
+              <TableCell align="right" sx={{ width: 140, minWidth: 140 }}>Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {propietariosFiltrados
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((p) => {
+                const checked = isSelected(p.id);
+                const nombreCompleto = `${p.nombre || ''} ${p.apellido || ''}`.trim();
+                const direccion = (p.direccionResidencial || '').trim();
+                return (
+                  <TableRow hover key={p.id} selected={checked} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                    <TableCell padding="checkbox">
+                      <Checkbox checked={checked} onChange={() => handleSelectOne(p.id)} />
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 400, fontSize: '0.8rem', width:"8rem"}}>{nombreCompleto || '—'}</TableCell>
+                    <TableCell sx={{ width:"3rem"}}>{p.cuit || '—'}</TableCell>
+                    <TableCell sx={{ width:"4rem"}}>{p.email || '—'}</TableCell>
+                    <TableCell sx={{ width:"5rem"}}>{p.telefono || '—'}</TableCell>
+                    <TableCell sx={{ width: '7rem', minWidth: '7rem', maxWidth: '7rem' }}>
+                      <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {direccion || '—'}
+                      </Box>
+                    </TableCell>
+                    <TableCell align="right">
+                      <IconButton size="small" onClick={() => openOwnerDocs(p)} sx={{ mr: 0.5 }}>
+                        <DescriptionIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => handleEdit(p.id)} sx={{ mr: 0.5 }}>
+                        <MoreVertIcon sx={{ display: 'none' }} />
+                        {/* Usamos directamente editar */}
+                        <span style={{ display: 'inline-flex' }}><EditIcon fontSize="small" /></span>
+                      </IconButton>
+                      <IconButton size="small" onClick={() => confirmDeletePropietario(p.id)} color="error">
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        component="div"
+        count={propietariosFiltrados.length}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[10, 25, 50, 100]}
+        labelRowsPerPage="Mostrar"
+      />
+    </Paper>
   );
 
   const renderSearchBar = () => (
@@ -463,12 +661,12 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
       width: "100%", 
       minHeight: "100vh",
       pt: { xs: 3, sm: 4 },
-      pb: { xs: 8, sm: 4 },
+      pb: { xs: 12, sm: 4 },
     
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      bgcolor:'background.default'
+      backgroundColor:theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'background.default',
     }}>
       <Box 
         sx={{ 
@@ -476,7 +674,9 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
           mt: { xs: '4rem', sm: 0 },
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center'
+          alignItems: 'center',
+          
+          
         }}
       >
         <Box 
@@ -487,6 +687,8 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
             justifyContent: 'space-between',
             marginTop:{xs:0,md:"2rem"},
             mb: { xs: 2, sm: 3 }
+            
+            
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -535,9 +737,9 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
           sx={{ 
             mb: 3,
             width: { xs: '90%', sm: '80%', md: '100%' },
-            
+              borderRadius: 6, '& fieldset': { borderRadius: 6 },
+              width:"100%",
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-            borderRadius: 1,
             '& .MuiOutlinedInput-root': {
               borderRadius: '8px',
               '&:hover .MuiOutlinedInput-notchedOutline': {
@@ -562,7 +764,8 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 2
+            gap: 2,
+            
           }}>
             <CircularProgress />
             <Typography>Cargando propietarios...</Typography>
@@ -589,9 +792,116 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
           open={Boolean(anchorEl)}
           onClose={handleMenuClose}
         >
+          <MenuItem onClick={handleEdit}>Editar</MenuItem>
           <MenuItem onClick={handleDelete}>Eliminar</MenuItem>
         </Menu>
+
+        {/* Modal de edición */}
+        <EditarPropietarioModal
+          open={editModalOpen}
+          onClose={handleCloseEditModal}
+          propietario={propietarioToEdit}
+          onPropietarioUpdated={handlePropietarioUpdated}
+        />
+
+        {/* Modal crear perfil de propietario */}
+        <CreateOwnerProfileModal
+          open={createOwnerOpen}
+          onClose={handleCloseCreateOwnerProfile}
+          propietario={propietarioForProfile}
+          onSubmit={handleSubmitCreateOwnerProfile}
+        />
+
+        {/* Modal: propietario ya tiene cuenta */}
+        <Dialog open={ownerHasAccountOpen} onClose={() => setOwnerHasAccountOpen(false)} PaperProps={{ sx: { borderRadius: 3, fontFamily: 'Roboto, sans-serif' } }}>
+          <DialogTitle sx={{ fontFamily: 'Roboto, sans-serif', position: 'relative', pr: 6 }}>
+            Información
+            <IconButton
+              aria-label="eliminar usuario"
+              onClick={handleDeleteOwnerUser}
+              disabled={deletingOwnerUser || ownerHasAccountLoading || !propietarios.find(x => x.id === ownerHasAccountId)?.usuarioCuentaPropietarioId}
+              sx={{ 
+                position: 'absolute', 
+                right: 8, 
+                top: 8,
+                color: '#d32f2f',
+                backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.08)' },
+                '&.Mui-disabled': { color: 'rgba(0,0,0,0.26)' }
+              }}
+            >
+              {deletingOwnerUser ? <CircularProgress size={20} /> : <DeleteOutlineIcon />}
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ fontFamily: 'Roboto, sans-serif', display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Typography sx={{ mb: 1 }}>
+              El propietario {ownerHasAccountName || ''} ya tiene una cuenta creada.
+            </Typography>
+            {ownerHasAccountLoading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={18} />
+                <Typography>Cargando credenciales...</Typography>
+              </Box>
+            ) : ownerHasAccountError ? (
+              <Typography color="error">{ownerHasAccountError}</Typography>
+            ) : ownerHasAccountCreds ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography><strong>Usuario:</strong> {ownerHasAccountCreds.username ?? '-'}</Typography>
+                <Typography><strong>Contraseña:</strong> {ownerHasAccountCreds.password ?? '-'}</Typography>
+              </Box>
+            ) : null}
+          </DialogContent>
+          <DialogActions sx={{ fontFamily: 'Roboto, sans-serif' }}>
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<WhatsAppIcon sx={{ fontSize: 35 }} />}
+              onClick={() => {
+                if (!ownerHasAccountCreds) return;
+                const p = propietarios.find((x) => x.id === ownerHasAccountId);
+                const username = ownerHasAccountCreds?.username ?? '';
+                const password = ownerHasAccountCreds?.password ?? '';
+                const texto = `\n*Descargate la app Tuinmo*\n\n_Desde Google Play buscá_ *Tuinmo*\n_y accedé con tus credenciales en la sección:_ _*Portal de alquileres*_\n\n\n*Usuario:* _${username}_\n*Contraseña:* _${password}_\n`;
+                const phone = (p?.telefono ?? '').replace(/\D/g, '');
+                const base = phone ? `https://wa.me/${phone}` : 'https://wa.me/';
+                const url = `${base}?text=${encodeURIComponent(texto.trim())}`;
+                window.open(url, '_blank');
+              }}
+              disabled={!ownerHasAccountCreds || ownerHasAccountLoading}
+              sx={{
+                textTransform: 'none',
+                bgcolor: 'rgb(7, 113, 50)',
+                color: 'white',
+                border: '1px solid #000',
+                borderRadius: '9999px',
+                px: 2,
+                py: 0.6,
+                fontSize: '.95rem',
+                boxShadow: 'none',
+                '& .MuiButton-startIcon': { mr: 0.75 },
+                '&:hover': { bgcolor: '#0f7a3e', boxShadow: 'none' },
+                '&.Mui-disabled': { bgcolor: '#a7f3d0', color: '#444', borderColor: '#666', opacity: 0.7 }
+              }}
+            >
+              Compartir credenciales
+            </Button>
+            <Button onClick={() => setOwnerHasAccountOpen(false)}>Cerrar</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Documentos Propietario */}
+        <DocumentManagerModal
+          open={docsOpen}
+          onClose={closeOwnerDocs}
+          entityType="propietario"
+          entityId={docsOwnerId}
+          entityName={docsOwnerName}
+          fetchList={fetchOwnerDocs}
+          uploadFiles={uploadOwnerDocs}
+          deleteDoc={deleteOwnerDoc}
+        />
       </Box>
+
     </Box>
     </>
   );

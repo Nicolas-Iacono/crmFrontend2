@@ -26,6 +26,8 @@ import useGoogleLink from '../../hooks/useGoogleLink';
 import { calendarApi } from '../api/calendarApi'; // Make sure API is imported
 import "../../../src/App.css";
 import Swal from 'sweetalert2';
+import { showSuccess, showError, showInfo } from '../alertas/showAlert';
+
 const mapGoogleEvents = (events) => {
   if (!Array.isArray(events)) {
     console.error('mapGoogleEvents expected an array, but received:', events);
@@ -118,7 +120,6 @@ const CalendarioPage = () => {
     endTime: null
   });
   const calendarRef = useRef(null);
-  console.log(usuarioFetch)
   const [events, setEvents] = useState([]);
   const { isLinked } = useGoogleLink();
   const [refetchTrigger, setRefetchTrigger] = useState(0);
@@ -147,7 +148,6 @@ const CalendarioPage = () => {
             // The backend sends already mapped events
                         const response = await calendarApi.listEvents({ from: dateRange.from, to: dateRange.to });
             // The actual events might be in a nested property, e.g., response.events
-                        console.log('Raw Google Events from API:', response);
             const rawGoogleEvents = Array.isArray(response) ? response : response.events || [];
             googleEvents = mapGoogleEvents(rawGoogleEvents);
 
@@ -237,7 +237,7 @@ const CalendarioPage = () => {
 
     const handleCreateEvent = async (withEndTime = true) => {
     if (!newEvent.title || !newEvent.startDate || !newEvent.startTime) {
-      Swal.fire('Error', 'El título, la fecha y la hora de inicio son obligatorios.', 'error');
+      showInfo('El título, la fecha y la hora de inicio son obligatorios.');
       return;
     }
 
@@ -261,16 +261,15 @@ const CalendarioPage = () => {
         end: { dateTime: endDateTime.format() }
       };
 
-      console.log('Sending event data:', eventData);
       await calendarApi.createEvent(eventData);
 
-      Swal.fire('¡Éxito!', 'El evento ha sido creado en Google Calendar.', 'success');
+      showSuccess('El evento ha sido creado en Google Calendar.');
       handleCloseEndModal();
       setRefetchTrigger(c => c + 1);
 
     } catch (error) {
       console.error('Error creating event:', error);
-      Swal.fire('Error', 'No se pudo crear el evento. Asegúrate de que tu cuenta de Google esté vinculada.', 'error');
+      showError('No se pudo crear el evento. Asegúrate de que tu cuenta de Google esté vinculada.');
     }
   };
 
@@ -280,8 +279,10 @@ const CalendarioPage = () => {
       bgcolor: 'background.default',
       minHeight: '100vh',
       color: 'text.primary',
-      width:{md:"100vw"}
-      
+      width:{md:"100vw"},
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'flex-start'
     }}>
      
       <Box className="calendar-container" sx={{ 
@@ -302,7 +303,8 @@ const CalendarioPage = () => {
           borderRadius: '8px',
           p: 2,
           height:"95vh",
-          width:{md:"50%", xs:"100vw"}
+          width:{md:"80vw", xs:"100vw"},
+          maxWidth: "1200px"
         },
         '.fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number': {
           color: theme.palette.text.secondary,
@@ -349,17 +351,23 @@ const CalendarioPage = () => {
         aria-describedby="modal-description"
         sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        <Card sx={{ minWidth: 300, maxWidth: 500, m: 2 }}>
+        <Card sx={{ minWidth: 300, maxWidth: 500, m: 2 ,borderRadius:"15px",
+           background: 'linear-gradient(135deg,rgb(53, 74, 168) 0%,rgb(122, 15, 228) 100%)'}}>
           <CardHeader
+            sx={{color:"white"}}
             title={`Eventos del ${selectedDate?.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}`}
             action={
-              <IconButton onClick={handleCloseModal}>
+              <IconButton onClick={handleCloseModal} sx={{color:"white"}}>
                 <CloseIcon />
               </IconButton>
             }
           />
-          <CardContent>
-            <Timeline position="alternate">
+          <CardContent sx={{display:"flex",flexDirection:"column",justifyContent:"start",alignItems:"start", borderRadius:"15px",
+
+          }}>
+            <Timeline position="right" sx={{
+              width:"100%", height:"100%", ml:-5.2
+            }}>
               {selectedEvents.length > 0 ? (
                 selectedEvents.map((event, index) => (
                   <TimelineItem key={event.id || index}>
@@ -367,7 +375,7 @@ const CalendarioPage = () => {
                       sx={{ m: 'auto 0' }}
                       align="right"
                       variant="body2"
-                      color="text.secondary"
+                      color="white"
                     >
                       {event.start ? dayjs(event.start).format('h:mm A') : 'All Day'}
                     </TimelineOppositeContent>
@@ -378,13 +386,17 @@ const CalendarioPage = () => {
                       <TimelineConnector />
                     </TimelineSeparator>
                     <TimelineContent sx={{ py: '12px', px: 2 }}>
+                    <Box sx={{display:"flex",flexDirection:"row",justifyContent:"space-between",
+                    alignItems:"center",backgroundColor:"rgba(255, 255, 255, 0.26)", borderRadius:"15px", width:"15rem"
+                    }}>
 
-                      <Typography variant="p" component="span">
+                      <Typography variant="body1" component="span" sx={{color:"white"}}>
                         {event.title}
                       </Typography>
                       {event.extendedProps?.description &&
-                        <Typography variant="p">{event.extendedProps.description}</Typography>
+                        <Typography variant="">{event.extendedProps.description}</Typography>
                       }
+                      </Box>
                     </TimelineContent>
                   </TimelineItem>
                 ))
@@ -396,18 +408,7 @@ const CalendarioPage = () => {
         </Card>
       </Modal>
 
-      <Fab
-        color="primary"
-        aria-label="add"
-        onClick={handleOpenNewEventModal}
-        sx={{
-          position: 'fixed',
-          bottom: { xs: 70, sm: 40 },
-          right: { xs: 24, sm: 40 },
-        }}
-      >
-        <AddIcon />
-      </Fab>
+   
 
       <Modal
         open={startModalOpen}

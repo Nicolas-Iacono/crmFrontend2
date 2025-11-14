@@ -53,7 +53,6 @@ export default function DataTable() {
     };
     fetchPropiedades();
   }, [user.name]);
-  console.log(propiedades)
   const paginationModel = { page: 0, pageSize: 5 };
 
   // Convertir las propiedades en filas para el DataGrid

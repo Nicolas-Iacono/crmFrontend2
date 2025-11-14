@@ -45,6 +45,9 @@ const sections = [
   {
     name: 'Calendario', url: '/calendario',
   },
+  {
+    name: 'Contacto', url: '/contacto',
+  },
   
 ];
 

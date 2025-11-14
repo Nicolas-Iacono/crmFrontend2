@@ -3,10 +3,12 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Box, Typography, useTheme, useMediaQuery, Grid2 } from '@mui/material';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { PropietarioApi } from '../api/propietarios';
 import {SchemaValidation} from '../validation/SchemaValidation'
 import Swal from 'sweetalert2';
 import PropiedadesApi from '../api/propiedades';
+import { showAlert, showError, showInfo, showSuccess } from '../alertas/showAlert';
 
 const PropietarioForm = () => {
   const theme = useTheme();
@@ -48,7 +50,6 @@ const PropietarioForm = () => {
 
   if(propietarios.data){
     propietarios.data.forEach((propietario)=>{
-      console.log(propietario.id)
     })
   }
 
@@ -63,7 +64,6 @@ const PropietarioForm = () => {
     nacionalidad:'',
     direccionResidencial: '',
     estadoCivil:'',
-    nombreUsuario:user.name
   };
 
   const pronombres = [
@@ -80,22 +80,17 @@ const PropietarioForm = () => {
 
   const onSubmit = async (values, { setSubmitting }) => {
     try {
-      await PropietarioApi.crearPropietario(values);
-      console.log(values);
-      console.log('propietario creado exitosamente');
-      Swal.fire({
-        title: '¡Éxito!',
-        text: 'Propietario creado exitosamente',
-        icon: 'success',
-      })
+      const onlyDigits = (v) => (v == null ? '' : String(v).replace(/\D/g, ''));
+      const processed = {
+        ...values,
+        dni: values.dni ? parseInt(onlyDigits(values.dni), 10) : values.dni,
+        cuit: values.cuit ? parseInt(onlyDigits(values.cuit), 10) : values.cuit,
+        telefono: values.telefono ? parseInt(onlyDigits(values.telefono), 10) : values.telefono,
+      };
+      await PropietarioApi.crearPropietario(processed);
+      showSuccess('Propietario creado exitosamente');
     } catch (error) {
-      console.log(values);
-      console.error(`Error al crear el propietario: ${error.message}` );
-      Swal.fire({
-        title: 'Error',
-        text: 'Error al crear el propietario',
-        icon: "error",
-      })
+      showError('Error al crear el propietario');
     } finally {
       setSubmitting(false); 
     }
@@ -105,10 +100,14 @@ const PropietarioForm = () => {
 
   return (
     <Box sx={{ 
-      p: 3, 
       bgcolor: 'background.default',
       color: 'text.primary',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      width:"100%",
+      display: 'flex',
+      justifyContent: 'center',
+      flexDirection: 'column',
+
     }}>
       <Typography 
         variant="h4" 
@@ -129,7 +128,7 @@ const PropietarioForm = () => {
         onSubmit={onSubmit}
         enableReinitialize 
       >
-        {({ values, handleChange, handleBlur }) => (
+        {({ values, handleChange, handleBlur, setFieldValue }) => (
           <Form style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Grid2
               container 
@@ -151,8 +150,8 @@ const PropietarioForm = () => {
                   maxWidth: '500px',
                   mx: 'auto',
                   '& .MuiTextField-root': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'background.paper',
-                    borderRadius: 1,
+                    bgcolor: 'transparent',
+                    borderRadius: 0,
                     '& .MuiInputBase-input': {
                       color: 'text.primary'
                     },
@@ -164,8 +163,8 @@ const PropietarioForm = () => {
                     }
                   },
                   '& .MuiFormControl-root': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'background.paper',
-                    borderRadius: 1,
+                    bgcolor: 'transparent',
+                    borderRadius: 0,
                     '& .MuiInputBase-input': {
                       color: 'text.primary'
                     },
@@ -194,6 +193,7 @@ const PropietarioForm = () => {
                           onChange={(e) => {
                             form.setFieldValue("pronombre", e.target.value);
                           }}
+                          sx={{ borderRadius: 6, '& fieldset': { borderRadius: 6 } }}
                         >
                           {pronombres.map((option) => (
                             <MenuItem key={option.value} value={option.value}>
@@ -214,6 +214,9 @@ const PropietarioForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.nombre}
+                    sx={{
+                      borderRadius: 6, '& fieldset': { borderRadius: 6 }
+                    }}
                   />
                   <ErrorMessage name="nombre" component="div" className="error-message" />
 
@@ -226,6 +229,9 @@ const PropietarioForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.apellido}
+                    sx={{
+                      borderRadius: 6, '& fieldset': { borderRadius: 6 }
+                    }}
                   />
                   <ErrorMessage name="apellido" component="div" className="error-message" />
 
@@ -238,6 +244,9 @@ const PropietarioForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.telefono}
+                    sx={{
+                      borderRadius: 6, '& fieldset': { borderRadius: 6 }
+                    }}
                   />
                   <ErrorMessage name="telefono" component="div" className="error-message" />
 
@@ -250,6 +259,9 @@ const PropietarioForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.email}
+                    sx={{
+                      borderRadius: 6, '& fieldset': { borderRadius: 6 }
+                    }}
                   />
                   <ErrorMessage name="email" component="div" className="error-message" />
                 </Box>
@@ -278,8 +290,8 @@ const PropietarioForm = () => {
                     }
                   },
                   '& .MuiFormControl-root': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'background.paper',
-                    borderRadius: 1,
+                    bgcolor: 'transparent',
+                    borderRadius: 0,
                     '& .MuiInputBase-input': {
                       color: 'text.primary'
                     },
@@ -296,28 +308,54 @@ const PropietarioForm = () => {
                     fontSize: '0.75rem'
                   }
                 }}>
-                  <Field
-                    name="dni"
-                    as={TextField}
-                    label="DNI"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.dni}
-                  />
+                  <Field name="dni">
+                    {({ field }) => (
+                      <TextField
+                        {...field}
+                        label="DNI"
+                        variant="outlined"
+                        fullWidth
+                        value={field.value}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                          setFieldValue('dni', formatted);
+                        }}
+                        onBlur={handleBlur}
+                        sx={{
+                          borderRadius: 6, '& fieldset': { borderRadius: 6 }
+                        }}
+                      />
+                    )}
+                  </Field>
                   <ErrorMessage name="dni" component="div" className="error-message" />
 
-                  <Field
-                    name="cuit"
-                    as={TextField}
-                    label="CUIT"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.cuit}
-                  />
+                  <Field name="cuit">
+                    {({ field }) => (
+                      <TextField
+                        {...field}
+                        label="CUIT"
+                        variant="outlined"
+                        fullWidth
+                        value={field.value}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          const a = digits.slice(0, 2);
+                          const b = digits.slice(2, 10);
+                          const c = digits.slice(10, 11);
+                          const formatted = [a, b, c]
+                            .map((seg, idx) => (idx === 0 ? seg : seg ? '-' + seg : ''))
+                            .join('')
+                            .replace(/^-/, '');
+                          setFieldValue('cuit', formatted);
+                        }}
+                        onBlur={handleBlur}
+                        sx={{
+                         borderRadius: 6, '& fieldset': { borderRadius: 6 }
+                        }}
+                      />
+                    )}
+                  </Field>
                   <ErrorMessage name="cuit" component="div" className="error-message" />
 
                   <Field
@@ -329,6 +367,9 @@ const PropietarioForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.nacionalidad}
+                    sx={{
+                      borderRadius: 6, '& fieldset': { borderRadius: 6 }
+                    }}
                   />
                   <ErrorMessage name="nacionalidad" component="div" className="error-message" />
 
@@ -341,6 +382,9 @@ const PropietarioForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.direccionResidencial}
+                    sx={{
+                      borderRadius: 6, '& fieldset': { borderRadius: 6 }
+                    }}
                   />
                   <ErrorMessage name="direccionResidencial" component="div" className="error-message" />
 
@@ -356,6 +400,7 @@ const PropietarioForm = () => {
                           onChange={(e) => {
                             form.setFieldValue("estadoCivil", e.target.value);
                           }}
+                          sx={{ borderRadius: 6, '& fieldset': { borderRadius: 6 } }}
                         >
                           {estadosCiviles.map((option) => (
                             <MenuItem key={option.value} value={option.value}>
@@ -381,11 +426,13 @@ const PropietarioForm = () => {
                 type="submit"
                 variant="contained"
                 color="primary"
+                startIcon={<PersonAddIcon />}
                 sx={{
                   minWidth: { xs: '100%', md: '200px' },
                   py: 1.5,
                   fontSize: '1rem',
                   boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                    borderRadius: 6,
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 6px 16px rgba(0,0,0,0.12)'

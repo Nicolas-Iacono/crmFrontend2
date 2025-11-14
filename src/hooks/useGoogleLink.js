@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useAuth } from '../components/context/GlobalAuth';
-
+import { showSuccess, showError, showWarning } from '../components/alertas/showAlert';
 const useGoogleLink = () => {
       const { token } = useAuth();
   const [googleProfile, setGoogleProfile] = useState(null);
@@ -22,7 +22,7 @@ const useGoogleLink = () => {
     }
     setIsLoading(true);
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL_2}/oauth/google/profile`, authConfig);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/oauth/google/profile`, authConfig);
       if (response.data.googleLinked) {
         setGoogleProfile(response.data.google);
         setIsLinked(true);
@@ -44,11 +44,11 @@ const useGoogleLink = () => {
 
     const params = new URLSearchParams(window.location.search);
     if (params.get('google_link') === 'ok') {
-      Swal.fire('¡Éxito!', 'Tu cuenta de Google ha sido vinculada correctamente.', 'success');
+      showSuccess('Tu cuenta de Google ha sido vinculada correctamente.');
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (params.get('google_link') === 'error') {
-        Swal.fire('Error', 'No se pudo vincular la cuenta de Google.', 'error');
+        showError('No se pudo vincular la cuenta de Google.');
         // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -65,7 +65,7 @@ const useGoogleLink = () => {
     if (!token) return;
     try {
       const { data } = await axios.get(
-        `${import.meta.env.VITE_API_URL_2}/oauth/google/link/state`,
+        `${import.meta.env.VITE_API_URL}/oauth/google/link/state`,
         authConfig
       );
 
@@ -73,7 +73,7 @@ const useGoogleLink = () => {
 
       if (!authUrl || !state || !redirectUri) {
         console.error('Respuesta inválida del backend:', data);
-        Swal.fire('Error', 'Respuesta inválida del servidor.', 'error');
+        showError('Respuesta inválida del servidor.');
         return;
       }
 
@@ -81,7 +81,7 @@ const useGoogleLink = () => {
       window.location.href = authUrl;
     } catch (error) {
       console.error('Error starting Google link process:', error);
-      Swal.fire('Error', 'No se pudo iniciar la vinculación. Inténtalo de nuevo.', 'error');
+      showError('No se pudo iniciar la vinculación. Inténtalo de nuevo.');
     }
   };
 
@@ -105,12 +105,12 @@ const useGoogleLink = () => {
             if (result.isConfirmed) {
         if (!token) return;
         try {
-          await axios.delete(`${import.meta.env.VITE_API_URL_2}/oauth/google/link`, authConfig);
-          Swal.fire('¡Éxito!', 'Tu cuenta de Google ha sido desvinculada.', 'success');
+          await axios.delete(`${import.meta.env.VITE_API_URL}/oauth/google/link`, authConfig);
+          showSuccess('Tu cuenta de Google ha sido desvinculada.');
           fetchGoogleProfile(); // Refresh state
         } catch (error) {
           console.error('Error unlinking Google account:', error);
-          Swal.fire('Error', 'No se pudo desvincular la cuenta. Inténtalo de nuevo.', 'error');
+          showError('No se pudo desvincular la cuenta. Inténtalo de nuevo.');
         }
       }
     });

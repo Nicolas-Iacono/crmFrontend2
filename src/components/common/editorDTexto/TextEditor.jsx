@@ -1,38 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
-import { Button, Grid2, Box, CircularProgress, Modal, Slide, useTheme, useMediaQuery, Typography, IconButton } from '@mui/material';
+import { Button, Box, CircularProgress, Modal, Slide, useTheme, useMediaQuery, Typography, IconButton, Backdrop, Grid, Grid2 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { UseEditorGlobalContext } from "../../context/EditorGlobal";
 import DOMPurify from 'dompurify';
 import axios from 'axios';
-import Swal from 'sweetalert2';
 import { useAuth } from '../../context/GlobalAuth';
+import ShareButtons from './ShareButtons';
+import { showAlert, showError, showInfo, showSuccess } from '../../alertas/showAlert';
 
-const TextEditor = ({ contrato, isOpen, onClose }) => {
-  const { addParagraph, resetEditor, clearEditor } = UseEditorGlobalContext();
+// ⚠️ Si usas Grid v5 "Unstable_Grid2", importa así:
+// import Grid2 from '@mui/material/Unstable_Grid2';
+
+const ALLOWED = {
+  ALLOWED_TAGS: ['p','br','strong','b','em','i','u','span','div','h1','h2','h3','h4','h5','h6','ul','ol','li','a','img','table','thead','tbody','tr','td','th'],
+  ALLOWED_ATTR: ['style','class','href','src','alt','title','target','colspan','rowspan'],
+  ALLOW_DATA_ATTR: false
+};
+
+const TextEditor = ({ contrato, isOpen, onClose, onSaved }) => {
+  const { addParagraph } = UseEditorGlobalContext();
   const [contenido, setContenido] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [toolbarVisible, setToolbarVisible] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { usuarioFetch } = useAuth();
 
-  
-  useEffect(() => {
-    setLoading(true);
-    if (!contrato || !usuarioFetch) {
-      clearEditor();
-      setLoading(false);
-      return;
-    }
-
-    if (contrato?.pdfContratoTexto) {
-      const sanitizedContent = DOMPurify.sanitize(contrato.pdfContratoTexto);
-      setContenido(sanitizedContent);
-      addParagraph(sanitizedContent);
-    } else {
-      const contenidoInicial = `
-        <div class="contrato-content">
+  // Genera el HTML inicial si no existe texto del contrato
+  const buildTemplate = (contrato, usuarioFetch) => {
+    const html = `
+       <div class="contrato-content">
         <p>En la Ciudad de ${usuarioFetch.partido}, en el dia de hoy sito ${contrato.fecha_inicio}, ${contrato?.propietario.pronombre || ""} ${contrato?.propietario.nombre || ""} ${contrato?.propietario.apellido ||   ""} de nacionalidad ${contrato.propietario.nacionalidad}, D.N.I. ${contrato.propietario.dni} , C.U.I.L. ${contrato.propietario.cuit} en adelante denominada la "parte LOCADORA", y por la otra parte ${contrato.inquilino.pronombre} ${contrato.inquilino.nombre} ${contrato.inquilino.apellido} de ${contrato.inquilino.nacionalidad} con DNI N° ${contrato.inquilino.dni}, CUIL ${contrato.inquilino.cuit} con domicilio en la ${contrato.propiedad.direccion} de la ciudad de ${contrato.propiedad.localidad}, partido de ${contrato.propiedad.partido} Provincia de ${contrato.propiedad.provincia}, en adelante llamado la "parte LOCATARIA", convienen en celebrar el presente Contrato de Locación, que celebran de buena fé, con el cuidado y previsión que exigen y contemplan los art. 9, 729, 961, 965 y 1061 Del Código Civil y Comercial de La Nación, en un todo de acuerdo el que se regirá por las siguientes cláusulas y condiciones.</p>
 
 
@@ -124,87 +125,119 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
       VIGÉSIMA SÉPTIMA: La Locataria reconocen y aceptan la facultad que posee la Locadora o su representante legal, de visitar el inmueble dado en locación. El plazo de visita será cada seis (6) meses, con previo aviso de 72 hs., a los efectos de corroborar el estado de uso y conservación del mismo. En prueba de Ratificación y Conformidad, se firman tres ejemplares de un mismo tenor y a un solo efecto, en el lugar y fecha al principio indicado, dejando constancia que la parte Locataria vuelve a  tomar tenencia del inmueble locado en este acto.
 
           </div>`;
-      
-      const sanitizedContent = DOMPurify.sanitize(contenidoInicial);
-      setContenido(sanitizedContent);
-      addParagraph(sanitizedContent);
-    }
-    setLoading(false);
-  }, [contrato?.id]);
+    return html;
+  };
 
-  const handleEditorChange = (content, editor) => {
-    const sanitizedContent = DOMPurify.sanitize(content);
-    setContenido(sanitizedContent);
-    addParagraph(sanitizedContent);
+  // Inicializa / reinicializa el editor cada vez que se abre o cambian contrato/pdfContratoTexto
+  useEffect(() => {
+    if (!isOpen || !contrato || !usuarioFetch) return;
+
+    const currentPdfContratoTexto = contrato?.pdfContratoTexto?.trim?.() || '';
+    const currentContratoPdf = contrato?.contratoPdf?.trim?.() || '';
+
+    // console.log('Cargando contenido del editor:', {
+    //   contratoId: contrato.id,
+    //   tiene_pdfContratoTexto: currentPdfContratoTexto.length > 0,
+    //   tiene_contratoPdf: currentContratoPdf.length > 0,
+    //   preview_usa: (currentPdfContratoTexto || currentContratoPdf || '').slice(0, 100) + '...'
+    // });
+
+    setLoading(true);
+
+    // ✅ Lógica mejorada: Si hay contenido guardado Y es diferente de solo el nombre del contrato, usarlo. Si no, usar plantilla.
+    const templateContent = buildTemplate(contrato, usuarioFetch);
+    const contratoNameOnly = contrato?.nombreContrato || '';
+    
+    // Verificar si el contenido guardado es solo el nombre del contrato o está vacío
+    const isContentOnlyName = (content) => {
+      const cleanContent = content.replace(/<[^>]*>/g, '').trim(); // Remover HTML tags
+      return cleanContent === contratoNameOnly || cleanContent.length === 0;
+    };
+    
+    let raw;
+    if (currentPdfContratoTexto.length > 0 && !isContentOnlyName(currentPdfContratoTexto)) {
+      raw = currentPdfContratoTexto;
+    } else if (currentContratoPdf.length > 0 && !isContentOnlyName(currentContratoPdf)) {
+      raw = currentContratoPdf;
+    } else {
+      raw = templateContent;
+    }
+
+    const sanitized = DOMPurify.sanitize(raw, ALLOWED);
+    setContenido(sanitized);
+    addParagraph(sanitized);
+    setLoading(false);
+  }, [
+    isOpen,
+    contrato?.id,
+    contrato?.pdfContratoTexto, // 👈 importante para rehidratar con lo último guardado
+    contrato?.contratoPdf,      // soporte legacy
+    usuarioFetch?.id
+  ]);
+
+  const handleEditorChange = (content) => {
+    const sanitized = DOMPurify.sanitize(content, ALLOWED);
+    setContenido(sanitized);
+    addParagraph(sanitized);
   };
 
   const handlerSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
 
-    const updatedContratoPdf = {
-      pdfContratoTexto: contenido,
+    const payload = {
+      pdfContratoTexto: contenido, // 👈 guardamos siempre en este campo
       contrato_id: contrato.id,
     };
 
     try {
-      await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/contrato/${contrato.id}/updateContract`,
-        updatedContratoPdf,
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      
-      resetEditor();
-      
-      Swal.fire({
-        title: '¡Contrato guardado!',
-        text: 'El contrato ya se encuentra disponible.',
-        icon: 'success',
-        confirmButtonText: 'Aceptar',
+      const url = `${import.meta.env.VITE_API_URL}/contrato/${contrato.id}/updateContract`;
+      const jwt = localStorage.getItem('token');
+
+
+      const response = await axios.put(url, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(jwt ? { Authorization: `Bearer ${jwt}` } : {})
+        },
+        withCredentials: true
       });
 
-      if (isMobile && onClose) {
-        onClose();
-      }
+      const savedHtml = response?.data?.pdfContratoTexto || contenido;
+
+      if (onSaved) onSaved(savedHtml);      // avisa al padre
+      setContenido(savedHtml);              // asegura estado local con lo último
+
+      showSuccess('Contrato guardado exitosamente');
+
+      // En mobile cierro el modal como hacías:
+      if (isMobile && onClose) onClose();
     } catch (error) {
       console.error('Error al guardar el contrato:', error);
-      Swal.fire({
-        title: 'Error',
-        text: 'Hubo un problema al guardar el contrato.',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-      });
+      showError('Hubo un problema al guardar el contrato.');
     } finally {
       setSaving(false);
     }
   };
 
   const editorContent = (
-    <Grid2 sx={{ 
+    <Grid2 sx={{
       height: isMobile ? "100vh" : "700px",
       width: "100%",
-      backgroundColor: "#f8fafc",
-      padding: { xs: "12px", sm: "24px" },
+      p: { xs: "12px", sm: "24px" },
       borderRadius: isMobile ? 0 : "8px",
       boxShadow: isMobile ? "none" : "0 2px 4px rgba(0,0,0,0.1)",
       display: "flex",
       flexDirection: "column",
       gap: 2,
-      position: 'relative'
+      position: 'relative',
+      backgroundColor: theme.palette ? theme.palette.background.default : "#f8fafc"
     }}>
       {loading && (
         <Box sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(248, 250, 252, 0.8)',
-          zIndex: 10,
-          backdropFilter: 'blur(2px)'
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: 'rgba(248, 250, 252, 0.8)', zIndex: 10, backdropFilter: 'blur(2px)'
         }}>
           <Box sx={{ textAlign: 'center' }}>
             <CircularProgress size={40} sx={{ mb: 2 }} />
@@ -214,180 +247,175 @@ const TextEditor = ({ contrato, isOpen, onClose }) => {
           </Box>
         </Box>
       )}
+
       {isMobile && (
         <Box sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 2,
-          borderBottom: "1px solid #e0e0e0",
-          pb: 1,
-          minHeight: "48px"
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          mb: 2, pb: 1, minHeight: "10px",
         }}>
-          <Typography variant="h6" sx={{ 
-            fontWeight: 600,
-            fontSize: { xs: '1.1rem', sm: '1.25rem' },
-            color: theme.palette.primary.main,
-            lineHeight: 1.2
+          <Typography variant="h6" sx={{
+            fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' },
+            color: theme.palette.primary.main, lineHeight: 1.2
           }}>
-            Editor de Contrato - {contrato?.nombreContrato}
+            Editor. {contrato?.nombreContrato}
           </Typography>
-          <IconButton 
-            onClick={onClose} 
-            sx={{ 
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton
+              onClick={() => setToolbarVisible(!toolbarVisible)}
+              sx={{
+                color: "text.secondary",
+                bgcolor: 'rgba(0, 0, 0, 0.26)',
+                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.45)' }
+              }}
+            >
+              {toolbarVisible ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            </IconButton>
+            <IconButton onClick={onClose} sx={{ color: "text.secondary", bgcolor: 'rgba(0, 0, 0, 0.26)', '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.45)' } }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
+
+      {!isMobile && (
+        <Box sx={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          mb: 2, pb: 1, minHeight: "10px",
+        }}>
+          <Typography variant="h6" sx={{
+            fontWeight: 600, fontSize: '1.25rem',
+            color: theme.palette.primary.main, lineHeight: 1.2
+          }}>
+            Editor. {contrato?.nombreContrato}
+          </Typography>
+          <IconButton
+            onClick={() => setToolbarVisible(!toolbarVisible)}
+            sx={{
               color: "text.secondary",
-              bgcolor: 'rgba(0,0,0,0.04)',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' }
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'
+              }
             }}
           >
-            <CloseIcon />
+            {toolbarVisible ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </IconButton>
         </Box>
       )}
+
       <Editor
+        key={`editor-${toolbarVisible}`}
         apiKey="yk10ygeb6q71ucxlc2kqvhzpliekkdjmjgw8bxrxbxmvbl6y"
         value={contenido}
         init={{
           theme: 'silver',
           height: isMobile ? "calc(100vh - 130px)" : "620px",
-          menubar: true,
+          menubar: toolbarVisible,
+          toolbar: toolbarVisible ? 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | searchreplace | preview fullscreen | removeformat' : false,
           plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
-            'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            'advlist','autolink','lists','link','image','charmap','preview','anchor',
+            'searchreplace','visualblocks','code','fullscreen',
+            'insertdatetime','media','table','wordcount'
           ],
-          toolbar: 'undo redo | formatselect | bold italic underline | ' +
-            'alignleft aligncenter alignright alignjustify | ' +
-            'bullist numlist outdent indent | removeformat | help',
           content_style: `
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-              font-size: 12pt;
-              line-height: 1.6;
-              color: #333;
-              padding: 40px;
-              max-width: 800px;
-              margin: 0 auto;
-              background-color: white;
-            }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                   font-size: 12pt; line-height: 1.6;
+                   color: ${theme.palette.mode === 'dark' ? '#e0e0e0' : '#333'};
+                   padding: 10px;
+                   width: 95%; margin: 0 auto;
+                   background-color: ${theme.palette.mode === 'dark' ? ' #1a1a1a' : 'white'}; }
             .contrato-content {
-              background-color: white;
-              padding: 40px;
-              box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            }
-            p {
-              margin: 0 0 1em 0;
-              text-align: justify;
-            }
-            strong u { 
-              font-weight: bold;
-              text-decoration: underline;
-              text-transform: uppercase;
-              font-size: 12pt;
-              display: block;
-              margin: 15px 0 10px 0;
-            }
-            p[style*="text-align: center;"] {
-              margin: 1.5em 0;
-              color: #666;
-              font-size: 11pt;
-            }
-            .mce-content-body {
-              outline: none !important;
-            }
+                   background-color: ${theme.palette.mode === 'dark' ? ' #1a1a1a' : 'white'};
+                   padding: 40px;
+                   box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+            p { margin: 0 0 1em 0; text-align: justify; }
+            strong u { font-weight: bold; text-decoration: underline; text-transform: uppercase; font-size: 12pt; display: block; margin: 15px 0 10px 0; }
+            p[style*="text-align: center;"] { margin: 1.5em 0;
+                   color: ${theme.palette.mode === 'dark' ? ' #b0b0b0' : '#666'};
+                   font-size: 10pt; }
+            .mce-content-body { outline: none !important; }
           `,
-          formats: {
-            bold: { inline: 'strong' },
-            italic: { inline: 'em' },
-            underline: { inline: 'u' },
-          },
+          formats: { bold: { inline: 'strong' }, italic: { inline: 'em' }, underline: { inline: 'u' } },
           style_formats: [
             { title: 'Título de Cláusula', block: 'p', wrapper: true, styles: { 'font-weight': 'bold', 'text-transform': 'uppercase', 'text-decoration': 'underline' } },
             { title: 'Separador', block: 'p', wrapper: true, styles: { 'text-align': 'center' } },
             { title: 'Párrafo Normal', block: 'p', wrapper: true }
-          ],
-          setup: (editor) => {
-            console.log('TinyMCE instance:', tinymce);
-          }
-          
+          ]
         }}
         onEditorChange={handleEditorChange}
       />
-      <Box sx={{ 
+
+      <Box sx={{
         width: "100%", 
-        height: "3rem",
-        justifyContent: "flex-end", 
-        display: 'flex', 
-        padding: "10px",
-        position: 'relative',
-        backgroundColor: isMobile ? '#f8fafc' : 'white',
-        borderTop: '1px solid #ddd',
-        mt: 'auto',
-        mb: '3rem' // Agregado el margen inferior de 3rem
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        p: "10px", 
+        position: 'relative', 
+        mt: 'auto', 
+        mb: '3rem',
+        borderTop: `1px solid ${theme.palette.divider}`,
+        pt: 2
       }}>
-        <Button 
-          onClick={handlerSubmit} 
-          variant="contained" 
+        <ShareButtons contrato={contrato} contenido={contenido} />
+        
+        <Button
+          onClick={handlerSubmit}
+          variant="contained"
           color="primary"
           disabled={saving}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 2,
-            px: 3,
-            fontWeight: 500,
+          sx={{ 
+            textTransform: 'none', 
+            borderRadius: 2, 
+            px: 3, 
+            fontWeight: 500, 
             boxShadow: 'none',
-            '&:hover': {
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }
+            '&:hover': { boxShadow: '0 2px 4px rgba(0,0,0,0.1)' } 
           }}
         >
-          {saving ? (
-            <>
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-              Guardando...
-            </>
-          ) : (
-            'Guardar'
-          )}
+          {saving ? (<><CircularProgress size={20} sx={{ mr: 1 }} /> Guardando...</>) : 'Guardar'}
         </Button>
       </Box>
     </Grid2>
   );
 
-  if (isMobile) {
-    return (
-      <Slide direction="up" in={isOpen}>
-        <Box sx={{ 
+  // Usar Modal tanto en mobile como en desktop
+  return (
+    <Modal open={isOpen} onClose={onClose} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 500 }}>
+      <Slide direction="up" in={isOpen} timeout={500}>
+        <Box sx={{
+          borderRadius: isMobile ? "20px 20px 0 0" : "12px",
+          position: 'fixed',
+          ...(isMobile ? {
+            bottom: 0,
+            left: 0,
+            right: 0,
             width: '100%',
-            height: 'calc(100dvh - 56px)', // nuevo: usa altura dinámica del viewport real
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#f8fafc',
-            overflow: 'hidden',
-            position: 'relative',
-          '& .tox-tinymce': {
-            border: 'none',
-            borderRadius: 0,
-          },
-          '& .tox-editor-header': {
-            backgroundColor: '#f8fafc',
-            borderBottom: '1px solid #e0e0e0',
-          },
-          '& .tox-toolbar__primary': {
-            backgroundColor: '#f8fafc',
-            padding: '4px 8px',
-          },
-          '& .tox-toolbar__group': {
-            padding: '4px 0',
-          }
+            height: 'calc(100dvh - 56px)'
+          } : {
+            bottom:-5,
+            left: '',
+            transform: 'translate(-50%, -50%)',
+            width: '100vw',
+            maxWidth: '1200px',
+            height: '85vh'
+          }),
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#f8fafc',
+          overflow: 'hidden',
+          zIndex: 1300,
+          boxShadow: isMobile ? '0 -4px 20px rgba(0,0,0,0.15)' : '0 8px 32px rgba(0,0,0,0.2)',
+          '& .tox-tinymce': { border: 'none', borderRadius: 0, height: '100%' },
+          '& .tox-editor-header': { backgroundColor: '#f8fafc', borderBottom: '1px solid #e0e0e0' },
+          '& .tox-toolbar__primary': { backgroundColor: '#f8fafc', p: '4px 8px' },
+          '& .tox-toolbar__group': { p: '4px 0' }
         }}>
           {editorContent}
         </Box>
       </Slide>
-    );
-  }
-
-  return editorContent;
+    </Modal>
+  );
 };
 
 export default TextEditor;

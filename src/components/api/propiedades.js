@@ -1,26 +1,26 @@
 import axios from 'axios';
-
+import http from './http';
 const URL_PROPIEDADES = `${import.meta.env.VITE_API_URL}/propiedad`;
 
 export const PropiedadesApi =  {
   
   getPropiedades: async () => {
     try {
-      const response = await axios.get(`${URL_PROPIEDADES}/all`);
+      const response = await http.get(`${URL_PROPIEDADES}/all`);
       return { data: response.data, isLoading: false, error: null };
     } catch (error) {
       console.error('Error fetching propiedades:', error);
       return { data: null, isLoading: false, error: error.message };
     }
   },
-  buscarPropiedadesPorUsuario: (username) => axios.get(`${URL_PROPIEDADES}/${username}`),
+  buscarPropiedadesPorUsuario: (username) => http.get(`${URL_PROPIEDADES}/${username}`),
     getPropiedadesPerLocalUser : async (username) => {
       if (!username) {
         console.error('Username is required for getPropiedadesPerLocalUser');
         return { data: null, isLoading: false, error: 'Username is required' };
       }
       try {
-        const response = await axios.get(`${URL_PROPIEDADES}/enum/${username}`);
+        const response = await http.get(`${URL_PROPIEDADES}/enum/${username}`);
         return { data: response.data, isLoading: false, error: null };
       } catch (error) {
         console.error('Error fetching propiedades por usuario:', error);
@@ -31,7 +31,7 @@ export const PropiedadesApi =  {
 
   crearPropiedad:async(propiedad) => {
   try{
-    const response = await axios.post(`${URL_PROPIEDADES}/create`, propiedad);
+    const response = await http.post(`${URL_PROPIEDADES}/create`, propiedad);
     return response.data;
   }catch (error){
     console.error('Error al crear propiedad:', error);
@@ -40,11 +40,11 @@ export const PropiedadesApi =  {
     throw new Error("Error al crear propiedad", error);
     }
   },
-    buscarPropiedadPorUsuario: (username) => axios.get(`${URL_PROPIEDADES}/${username}`),
+    buscarPropiedadPorUsuario: (username) => http.get(`${URL_PROPIEDADES}/${username}`),
 
   asignarPropietario: async (propiedadId, propietarioId) => {
     try {
-      const response = await axios.put(`${URL_PROPIEDADES}/propiedad/${propiedadId}/asignar-propietario/${propietarioId}`, null, {
+      const response = await http.put(`${URL_PROPIEDADES}/propiedad/${propiedadId}/asignar-propietario/${propietarioId}`, null, {
         params: {
           propiedadId,
           propietarioId

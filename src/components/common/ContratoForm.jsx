@@ -30,7 +30,7 @@ import GaranteApi from '../api/garanteApi';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
-
+import { showAlert, showError, showInfo, showSuccess } from '../alertas/showAlert';
 const ContratoForm = () => {
   const [localUser, setLocalUser] = useState({
     name: '',
@@ -51,7 +51,6 @@ const ContratoForm = () => {
   }, []);
   const {logout, user} = useAuth();
 
-  console.log(localUser.name)
   const initialValues = {
     nombreContrato: '',
     fecha_inicio: '',
@@ -75,8 +74,7 @@ const ContratoForm = () => {
     duracion: 0,
     indiceAjuste:"",
     destino:"",
-    activo: true,
-    nombreUsuario:localUser.name
+    activo: true
   };
 
   const destinos = [
@@ -102,7 +100,6 @@ const ContratoForm = () => {
   // Obtener datos de la API solo después de que se haya cargado el usuario
   useEffect(() => {
     if (isUserLoaded && localUser.name) {
-      console.log("Fetching data with username:", localUser.name);
       fetchPropietarios();
       fetchPropiedades();
       fetchInquilinos();
@@ -112,7 +109,6 @@ const ContratoForm = () => {
 
   const fetchPropietarios = async () => {
     if (!localUser.name) {
-      console.log("Username not available for fetchPropietarios");
       return;
     }
     
@@ -141,8 +137,7 @@ const ContratoForm = () => {
 
   const fetchInquilinos = async () => {
     if (!localUser.name) {
-      console.log("Username not available for fetchInquilinos");
-      return;
+        return;
     }
     
     try {
@@ -169,7 +164,6 @@ const ContratoForm = () => {
 
   const fetchPropiedades = async () => {
     if (!localUser.name) {
-      console.log("Username not available for fetchPropiedades");
       return;
     }
     
@@ -197,7 +191,6 @@ const ContratoForm = () => {
 
   const fetchGarantes = async () => {
     if (!localUser.name) {
-      console.log("Username not available for fetchGarantes");
       return;
     }
     
@@ -234,7 +227,6 @@ const ContratoForm = () => {
     if(addGarante >= 1  ){
       setAddGarante(addGarante-1)
     }else{
-    console.log("no se puede - 0 garantes")
     }
   }
 
@@ -249,22 +241,9 @@ const ContratoForm = () => {
 
     try {
       await contratoApi.crearContrato(formattedValues);
-      console.log(formattedValues)
-      console.log('Contrato creado exitosamente');
-      Swal.fire({
-        title: '¡Éxito!',
-        text: 'Contrato creado exitosamente',
-        icon: 'success',
-      })
+      showSuccess('Contrato creado exitosamente');
     } catch (error) {
-      console.error(`Error al crear el Contrato: ${error.message}`);
-      Swal.fire({
-        title: 'Error',
-        text: 'Error al crear el contrato',
-        icon: "error",
-      })
-      console.log(values)
-      console.log(`${error.message}`)
+      showError('Error al crear el contrato');
     } finally {
       setSubmitting(false);
     }

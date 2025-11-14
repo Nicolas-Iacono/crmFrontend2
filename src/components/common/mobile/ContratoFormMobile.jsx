@@ -118,11 +118,11 @@ const ContratoFormMobile = () => {
   };
   
   // Add this useEffect to log when inquilinos state changes
-  useEffect(() => {
-    if (inquilinos && inquilinos.data) {
-      console.log("Updated inquilinos data:", inquilinos.data);
-    }
-  }, [inquilinos]);
+  // useEffect(() => {
+  //   if (inquilinos && inquilinos.data) {
+  //     // console.log("Updated inquilinos data:", inquilinos.data);
+  //   }
+  // }, [inquilinos]);
   
   const fetchPropiedades = async () => {
     try { 
@@ -191,7 +191,6 @@ const fetchMunicipal = async () => {
     if(addGarante >= 1  ){
       setAddGarante(addGarante-1)
     }else{
-    console.log("no se puede - 0 garantes")
     }
   }
 
@@ -225,9 +224,7 @@ const fetchMunicipal = async () => {
         formattedValues.garantesIds = [];
       }
 
-      console.log("Sending contract data:", formattedValues);
       const response = await contratoApi.crearContrato(formattedValues);
-      console.log("Server response:", response);
       
       Swal.fire({
         title: '¡Éxito!',

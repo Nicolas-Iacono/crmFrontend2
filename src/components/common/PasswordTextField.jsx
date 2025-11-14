@@ -23,7 +23,14 @@ export const PasswordTextField = ({ handleChange, handleBlur, values }) => {
       value={values.password}
       type={showPassword ? "text" : "password"}
       fullWidth
-      sx={{ borderRadius: 2, backgroundColor:"white", color:"#2E2C97" }}
+      sx={{
+        width: "100%",
+        color: "#2E2C97",
+        '& .MuiOutlinedInput-root': {
+          borderRadius: 12,
+          backgroundColor: 'white',
+        }
+      }}
       InputProps={{
         endAdornment: (
           <InputAdornment position="end">

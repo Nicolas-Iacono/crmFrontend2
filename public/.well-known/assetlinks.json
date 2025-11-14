@@ -1,0 +1,16 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.beweb.tuinmo",
+      "sha256_cert_fingerprints": [
+        "CA:A1:B1:A7:BB:11:F7:7D:83:D0:15:C8:9D:67:CE:DE:79:CD:97:1D:A6:DC:2A:14:71:AE:F9:07:AF:E8:32:C4",
+        "24:E5:7B:B4:4F:8E:FC:F0:CF:2E:77:45:54:8F:7C:C7:9E:CB:11:FB:A8:56:86:87:A5:5F:AC:1C:5C:E6:2D:F7"
+      ]
+    }
+  }
+]

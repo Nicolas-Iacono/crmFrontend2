@@ -5,6 +5,8 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import { useTheme } from '@mui/material';
+import http from '../api/http';
 
 const estadoColor = {
   'PENDIENTE': 'warning',
@@ -24,6 +26,7 @@ function formatFecha(fechaStr) {
 }
 
 const NotasContratoList = ({ idContrato, contrato }) => {
+  const theme = useTheme();
   const [modalOpen, setModalOpen] = useState(false);
   const [notaSeleccionada, setNotaSeleccionada] = useState(null);
   const [notas, setNotas] = useState([]);
@@ -35,10 +38,12 @@ const NotasContratoList = ({ idContrato, contrato }) => {
   useEffect(() => {
     if (!idContrato) return;
     setLoading(true);
-    fetch(`${import.meta.env.VITE_API_URL}/notas/listar`)
-      .then(res => res.json())
-      .then(data => {
-        const notasFiltradas = (Array.isArray(data) ? data : []).filter(n => n.idContrato === idContrato);
+    http
+      .get(`${import.meta.env.VITE_API_URL}/notas/listar`)
+      .then(res => {
+        const payload = res?.data;
+        const data = Array.isArray(payload) ? payload : (payload?.data && Array.isArray(payload.data) ? payload.data : []);
+        const notasFiltradas = data.filter(n => n.idContrato === idContrato);
         // Ordenar por id descendente (más nuevas primero)
         notasFiltradas.sort((a, b) => b.id - a.id);
         setNotas(notasFiltradas);
@@ -48,6 +53,29 @@ const NotasContratoList = ({ idContrato, contrato }) => {
         setError('Error al cargar las notas');
         setLoading(false);
       });
+  }, [idContrato]);
+  // Suscribirse a creación de notas para actualizar en vivo
+  useEffect(() => {
+    const handler = (e) => {
+      const nueva = e.detail;
+      if (!nueva) return;
+      if (nueva.idContrato !== idContrato) return;
+      setNotas((prev) => {
+        const next = [nueva, ...prev];
+        // ordenar por id desc si existe, sino por fechaCreacion desc
+        next.sort((a, b) => {
+          if (a.id && b.id) return b.id - a.id;
+          const ta = new Date(a.fechaCreacion || 0).getTime();
+          const tb = new Date(b.fechaCreacion || 0).getTime();
+          return tb - ta;
+        });
+        return next;
+      });
+      // si la nueva inserción dejó la página fuera de rango, volver a 1
+      setPage(1);
+    };
+    window.addEventListener('nota-creada', handler);
+    return () => window.removeEventListener('nota-creada', handler);
   }, [idContrato]);
 
   if (!idContrato) return null;
@@ -60,7 +88,7 @@ const NotasContratoList = ({ idContrato, contrato }) => {
     borderRadius: 2,
     mt: 2,
   })}>
-      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#1F2C61' }}>
+      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: theme.palette.mode === 'dark' ? 'white' : '#1F2C61' }}>
         Historial de notas
       </Typography>
       {loading ? (

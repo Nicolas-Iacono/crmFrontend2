@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import axios from 'axios';
 import { Button, TextField, Box, Grid2, Typography, FormControl, InputLabel, Select, MenuItem, useTheme, useMediaQuery } from '@mui/material';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import InquilinosApi from '../api/inquilinosApi';
 import {SchemaValidation} from '../validation/SchemaValidation'
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/GlobalAuth';
 import PropietarioApi from '../api/propietarios';
-
+import { showAlert, showError, showInfo, showSuccess } from '../alertas/showAlert';
 const InquilinoForm = () => {
   const {logout, user} = useAuth();
   const theme = useTheme();
@@ -31,7 +32,6 @@ const InquilinoForm = () => {
 
   if(propietarios.data){
     propietarios.data.forEach((propietario)=>{
-      console.log(propietario.id)
     })
   }
 
@@ -48,7 +48,6 @@ const InquilinoForm = () => {
     nacionalidad:'',
     direccionResidencial: '',
     estadoCivil:'',
-    nombreUsuario:user.username
   };
   const pronombres = [
     { value: 'El Sr.', label: 'El Sr.' },
@@ -72,34 +71,30 @@ const InquilinoForm = () => {
   // Función para manejar el envío del formulario
   const onSubmit = async (values, { setSubmitting }) => {
     try {
-      await InquilinosApi.crearInquilino(values);
-      console.log('Inquilino creado exitosamente');
-      Swal.fire({
-        title: '¡Éxito!',
-        text: 'Inquilino creado exitosamente',
-        icon: 'success',
-      })
-      // Aquí puedes agregar una acción para redirigir o mostrar un mensaje de éxito
+      const onlyDigits = (v) => (v == null ? '' : String(v).replace(/\D/g, ''));
+      const processed = {
+        ...values,
+        dni: values.dni ? parseInt(onlyDigits(values.dni), 10) : values.dni,
+        cuit: values.cuit ? parseInt(onlyDigits(values.cuit), 10) : values.cuit,
+        telefono: values.telefono ? parseInt(onlyDigits(values.telefono), 10) : values.telefono,
+      };
+      await InquilinosApi.crearInquilino(processed);
+      showSuccess('Inquilino creado exitosamente');
     } catch (error) {
       console.error(`Error al crear el inquilino: ${error.message}` );
-      // Muestra el error en el frontend si es necesario
-      Swal.fire({
-        title: 'Error',
-        text: 'Error al crear el inquilino',
-        icon: "error",
-      })
+      showError('Error al crear el inquilino');
     } finally {
-      setSubmitting(false); // Desactiva el estado de "submitting"
+      setSubmitting(false);
     }
   };
   
 
   return (
     <Box sx={{ 
-      p: 3, 
       bgcolor: 'background.default',
       color: 'text.primary',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      width: '100%',
     }}>
       <Typography 
         variant="h4" 
@@ -119,7 +114,7 @@ const InquilinoForm = () => {
         validationSchema={SchemaValidation.inquilinoValidation}
         onSubmit={onSubmit}
       >
-        {({ values, handleChange, handleBlur }) => (
+        {({ values, handleChange, handleBlur, setFieldValue }) => (
           <Form style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Grid2 
               container 
@@ -141,31 +136,30 @@ const InquilinoForm = () => {
                   maxWidth: '500px',
                   mx: 'auto',
                   '& .MuiTextField-root': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'background.paper',
-                    borderRadius: 1,
-                    '& .MuiInputBase-input': {
-                      color: 'text.primary'
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'text.secondary'
-                    },
+                    bgcolor: 'transparent',
+                    borderRadius: 0,
+                    '& .MuiInputBase-input': { color: 'text.primary' },
+                    '& .MuiInputLabel-root': { color: 'text.secondary' },
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
                     }
                   },
                   '& .MuiFormControl-root': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'background.paper',
-                    borderRadius: 1,
-                    '& .MuiInputBase-input': {
-                      color: 'text.primary'
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'text.secondary'
-                    },
+                    bgcolor: 'transparent',
+                    borderRadius: 0,
+                    '& .MuiInputBase-input': { color: 'text.primary' },
+                    '& .MuiInputLabel-root': { color: 'text.secondary' },
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
                     }
                   },
+                  '& .MuiOutlinedInput-root': { borderRadius: 6, overflow: 'hidden', backgroundColor: 'transparent !important' },
+                  '& .MuiOutlinedInput-root fieldset': { borderRadius: 6 },
+                  '& .MuiInputBase-root': { backgroundColor: 'transparent !important' },
+                  '& .MuiOutlinedInput-input': { backgroundColor: 'transparent !important' },
+                  '& .MuiSelect-select': { backgroundColor: 'transparent !important' },
+                  '& input': { backgroundColor: 'transparent !important', WebkitBoxShadow: '0 0 0px 1000px transparent inset' },
+                  '& input:-webkit-autofill': { WebkitBoxShadow: '0 0 0px 1000px transparent inset', WebkitTextFillColor: 'inherit' },
                   '& .error-message': {
                     color: theme.palette.error.main,
                     mt: 0.5,
@@ -184,6 +178,7 @@ const InquilinoForm = () => {
                           onChange={(e) => {
                             form.setFieldValue("pronombre", e.target.value);
                           }}
+                          sx={{ borderRadius: 6, '& fieldset': { borderRadius: 6 } }}
                         >
                           {pronombres.map((option) => (
                             <MenuItem key={option.value} value={option.value}>
@@ -255,31 +250,25 @@ const InquilinoForm = () => {
                   maxWidth: '500px',
                   mx: 'auto',
                   '& .MuiTextField-root': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'background.paper',
-                    borderRadius: 1,
-                    '& .MuiInputBase-input': {
-                      color: 'text.primary'
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'text.secondary'
-                    },
+                    bgcolor: 'transparent',
+                    borderRadius: 0,
+                    '& .MuiInputBase-input': { color: 'text.primary' },
+                    '& .MuiInputLabel-root': { color: 'text.secondary' },
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
                     }
                   },
                   '& .MuiFormControl-root': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'background.paper',
-                    borderRadius: 1,
-                    '& .MuiInputBase-input': {
-                      color: 'text.primary'
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'text.secondary'
-                    },
+                    bgcolor: 'transparent',
+                    borderRadius: 0,
+                    '& .MuiInputBase-input': { color: 'text.primary' },
+                    '& .MuiInputLabel-root': { color: 'text.secondary' },
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
                     }
                   },
+                  '& .MuiOutlinedInput-root': { borderRadius: 6, overflow: 'hidden', backgroundColor: 'transparent' },
+                  '& .MuiOutlinedInput-root fieldset': { borderRadius: 6 },
                   '& .error-message': {
                     color: theme.palette.error.main,
                     mt: 0.5,
@@ -295,6 +284,11 @@ const InquilinoForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.dni}
+                    sx={{
+                      borderRadius: 6,
+                      '& fieldset': { borderRadius: 6 },
+                      '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
+                    }}
                   />
                   <ErrorMessage name="dni" component="div" className="error-message" />
 
@@ -307,6 +301,11 @@ const InquilinoForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.cuit}
+                  sx={{
+                    borderRadius: 6,
+                    '& fieldset': { borderRadius: 6 },
+                    '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
+                  }}
                   />
                   <ErrorMessage name="cuit" component="div" className="error-message" />
 
@@ -319,6 +318,11 @@ const InquilinoForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.nacionalidad}
+                  sx={{
+                    borderRadius: 6,
+                    '& fieldset': { borderRadius: 6 },
+                    '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
+                  }}
                   />
                   <ErrorMessage name="nacionalidad" component="div" className="error-message" />
 
@@ -331,6 +335,11 @@ const InquilinoForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.direccionResidencial}
+                  sx={{
+                    borderRadius: 6,
+                    '& fieldset': { borderRadius: 6 },
+                    '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
+                  }}
                   />
                   <ErrorMessage name="direccionResidencial" component="div" className="error-message" />
 
@@ -345,6 +354,11 @@ const InquilinoForm = () => {
                           value={form.values.estadoCivil}
                           onChange={(e) => {
                             form.setFieldValue("estadoCivil", e.target.value);
+                          }}
+                          sx={{
+                            borderRadius: 6,
+                            '& fieldset': { borderRadius: 6 },
+                            '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
                           }}
                         >
                           {estadosCiviles.map((option) => (
@@ -371,11 +385,13 @@ const InquilinoForm = () => {
                 type="submit"
                 variant="contained"
                 color="primary"
+                startIcon={<PersonAddIcon />}
                 sx={{
                   minWidth: { xs: '100%', md: '200px' },
                   py: 1.5,
                   fontSize: '1rem',
                   boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                  borderRadius: 6,
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 6px 16px rgba(0,0,0,0.12)'

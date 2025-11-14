@@ -62,7 +62,6 @@ const NuevoServicio = () => {
   };
   const [idContrato, setIdContrato] = useState(null);
   const handleSubmit = (values) => {
-    console.log("Datos enviados:", values);
     alert("Formulario enviado con éxito");
   };
 

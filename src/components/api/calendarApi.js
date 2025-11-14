@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const googleApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL_2,
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
 
@@ -19,7 +19,6 @@ export const calendarApi = {
         if (calendarId) params.set("calendarId", calendarId);
     
                 const { data } = await googleApi.get(`/google/calendar/events?${params.toString()}`);
-       console.log("calendario data",data);
                 return data; // array de eventos mapeados por tu servicio
       },
       createEvent: async (eventData) => {

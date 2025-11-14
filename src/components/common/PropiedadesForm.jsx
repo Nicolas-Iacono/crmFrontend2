@@ -8,9 +8,10 @@ import { SchemaValidation } from "../validation/SchemaValidation";
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import PropietarioApi from '../api/propietarios';
+import http from '../api/http';
 import SearchIcon from '@mui/icons-material/Search';
 import { useTheme } from '@mui/material/styles';
-
+import { showAlert, showError, showInfo, showSuccess } from '../alertas/showAlert';
 const PropiedadesForm = () => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -41,7 +42,7 @@ const PropiedadesForm = () => {
   useEffect(() => {
   const fetchPropietarios = async () => {
     try {
-        const response = await PropietarioApi.buscarPropietarioPorUsuario(user.name);
+        const response = await http.get(`${import.meta.env.VITE_API_URL}/propietario/me`);
         const propietariosObtenidos = Array.isArray(response.data) 
         ? response.data 
         : (response.data?.data && Array.isArray(response.data.data)) 
@@ -56,7 +57,6 @@ const PropiedadesForm = () => {
     fetchPropietarios();
   }, [user]);
 
-  console.log(propietarios)
   const initialValues = {
     direccion: '',
     localidad: '',
@@ -65,10 +65,8 @@ const PropiedadesForm = () => {
     disponibilidad: false,
     tipo: "",
     inventario: "",
-    id_propietario: '',
-    nombreUsuario:user.name
+    id_propietario: ''
   };
-  console.log(user.name)
   const tipos = [
     { value: 'PH', label: 'PH' },
     { value: 'Casa de material', label: 'Casa de material' },
@@ -89,22 +87,12 @@ const PropiedadesForm = () => {
         nombreUsuario: user.name || localStorage.getItem("username") || ""
       };
       
-      console.log('Enviando datos al servidor:', JSON.stringify(dataToSend, null, 2));
       await PropiedadesApi.crearPropiedad(dataToSend);
-      console.log('Propiedad creada exitosamente');
-      Swal.fire({
-        title: '¡Éxito!',
-        text: 'Propiedad creada exitosamente',
-        icon: 'success',
-      });
+      showSuccess('Propiedad creada exitosamente');
       navigate("/propiedades")
     } catch (error) {
       console.error(`Error al crear la propiedad: ${error.message}`);
-      Swal.fire({
-        title: 'Error',
-        text: 'Error al crear la propiedad',
-        icon: "error",
-      });
+      showError('Error al crear la propiedad');
     } finally {
       setSubmitting(false);
     }
@@ -162,36 +150,33 @@ const PropiedadesForm = () => {
                 maxWidth: '500px',
                 mx: 'auto',
                 '& .MuiTextField-root': {
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'background.paper',
-                  borderRadius: 1,
-                  '& .MuiInputBase-input': {
-                    color: 'text.primary'
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'text.secondary'
-                  },
+                  bgcolor: 'transparent',
+                  borderRadius: 0,
+                  '& .MuiInputBase-input': { color: 'text.primary' },
+                  '& .MuiInputLabel-root': { color: 'text.secondary' },
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
                   }
                 },
                 '& .MuiFormControl-root': {
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'background.paper',
-                  borderRadius: 1,
-                  '& .MuiInputBase-input': {
-                    color: 'text.primary'
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'text.secondary'
-                  },
+                  bgcolor: 'transparent',
+                  borderRadius: 0,
+                  '& .MuiInputBase-input': { color: 'text.primary' },
+                  '& .MuiInputLabel-root': { color: 'text.secondary' },
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
                   }
                 },
+                '& .MuiOutlinedInput-root': { borderRadius: 6, overflow: 'hidden' },
+                '& .MuiOutlinedInput-root fieldset': { borderRadius: 6 },
                 '& .error-message': {
                   color: theme.palette.error.main,
                   mt: 0.5,
                   fontSize: '0.75rem'
-                }
+                },
+                '& .MuiOutlinedInput-root': { borderRadius: 6 },
+                '& .MuiOutlinedInput-root fieldset': { borderRadius: 6 },
+                '& .MuiButton-root': { borderRadius: 6 }
               }}>
                 {/* Campos del formulario */}
                 <Box sx={{ marginTop: ".5rem" }}>
@@ -209,7 +194,8 @@ const PropiedadesForm = () => {
                     
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
-                      
+                      borderRadius: 6,
+                      '& fieldset': { borderRadius: 6 },
                       }
                     }}
                   />
@@ -228,10 +214,12 @@ const PropiedadesForm = () => {
                   sx={{ 
                 
                     
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                    
-                    }
+                   
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      borderRadius: 6,
+                      '& fieldset': { borderRadius: 6 },
+                      }
                   }}
                 />
                 <ErrorMessage name="localidad" component="div" style={{ color: 'red' }} />
@@ -249,10 +237,12 @@ const PropiedadesForm = () => {
                   sx={{ 
                 
                     
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
                     
-                    }
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      borderRadius: 6,
+                      '& fieldset': { borderRadius: 6 },
+                      }
                   }}
                 />
                 <ErrorMessage name="partido" component="div" style={{ color: 'red' }} />
@@ -270,10 +260,12 @@ const PropiedadesForm = () => {
                   sx={{ 
                 
                     
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                    
-                    }
+                   
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      borderRadius: 6,
+                      '& fieldset': { borderRadius: 6 },
+                      }
                   }}
                 />
                 <ErrorMessage name="provincia" component="div" style={{ color: 'red' }} />
@@ -298,12 +290,14 @@ const PropiedadesForm = () => {
                             }}
                             sx={{ 
                               mb: 2,
-                              borderRadius: '8px',
+                             
                               
-                              '& .MuiOutlinedInput-root': {
-                                borderRadius: '8px',
-                              
-                              }
+                             
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      borderRadius: 6,
+                      '& fieldset': { borderRadius: 6 },
+                      }
                             }}>
                             {tipos.map((option) => (
                               <MenuItem key={option.value} value={option.value} >
@@ -327,7 +321,7 @@ const PropiedadesForm = () => {
                           variant="outlined"
                           value={searchTermPropietario}
                           onChange={(e) => setSearchTermPropietario(e.target.value)}
-                          sx={{ mb: 2, width: "90%", '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                          sx={{ mb: 2, width: "90%", '& .MuiOutlinedInput-root': { borderRadius: 6 }, '& fieldset': { borderRadius: 6 } }}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start"><SearchIcon color="primary" /></InputAdornment>
@@ -345,7 +339,7 @@ const PropiedadesForm = () => {
                             onChange={handleChange}
                             onBlur={handleBlur}
                             value={values.id_propietario}
-                            sx={{ width: "90%", margin: "0 auto", '& .MuiOutlinedInput-root': { borderRadius: '8px' }, '& .MuiSelect-select': { padding: '12px' } }}
+                            sx={{ width: "90%", margin: "0 auto", '& .MuiOutlinedInput-root': { borderRadius: 6 }, '& fieldset': { borderRadius: 6 }, '& .MuiSelect-select': { padding: '12px' } }}
                           >
                             {propietarios ?
                               (propietarios.data?.length > 0 ? (
@@ -412,7 +406,7 @@ const PropiedadesForm = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.inventario}
-                    sx={{ 
+                    sx={{
                 
                     
                       '& .MuiOutlinedInput-root': {
@@ -436,7 +430,7 @@ const PropiedadesForm = () => {
                 </Box>
 
                 <Box sx={{ marginTop: "1rem" ,marginBottom:"4rem"}}>
-                  <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
+                  <Button type="submit" variant="contained" color="primary" disabled={isSubmitting} sx={{ borderRadius: 6 }}>
                   {isSubmitting ? "Creando propiedad..." : "Crear propiedad"}
                   </Button>
                 </Box>

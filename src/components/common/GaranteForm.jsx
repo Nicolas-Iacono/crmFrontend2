@@ -10,7 +10,7 @@ import { CollectionsOutlined } from '@mui/icons-material';
 import ContratoApi from '../api/contratoApi';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-
+import { showAlert, showError, showInfo, showSuccess } from '../alertas/showAlert';
 const GaranteForm = ({ onSuccess }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -62,7 +62,7 @@ const GaranteForm = ({ onSuccess }) => {
 
     if(contratos.data){
       contratos.data.forEach((contrato) => {
-        console.log(contrato);
+      
       })
     }
 
@@ -112,47 +112,28 @@ const GaranteForm = ({ onSuccess }) => {
     { value: 2, label: 'Recibo de sueldo'}
   ]
   const onSubmit = async (values, { setSubmitting }) => {
-    console.log("Valores enviados:", values);
-
-    // Convert numeric fields to integers to avoid backend parsing errors
+    // Sanitize formatted fields (remove dots/hyphens) and convert to integers where applicable
+    const onlyDigits = (v) => (v == null ? '' : String(v).replace(/\D/g, ''));
     const processedValues = {
       ...values,
-      // Convert numeric fields that should be integers
-      dni: values.dni ? parseInt(values.dni, 10) || values.dni : values.dni,
-      telefono: values.telefono ? parseInt(values.telefono, 10) || values.telefono : values.telefono,
-      cuit: values.cuit ? parseInt(values.cuit, 10) || values.cuit : values.cuit,
-      legajo: values.legajo ? parseInt(values.legajo, 10) || values.legajo : values.legajo,
-      cuitEmpresa: values.cuitEmpresa ? parseInt(values.cuitEmpresa, 10) || values.cuitEmpresa : values.cuitEmpresa,
-      partidaInmobiliaria: values.partidaInmobiliaria ? parseInt(values.partidaInmobiliaria, 10) || values.partidaInmobiliaria : values.partidaInmobiliaria,
+      dni: values.dni ? parseInt(onlyDigits(values.dni), 10) : values.dni,
+      telefono: values.telefono ? parseInt(onlyDigits(values.telefono), 10) : values.telefono,
+      cuit: values.cuit ? parseInt(onlyDigits(values.cuit), 10) : values.cuit,
+      legajo: values.legajo ? parseInt(onlyDigits(values.legajo), 10) : values.legajo,
+      cuitEmpresa: values.cuitEmpresa ? parseInt(onlyDigits(values.cuitEmpresa), 10) : values.cuitEmpresa,
+      partidaInmobiliaria: values.partidaInmobiliaria ? parseInt(onlyDigits(values.partidaInmobiliaria), 10) : values.partidaInmobiliaria,
     };
-
-    console.log("Valores procesados:", processedValues);
 
     try {
       await GarantesApi.crearGarante(processedValues);
-      console.log('Garante creado exitosamente');
-      Swal.fire({
-        title: '¡Éxito!',
-        text: 'Garante creado exitosamente',
-        icon: 'success',
-      })
-      console.log("Valores enviados:", processedValues);
+      showSuccess('Garante creado exitosamente');
       
       // Close modal if onSuccess callback is provided
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
-      console.log(processedValues)
-      console.error(`Error al crear el garante: ${error.message}`);
-      Swal.fire({
-        title: 'Error',
-        text: 'Error al crear el garante',
-        icon: "error",
-      })
-      console.log("Valores enviados:", processedValues);
-
-      console.log(`${error.message}`)
+      showError('Error al crear el   garante');
     } finally {
       setSubmitting(false);
     }
@@ -191,7 +172,7 @@ const GaranteForm = ({ onSuccess }) => {
         enableReinitialize >
     
 
-        {({ values, handleChange, handleBlur, isSubmitting }) => (
+        {({ values, handleChange, handleBlur, setFieldValue, isSubmitting }) => (
           <Form sx={{width:"100%" }}>
 
             <Grid2 sx={{width:"100%", display:"flex",flexDirection:"column", justifyContent:"center", alignItems:"center" }}>
@@ -282,29 +263,49 @@ const GaranteForm = ({ onSuccess }) => {
                   <ErrorMessage name="email" component="div" style={{ color: 'red' }} />
                 </Box>
                 <Box sx={{ marginTop: '.5rem' }}>
-                  <Field
-                    name="dni"
-                    as={TextField}
-                    label="DNI"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.dni}
-                  />
+                  <Field name="dni">
+                    {({ field }) => (
+                      <TextField
+                        {...field}
+                        label="DNI"
+                        variant="outlined"
+                        fullWidth
+                        value={field.value}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                          setFieldValue('dni', formatted);
+                        }}
+                        onBlur={handleBlur}
+                      />
+                    )}
+                  </Field>
                   <ErrorMessage name="dni" component="div" style={{ color: 'red' }} />
                 </Box>
                 <Box sx={{ marginTop: '.5rem' }}>
-                  <Field
-                    name="cuit"
-                    as={TextField}
-                    label="CUIT"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.cuit}
-                  />
+                  <Field name="cuit">
+                    {({ field }) => (
+                      <TextField
+                        {...field}
+                        label="CUIT"
+                        variant="outlined"
+                        fullWidth
+                        value={field.value}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          const a = digits.slice(0, 2);
+                          const b = digits.slice(2, 10);
+                          const c = digits.slice(10, 11);
+                          const formatted = [a, b, c]
+                            .map((seg, idx) => (idx === 0 ? seg : seg ? '-' + seg : ''))
+                            .join('')
+                            .replace(/^-/, '');
+                          setFieldValue('cuit', formatted);
+                        }}
+                        onBlur={handleBlur}
+                      />
+                    )}
+                  </Field>
                   <ErrorMessage name="dni" component="div" style={{ color: 'red' }} />
                 </Box>
                 <Box sx={{ marginTop: '.5rem' }}>

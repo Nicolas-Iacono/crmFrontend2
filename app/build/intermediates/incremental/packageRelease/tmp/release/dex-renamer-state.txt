@@ -1,0 +1,4 @@
+#Thu Nov 13 14:09:34 ART 2025
+base.0=C\:\\Users\\nico_\\Archivos descargados\\compuNico\\crmNEW\\crmFrontend2\\app\\build\\intermediates\\dex\\release\\minifyReleaseWithR8\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

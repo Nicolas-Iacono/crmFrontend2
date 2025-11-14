@@ -1,135 +1,140 @@
-// sw.js — Tuinmo (Opción A: network-first para /api/contratos)
-// ====== CONFIG ======
-const SW_VERSION       = "tuinmo-sw-v2"; // <-- cambiá esto en cada release del SW
-const STATIC_CACHE     = `${SW_VERSION}-static`;
-const RUNTIME_CACHE    = `${SW_VERSION}-runtime`;
-const CONTRACTS_CACHE  = `${SW_VERSION}-contratos`;
+// ===============================
+//  SW — Tuinmo (versión estable)
+// ===============================
+const SW_VERSION = "tuinmo-sw-v10";
+const STATIC_CACHE = `${SW_VERSION}-static`;
+const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
+const CONTRACTS_CACHE = `${SW_VERSION}-contracts`;
 
-const API_PREFIX       = "/api";
-const CONTRACTS_API    = "/api/contratos";
-const LOGIN_PATH       = "/login";
+const API_PREFIX = "/api";
+const CONTRACTS_API = "/api/contratos";
 
-// Precache básico (shell + manifest + íconos)
+// ⚠️ NO precachear index.html (Causa pantalla blanca)
 const PRECACHE_URLS = [
-  "/",
-  "/index.html",       // si tu server la expone directamente
   "/manifest.json",
-  "/assets/logoInmo192.png",
-  "/assets/logoInmo512.png"
+  "/logoInmo192.png",
+  "/logoInmo512.png",
 ];
 
-// ====== INSTALL ======
+// ==========================
+// INSTALL
+// ==========================
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)));
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
+  );
+
+  self.skipWaiting(); // activar nueva versión ya mismo
 });
 
-// ====== ACTIVATE ======
+// ==========================
+// ACTIVATE
+// ==========================
 self.addEventListener("activate", (event) => {
-  event.waitUntil((async () => {
-    if (self.registration.navigationPreload) {
-      try { await self.registration.navigationPreload.enable(); } catch {}
-    }
-    const keep = new Set([STATIC_CACHE, RUNTIME_CACHE, CONTRACTS_CACHE]);
-    const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => !keep.has(k)).map((k) => caches.delete(k)));
-    await self.clients.claim();
-  })());
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((key) => !key.startsWith(SW_VERSION))
+          .map((key) => caches.delete(key))
+      );
+
+      await self.clients.claim();
+    })()
+  );
 });
 
-// ====== HELPERS ======
-const isSameOrigin = (url) => new URL(url, self.location.origin).origin === self.location.origin;
-const isAssetPath = (p) => /\.(?:js|css|png|jpg|jpeg|svg|webp|ico|woff2?|ttf|eot|map)$/.test(p);
+// ==========================
+// HELPERS
+// ==========================
+const isSameOrigin = (url) =>
+  new URL(url, self.location.origin).origin === self.location.origin;
 
-// Navegaciones (HTML): network-first con fallback al shell (SPA)
-async function handleNavigationRequest(request) {
-  const url = new URL(request.url);
-  if (url.pathname.startsWith(LOGIN_PATH)) return fetch(request);
+const isAssetPath = (p) =>
+  /\.(js|css|png|jpg|jpeg|svg|webp|ico|woff2?|ttf|eot)$/.test(p);
 
-  try {
-    const preload = await eventPreloadResponse();
-    if (preload) return preload;
-  } catch {}
-
+// ==========================
+// NAVIGATION — NetworkFirst
+// ==========================
+async function handleNavigation(request) {
   try {
     return await fetch(request);
   } catch {
     const cache = await caches.open(STATIC_CACHE);
-    return (await cache.match("/index.html")) || (await cache.match("/")) || Response.error();
+    return (
+      (await cache.match("/index.html")) ||
+      new Response("Offline", { status: 503 })
+    );
   }
 }
 
-async function eventPreloadResponse() {
-  try {
-    // @ts-ignore
-    if (typeof event !== "undefined" && event.preloadResponse) {
-      // @ts-ignore
-      return await event.preloadResponse;
-    }
-  } catch {}
-  return null;
-}
-
-// Assets: stale-while-revalidate
-async function handleAssetRequest(request) {
+// ==========================
+// ASSETS — Stale-While-Revalidate
+// ==========================
+async function handleAsset(request) {
   const cache = await caches.open(RUNTIME_CACHE);
+
   const cached = await cache.match(request);
-  const networkPromise = fetch(request).then((res) => {
-    if (res && res.status === 200) cache.put(request, res.clone());
-    return res;
-  });
-  return cached || networkPromise;
+  const network = fetch(request)
+    .then((res) => {
+      if (res.ok) cache.put(request, res.clone());
+      return res;
+    })
+    .catch(() => null);
+
+  return cached || network;
 }
 
-// API /api/contratos: NETWORK-FIRST con fallback a caché
-async function networkFirstJSON(request) {
+// ==========================
+// API /contratos — NetworkFirst
+// ==========================
+async function handleContracts(request) {
   const cache = await caches.open(CONTRACTS_CACHE);
   try {
     const res = await fetch(request);
     if (res.ok) cache.put(request, res.clone());
     return res;
   } catch {
-    const cached = await cache.match(request);
-    return cached || new Response(JSON.stringify({ error: "offline" }), { status: 503 });
+    return (
+      (await cache.match(request)) ||
+      new Response(JSON.stringify({ offline: true }), { status: 503 })
+    );
   }
 }
 
-// ====== FETCH ======
+// ==========================
+// FETCH
+// ==========================
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  const url = new URL(request.url);
+
+  // Solo GET
   if (request.method !== "GET") return;
 
-  const url = new URL(request.url);
+  // Misma origin
   if (!isSameOrigin(url)) return;
 
-  // /api/contratos → network-first
+  // API /contratos
   if (url.pathname.startsWith(CONTRACTS_API)) {
-    event.respondWith(networkFirstJSON(request));
+    event.respondWith(handleContracts(request));
     return;
   }
 
-  // Otras APIs: no cachear (van directas a la red)
+  // Otras API
   if (url.pathname.startsWith(API_PREFIX)) {
     return;
   }
 
-  // Navegaciones (HTML)
+  // Navegación (HTML)
   if (request.mode === "navigate") {
-    event.respondWith(handleNavigationRequest(request));
+    event.respondWith(handleNavigation(request));
     return;
   }
 
-  // Assets estáticos
+  // Assets
   if (isAssetPath(url.pathname)) {
-    event.respondWith(handleAssetRequest(request));
-  }
-});
-
-// ====== Mensajes (ej. limpiar cache de contratos al logout) ======
-self.addEventListener("message", async (event) => {
-  const { type } = event.data || {};
-  if (type === "CLEAR_CONTRACTS_CACHE") {
-    await caches.delete(CONTRACTS_CACHE);
-    event.ports?.[0]?.postMessage?.({ ok: true });
+    event.respondWith(handleAsset(request));
   }
 });

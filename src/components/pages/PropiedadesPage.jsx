@@ -24,7 +24,7 @@ import {
   Chip,
   Tooltip,
   Fab,
-  Pagination,
+  Button,
   CardMedia
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -38,12 +38,17 @@ import MapIcon from '@mui/icons-material/Map';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import ShareIcon from '@mui/icons-material/Share';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import "../styles/garantesPage.css";
 import PropertiesTour from '../common/tour/PropertiesTour';
+import http from '../api/http';
+import { showSuccess, showError, showWarning } from '../alertas/showAlert';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
 const PropiedadesPage = () => {
   // Estado para el modal de detalle de propiedad
@@ -79,7 +84,7 @@ const PropiedadesPage = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      await axios.post(`/api/propiedad/${selectedPropId}/imagenes`, formData, {
+      await http.post(`/api/propiedad/${selectedPropId}/imagenes`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setUploadMsg('Imagen subida correctamente');
@@ -121,8 +126,8 @@ const PropiedadesPage = () => {
   const fetchPropiedades = async () => {
     try {
       setIsLoading(true);
-      // Corrigiendo URL para usar /all como en las otras páginas
-      const result = await axios.get(`${import.meta.env.VITE_API_URL}/propiedad/${user.name}`);
+      // Usar endpoint basado en el usuario autenticado
+      const result = await http.get(`${import.meta.env.VITE_API_URL}/propiedad/me`);
       
       // Extraer los datos de la respuesta siguiendo el patrón común de las otras páginas
       let propiedadesData = [];
@@ -161,7 +166,6 @@ const PropiedadesPage = () => {
 
     if (result.isConfirmed) {
       try {
-        console.log("🚀 [PRODUCCION DEBUG] Eliminando propiedad:", id);
         await axios.delete(`${import.meta.env.VITE_API_URL}/propiedad/delete/${id}`);
         await Swal.fire({
           toast: true,
@@ -183,11 +187,7 @@ const PropiedadesPage = () => {
         );
       } catch (error) {
         console.error("Error al eliminar propiedad: ", error.response ? error.response.data : error.message);
-        Swal.fire(
-          'Error',
-          'No se pudo eliminar la propiedad.',
-          'error'
-        );
+          showError('No se pudo eliminar la propiedad.');
       }
     }
   };
@@ -237,15 +237,17 @@ const PropiedadesPage = () => {
   }, [propiedadesFiltradas, itemsPerPage]);
 
   // Manejar el cambio de página
-  const handlePageChange = (event, newPage) => {
-    setPage(newPage);
-    // Scroll al inicio de la lista cuando cambia la página
+  const goPrevPage = () => {
+    setPage((p) => Math.max(1, p - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const goNextPage = () => {
+    setPage((p) => Math.min(totalPages || 1, p + 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handler para borrar imagen usando la API
   const handleDeleteImagen = async (img, idx) => {
-    console.log('BORRAR', img, idx, propiedadImagenesId);
     if (!propiedadImagenesId || !img?.idImage) return;
     const confirmDelete = window.confirm('¿Estás seguro que deseas eliminar esta imagen?');
     if (!confirmDelete) return;
@@ -283,8 +285,118 @@ const PropiedadesPage = () => {
       setUploadingId(null);
     }
   };
+
+  // Handler para compartir propiedad
+  const handleSharePropiedad = async (propiedad) => {
+    try {
+      // Crear texto con toda la información de la propiedad
+      const propiedadInfo = `🏠 PROPIEDAD DISPONIBLE
+
+📍 Dirección: ${propiedad.direccion}
+🌆 Localidad: ${propiedad.localidad}
+🗺️ Partido: ${propiedad.partido}, ${propiedad.provincia}
+👤 Agente: ${propiedad.usuarioDtoSalida ? propiedad.usuarioDtoSalida.username : 'No asignado'}
+🏷️ Tipo: ${propiedad.tipo || propiedad.tipoPropiedad || 'No especificado'}
+✅ Estado: ${propiedad.disponibilidad ? 'Disponible' : 'Alquilado'}
+
+${propiedad.inventario ? `📝 Inventario: ${propiedad.inventario}` : ''}`;
+
+
+      // Preguntar qué quiere compartir
+      const result = await Swal.fire({
+        title: '¿Cómo quieres compartir?',
+        text: propiedad.imagenes && propiedad.imagenes.length > 0 ? 
+          `Se encontraron ${propiedad.imagenes.length} imagen(es)` : 
+          'No hay imágenes disponibles',
+        icon: 'question',
+        showCancelButton: true,
+        showDenyButton: propiedad.imagenes && propiedad.imagenes.length > 0,
+        confirmButtonText: 'Solo texto',
+        denyButtonText: 'Texto + Imágenes',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#28a745',
+        denyButtonColor: '#007bff',
+        cancelButtonColor: '#6c757d'
+      });
+
+      if (result.isConfirmed) {
+        // Solo texto
+        if (navigator.share) {
+          await navigator.share({
+            title: `Propiedad en ${propiedad.direccion}`,
+            text: propiedadInfo
+          });
+        } else {
+          await navigator.clipboard.writeText(propiedadInfo);
+          Swal.fire({
+            icon: 'success',
+            title: '¡Texto copiado!',
+            text: 'La información se copió al portapapeles',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+      } else if (result.isDenied) {
+        // Texto + Imágenes
+        try {
+          // Primero compartir solo el texto
+          await navigator.share({
+            title: `Propiedad en ${propiedad.direccion}`,
+            text: propiedadInfo
+          });
+
+          // Luego preguntar si quiere compartir las imágenes por separado
+          const shareImages = await Swal.fire({
+            title: 'Compartir imágenes',
+            text: '¿Quieres compartir las imágenes por separado?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, compartir imágenes',
+            cancelButtonText: 'No, solo el texto'
+          });
+
+          if (shareImages.isConfirmed) {
+            const imageFiles = [];
+            for (let i = 0; i < propiedad.imagenes.length; i++) { // Compartir todas las imágenes
+              const imagen = propiedad.imagenes[i];
+              if (imagen?.imageUrl) {
+                try {
+                  const response = await fetch(imagen.imageUrl);
+                  const blob = await response.blob();
+                  const file = new File([blob], `propiedad_${i + 1}.jpg`, { type: blob.type });
+                  imageFiles.push(file);
+                } catch (error) {
+                }
+              }
+            }
+            
+            if (imageFiles.length > 0) {
+              await navigator.share({
+                title: `Imágenes - ${propiedad.direccion}`,
+                files: imageFiles
+              });
+            }
+          }
+        } catch (shareError) {
+          // Fallback: copiar texto al portapapeles
+          await navigator.clipboard.writeText(propiedadInfo);
+            Swal.fire({
+            icon: 'info',
+            title: 'Texto copiado',
+            text: 'No se pudo usar el compartir nativo. El texto se copió al portapapeles.',
+            timer: 3000
+          });
+        }
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Error al compartir:', error);
+        showError('No se pudo compartir la propiedad');
+      }
+    }
+  };
+
 useEffect(() => {
-  console.log("🧪 [PRODUCCION DEBUG] Entorno:", process.env.NODE_ENV);
 }, [propiedades]);
   return (
     <>
@@ -387,9 +499,9 @@ useEffect(() => {
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ 
             mb: 3,
-            width: { xs: '90%', sm: '100%' },
+            width: { xs: '100%', sm: '100%' },
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-            borderRadius: 1,
+            borderRadius: 6, '& fieldset': { borderRadius: 6 },
             '& .MuiOutlinedInput-root': {
               borderRadius: '8px',
               '&:hover .MuiOutlinedInput-notchedOutline': {
@@ -558,6 +670,30 @@ useEffect(() => {
             </IconButton>
           </span>
         </Tooltip>
+
+        {/* Botón compartir propiedad */}
+        <Tooltip title="Compartir propiedad">
+          <span>
+            <IconButton
+              size="small"
+              sx={{
+                position: 'absolute',
+                bottom: 8,
+                right: 8,
+                bgcolor: 'rgba(255,255,255,0.7)',
+                boxShadow: 1,
+                zIndex: 2,
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSharePropiedad(propiedad);
+              }}
+            >
+              <ShareIcon color="success" fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
         {/* Input file oculto global */}
         {uploadingId === propiedad.id && (
           <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
@@ -571,8 +707,20 @@ useEffect(() => {
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
-          <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary', fontSize: 16 }}>
-            Sin imagen
+          <Box sx={{ 
+            width: '100%', 
+            height: '100%', 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            bgcolor: '#e5e7eb',
+            color: '#6b7280'
+          }}>
+            <HomeIcon sx={{ fontSize: 48, mb: 1, color: '#9ca3af' }} />
+            <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
+              Sin imagen
+            </Typography>
           </Box>
         )}
       </Box>
@@ -661,18 +809,27 @@ useEffect(() => {
                         width:"100%",
                         display:"flex",
                         justifyContent: { xs: 'center', sm: 'flex-start' },
+                        flewWrap:"wrap",
                         ml: { xs: -1, sm: -2 },
                         gap: '1rem 4rem',
                         height: 'auto',
                       }}
                     >
                       {propiedadesPaginadas.map((propiedad, index) => (
-                        <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`}>
+                        <Grid2 item key={propiedad?.id || `fallback-${Math.random()}` } sx={{ width: '30%', display:"flex",
+                          alignItems:"center",
+                          justifyContent:"center",
+                          flexDirection:"column",
+                          maxWidth:"40rem"
+                          
+                        }}>
                           <Card
                             data-tour={index === 0 ? 'propiedades-card' : undefined}
                             sx={{
                               mb: 2,
-                              width: { xs: '19rem', sm: '20rem' },
+                              width: '68%',
+                              minWidth: '20rem',
+                              height: '23rem',
                               borderRadius: 3,
                               overflow: 'hidden',
                               bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
@@ -768,8 +925,20 @@ useEffect(() => {
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 />
                               ) : (
-                                <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary', fontSize: 16 }}>
-                                  Sin imagen
+                                <Box sx={{ 
+                                  width: '100%', 
+                                  height: '100%', 
+                                  display: 'flex', 
+                                  flexDirection: 'column',
+                                  alignItems: 'center', 
+                                  justifyContent: 'center', 
+                                  bgcolor: '#e5e7eb',
+                                  color: '#6b7280'
+                                }}>
+                                  <HomeIcon sx={{ fontSize: 48, mb: 1, color: '#9ca3af' }} />
+                                  <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
+                                    Sin imagen
+                                  </Typography>
                                 </Box>
                               )}
                             </Box>
@@ -834,36 +1003,17 @@ useEffect(() => {
             {/* Componente de paginación */}
             {propiedadesFiltradas.length > 0 && (
               <Box sx={{ 
-                
-                mt: 4, 
+                mt: 4,
+                mb: 6, 
                 display: 'flex', 
                 justifyContent: 'center',
                 width: '100%'
               }}>
-                <Pagination 
-                  data-tour="propiedades-pagination"
-                  count={totalPages} 
-                  page={page} 
-                  onChange={handlePageChange}
-                  variant="outlined" 
-                  shape="rounded"
-                  color="primary"
-                  size={isMobile ? "medium" : "large"}
-                  sx={{
-                    '& .MuiPaginationItem-root': {
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-                      color: 'text.primary',
-                      fontWeight: 500,
-                      '&:hover': {
-                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.05)',
-                      },
-                    },
-                    '& .Mui-selected': {
-                      bgcolor: theme.palette.primary.main + ' !important',
-                      color: 'white !important',
-                    }
-                  }}
-                />
+                <Box sx={{ justifyContent: 'center', width: '100%', display: 'flex', gap: 1 }}>
+                  <Button variant="outlined" onClick={goPrevPage} disabled={page <= 1} startIcon={<NavigateBeforeIcon />}>Prev</Button>
+                  <Chip label={`${page} / ${totalPages || 1}`} sx={{ px: 1 }} />
+                  <Button variant="outlined" onClick={goNextPage} disabled={page >= (totalPages || 1)} endIcon={<NavigateNextIcon />}>Next</Button>
+                </Box>
               </Box>
             )}
           </>

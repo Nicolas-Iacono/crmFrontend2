@@ -54,6 +54,9 @@ import NotasContratoList from '../common/NotasContratoList';
 import ModalContract from '../common/popUps/ModalContract';
 import EditIcon from '@mui/icons-material/Edit';
 import ContractsTour from '../common/tour/ContractsTour';
+import { showSuccess, showError, showInfo } from '../alertas/showAlert';
+import http from '../api/http';
+
 const ContratosPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -74,7 +77,7 @@ const ContratosPage = () => {
   const [contractNote, setContractNote] = useState('');
   const [contractNotes, setContractNotes] = useState({});
   const navigate = useNavigate();
-  const contractsPerPage = 3;
+  const contractsPerPage = isMobile ? 3 : 4;
 
   useEffect(() => {
     if (localStorage.getItem("username")) {
@@ -89,7 +92,8 @@ const ContratosPage = () => {
     const fetchContratos = async () => {
       if (user.name) {
         try {
-          const { data } = await contratoApi.buscarContratoPorUsuario(user.name);
+          const res = await http.get(`${import.meta.env.VITE_API_URL}/contrato/me`);
+          const data = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
           setContratos(data || []);
           
           // Recuperar notas guardadas del localStorage
@@ -111,7 +115,6 @@ const ContratosPage = () => {
   useEffect(() => {
     setCurrentPage(0); // Reset to first page when search term changes
   }, [searchTerm]);
-  console.log(contratos)
  
   const pausarContrato = async(id) => {
     try {
@@ -125,19 +128,14 @@ const ContratosPage = () => {
       fetchContratos();
     } catch (error) {
       console.error('Error al pausar contrato:', error);
-      Swal.fire({
-        title: 'Error',
-        text: 'No se pudo pausar el contrato',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+      showError('No se pudo pausar el contrato');
     }
   };
 
   const handleDeleteClick = async(id) => {
     try {
       await axios.delete(`${import.meta.env.VITE_API_URL}/contrato/delete/${id}`);
-      Swal.fire('✅ Contrato eliminado', '', 'success');
+      showSuccess('Contrato eliminado');
       
       // Remove the deleted contract from the frontend state
       const updatedContratos = contratos.filter(contrato => contrato.id !== id);
@@ -162,14 +160,14 @@ const ContratosPage = () => {
     
         if (confirmar.isConfirmed) {
           await axios.delete(`${import.meta.env.VITE_API_URL}/contrato/delete-forzado/${id}`);
-          Swal.fire('✅ Eliminado forzadamente', '', 'success');
+          showSuccess('✅ Eliminado forzadamente');
           
           // Remove the deleted contract from the frontend state after forced deletion
           const updatedContratos = contratos.filter(contrato => contrato.id !== id);
           setContratos(updatedContratos);
         }
       } else {
-        Swal.fire('❌ Error', 'No se pudo eliminar el contrato', 'error');
+        showError('No se pudo eliminar el contrato');
       }
     }}
   const handleSelectContrato = (contrato) => {
@@ -180,7 +178,6 @@ const ContratosPage = () => {
   const handleGenerateReceipt = (contratos) => {
     if (contratos && contratos.id) {
       let contratoId = contratos.id;
-      console.log("Enviando contrato a página de recibos:", contratos);
       navigate(`/recibos/${contratoId}`, { 
         state: { 
           contrato: contratos, 
@@ -189,11 +186,7 @@ const ContratosPage = () => {
       });
       setSelectedContract(contratos);
     } else {
-      Swal.fire({
-        title: 'Error',
-        text: 'No se puede acceder a los recibos de este contrato',
-        icon: 'error'
-      });
+      showError('No se puede acceder a los recibos de este contrato');
     }
   };
 
@@ -243,7 +236,19 @@ const ContratosPage = () => {
       setContractNote('');
     }
   };
-
+  const handleEditorSaved = (html) => {
+    // actualiza el seleccionado
+    setSelectedContract(prev =>
+      prev ? { ...prev, contratoPdf: html } : prev
+    );
+    // si manejás una lista base:
+    setContratos(prev =>
+      Array.isArray(prev)
+        ? prev.map(c => c.id === selectedContract?.id ? { ...c, contratoPdf: html } : c)
+        : prev
+    );
+    // si renderizás desde contratosFiltrados derivados, con que actualices la base alcanza
+  };
   const handleCloseDetailModal = () => {
     setDetailModalOpen(false);
     setSelectedContract(null);
@@ -256,26 +261,18 @@ const ContratosPage = () => {
       ...contractNotes,
       [selectedContract.id]: contractNote
     };
+
     
     setContractNotes(updatedNotes);
     localStorage.setItem('contractNotes', JSON.stringify(updatedNotes));
     
-    Swal.fire({
-      title: 'Nota guardada',
-      text: 'La nota se ha guardado correctamente',
-      icon: 'success',
-      timer: 1500,
-      showConfirmButton: false
-    });
+    showSuccess('Nota guardada');
+    
   };
 
   const handleWhatsAppClick = (phone) => {
     if (!phone) {
-      Swal.fire({
-        title: 'Error',
-        text: 'No hay número de teléfono disponible',
-        icon: 'error'
-      });
+      showError('No hay número de teléfono disponible');
       return;
     }
     
@@ -286,11 +283,7 @@ const ContratosPage = () => {
 
   const handleEmailClick = (email) => {
     if (!email) {
-      Swal.fire({
-        title: 'Error',
-        text: 'No hay correo electrónico disponible',
-        icon: 'error'
-      });
+      showError('No hay correo electrónico disponible');
       return;
     }
     
@@ -311,6 +304,7 @@ const ContratosPage = () => {
             sx={{ 
               mb: 2.5, 
               borderRadius: 3,
+              background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg,rgb(47, 51, 88) 0%,rgb(12, 12, 33) 100%)' : '#fff',
               boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
               overflow: 'visible',
               position: 'relative',
@@ -323,25 +317,30 @@ const ContratosPage = () => {
           >
             <CardContent sx={{ p: 2.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <HomeIcon sx={{ color: '#1F2C61', mr: 1.5 }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#1F2C61' }}>
+                <HomeIcon sx={{ color: theme.palette.mode === 'dark' ? 'rgb(190, 190, 190)' : '#1F2C61', mr: 1.5 }} />
+                <Typography variant="h6" sx={{ 
+                 fontWeight: 600,
+                 fontFamily:'Poppins, sans-serif',
+                 color:  theme.palette.mode === 'dark' ? 'rgb(190, 190, 190)' : '#1F2C61',
+                 }}>
                   {contrato.nombreContrato}
                 </Typography>
               </Box>
               
-              <Typography variant="body2" sx={{ mb: 1.5 }}>
+              <Typography variant="body2" sx={{ mb: 1.5, fontFamily:'Roboto, sans-serif'}}>
                 <span style={{ fontWeight: 500 }}>Dirección:</span> {contrato.propiedad?.direccion || 'No especificada'}
+
               </Typography>
               
-              <Typography variant="body2" sx={{ mb: 1.5 }}>
+              <Typography variant="body2" sx={{ mb: 1.5, fontFamily:'Roboto, sans-serif'}}>
                 <span style={{ fontWeight: 500 }}>Propietario:</span> {contrato.propietario?.nombre} {contrato.propietario?.apellido}
               </Typography>
               
-              <Typography variant="body2" sx={{ mb: 1.5 }}>
+              <Typography variant="body2" sx={{ mb: 1.5, fontFamily:'Roboto, sans-serif'}}>
                 <span style={{ fontWeight: 500 }}>Inquilino:</span> {contrato.inquilino?.nombre} {contrato.inquilino?.apellido}
               </Typography>
               
-              <Typography variant="body2" sx={{ mb: 1.5 }}>
+              <Typography variant="body2" sx={{ mb: 1.5, fontFamily:'Roboto, sans-serif'}}>
                 <span style={{ fontWeight: 500 }}>Monto:</span> ${contrato.montoAlquiler?.toLocaleString() || '0'}
               </Typography>
               
@@ -350,8 +349,8 @@ const ContratosPage = () => {
                   <IconButton 
                     onClick={() => handleOpenDetailModal(contrato)}
                     sx={{ 
-                      color: '#1F2C61', 
-                      bgcolor: 'rgba(25, 118, 210, 0.08)',
+                      color:  theme.palette.mode === 'dark' ? 'rgb(241, 241, 241)' :  ' #1F2C61', 
+                      background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg,rgb(132, 63, 181) 0%,rgb(38, 53, 185) 100%)' : 'rgba(31, 44, 97, 0.29)',
                       '&:hover': { bgcolor: 'rgba(25, 118, 210, 0.12)' } 
                     }}
                   >
@@ -363,8 +362,8 @@ const ContratosPage = () => {
                       <IconButton 
                         onClick={() => handleSelectContrato(contrato)}
                         sx={{ 
-                          color: '#C22961', 
-                          bgcolor: 'rgba(194, 41, 97, 0.08)',
+                          color:  theme.palette.mode === 'dark' ? 'rgb(241, 241, 241)' :  ' #C22961', 
+                          background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg,rgb(225, 185, 9) 0%,rgb(185, 38, 38) 100%)' : 'rgba(194, 41, 97, 0.34)',
                           '&:hover': { bgcolor: 'rgba(194, 41, 97, 0.12)' } 
                         }}
                       >
@@ -378,16 +377,12 @@ const ContratosPage = () => {
                       if (contrato && contrato.id) {
                         navigate(`/recibos/${contrato.id}`);
                       } else {
-                        Swal.fire({
-                          title: 'Error',
-                          text: 'No se puede acceder a los recibos de este contrato',
-                          icon: 'error'
-                        });
+                        showError('No se puede acceder a los recibos de este contrato');
                       }
                     }}
                     sx={{ 
-                      color: '#4CAF50', 
-                      bgcolor: 'rgba(76, 175, 80, 0.08)',
+                      color:  theme.palette.mode === 'dark' ? 'rgb(241, 241, 241)' :  ' #4CAF50', 
+                      background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg,rgb(31, 200, 39) 0%,rgb(18, 119, 102) 100%)' : 'rgba(76, 175, 79, 0.3)',
                       '&:hover': { bgcolor: 'rgba(76, 175, 80, 0.12)' } 
                     }}
                   >
@@ -399,8 +394,8 @@ const ContratosPage = () => {
                   <IconButton 
                     onClick={() => handleDeleteClick(contrato.id)}
                     sx={{ 
-                      color: '#FF5252', 
-                      bgcolor: 'rgba(255, 82, 82, 0.08)',
+                      color:  theme.palette.mode === 'dark' ? 'rgb(241, 241, 241)' :  ' #FF5252', 
+                      background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg,rgb(242, 42, 42) 0%,rgb(136, 25, 25) 100%)' : 'rgba(255, 82, 82, 0.31)',
                       '&:hover': { bgcolor: 'rgba(255, 82, 82, 0.12)' } 
                     }}
                   >
@@ -440,19 +435,30 @@ const ContratosPage = () => {
 
     return (
       <Box sx={{ width: '100%',padding:{xs:"0",md:"1rem"} }}>
-        <Grid2 container spacing={3}>
+        <Grid2 container spacing={3} sx={{ 
+          display: 'flex', 
+          justifyContent: "flex-start",
+          flexWrap: 'wrap'
+        }}>
           {currentContratos.map((contrato) => (
-            <Grid2 item xs={12} sm={6} md={4} key={contrato.id}>
+            <Grid2 item key={contrato.id} sx={{ 
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '30%',
+              minWidth: '300px',
+              maxWidth: '400px'
+            }}>
               <Card 
                 sx={{ 
-                  height: '100%', 
+                  height: '24rem', 
+                  width: '20rem',
                   display: 'flex', 
                   flexDirection: 'column',
                   borderRadius: 3,
                   boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
                   overflow: 'visible',
                   position: 'relative',
-                  width: '100%',
                   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                   '&:hover': {
                     transform: 'translateY(-3px)',
@@ -525,11 +531,7 @@ const ContratosPage = () => {
                           if (contrato && contrato.id) {
                             navigate(`/recibos/${contrato.id}`);
                           } else {
-                            Swal.fire({
-                              title: 'Error',
-                              text: 'No se puede acceder a los recibos de este contrato',
-                              icon: 'error'
-                            });
+                            showError('No se puede acceder a los recibos de este contrato');
                           }
                         }}
                         sx={{ 
@@ -655,6 +657,7 @@ const ContratosPage = () => {
          <ModalContract
           selectedContract={selectedContract}
           setSelectedContract={setSelectedContract}
+          setContratos={setContratos}
           handleCloseDetailModal={handleCloseDetailModal}
           detailModalOpen={detailModalOpen}
           handleWhatsAppClick={handleWhatsAppClick}
@@ -693,7 +696,7 @@ const ContratosPage = () => {
           variant="h4" 
           sx={{
             fontWeight: 600,
-            color: theme.palette.primary.main,
+            color: theme.palette.mode === 'dark' ? 'rgb(240, 240, 240)' : 'rgb(30, 31, 136)',
             fontSize: { xs: '1.75rem', md: '2rem' }
           }}
         >
@@ -808,38 +811,34 @@ const ContratosPage = () => {
             </Box>
           ) : (
             <>
+              {/* Renderizar modales globalmente */}
+              {renderDetailModal()}
+              {selectedContract && (
+                <TextEditor
+                  contrato={selectedContract}
+                  isOpen={editorOpen}
+                  onClose={handleCloseEditor}
+                  onSaved={handleEditorSaved}
+                />
+              )}
+              
               {isMobile ? (
                 <>
                   {renderMobileView(contratosFiltrados)}
                   {/* Mobile pagination anchor */}
                   <Box sx={{ display: 'flex', justifyContent: 'center' }} data-tour="contracts-pagination" />
-                  {selectedContract && (
-                    <TextEditor 
-                      contrato={selectedContract} 
-                      isOpen={editorOpen}
-                      onClose={handleCloseEditor}
-                   />
-                  )}
                 </>
               ) : (
                 <>
                   {renderDesktopView(contratosFiltrados)}
                   {/* Desktop pagination anchor */}
                   <Box sx={{ display: 'flex', justifyContent: 'center' }} data-tour="contracts-pagination" />
-                  {selectedContract && (
-                    <TextEditor 
-                      contrato={selectedContract} 
-                      isOpen={editorOpen}
-                      onClose={handleCloseEditor}
-                    />
-                  )}
                 </>
               )}
             </>
           )}
         </>
       )}
-      {renderDetailModal()}
     </Box>
   );
 };

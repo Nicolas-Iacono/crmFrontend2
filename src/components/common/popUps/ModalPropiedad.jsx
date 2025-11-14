@@ -13,6 +13,8 @@ import {
   Chip,
   Grid2,
   useTheme,
+  useMediaQuery,
+  Slide,
   CardMedia
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -27,10 +29,65 @@ import CarouselPropiedad from './CarouselPropiedad';
 
 const ModalPropiedad = ({ open, onClose, propiedad = {} }) => {
       const theme = useTheme();
+      const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+      const Transition = React.useMemo(() =>
+        React.forwardRef(function Transition(props, ref) {
+          return <Slide direction="up" ref={ref} {...props} />;
+        }),
+      []);
 
   const navigate = useNavigate();
   const [imgHeight, setImgHeight] = useState(500);
   const dialogContentRef = useRef(null);
+  // Drag-to-close state
+  const paperRef = useRef(null);
+  const startYRef = useRef(0);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const getClientY = (e) => (e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY);
+
+  const handleDragStart = (e) => {
+    const y = getClientY(e);
+    setIsDragging(true);
+    startYRef.current = y;
+    setDragY(0);
+    // Attach listeners to the document to track drag outside header
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+    document.addEventListener('touchmove', handleDragMove, { passive: false });
+    document.addEventListener('touchend', handleDragEnd);
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging) return;
+    if (e.cancelable) e.preventDefault();
+    const y = getClientY(e);
+    const delta = Math.max(0, y - startYRef.current);
+    setDragY(delta);
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    // Remove listeners
+    document.removeEventListener('mousemove', handleDragMove);
+    document.removeEventListener('mouseup', handleDragEnd);
+    document.removeEventListener('touchmove', handleDragMove);
+    document.removeEventListener('touchend', handleDragEnd);
+
+    const paperEl = paperRef.current;
+    const height = paperEl ? paperEl.clientHeight : 0;
+    const threshold = Math.max(120, Math.floor(height * 0.25));
+    if (dragY > threshold) {
+      // Close if beyond threshold
+      onClose?.();
+      setDragY(0);
+    } else {
+      // Bounce back
+      setDragY(0);
+    }
+  };
 
   useEffect(() => {
     if (open) {
@@ -66,15 +123,36 @@ const ModalPropiedad = ({ open, onClose, propiedad = {} }) => {
   } = propiedad;
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth key={open ? 'open' : 'closed'}
+    TransitionComponent={Transition}
     sx={{
       '& .MuiDialog-paper': {
-        borderRadius:{xs:"10px", md:"20px"},
+        borderRadius:{xs:0, md:"20px"},
         maxWidth:{xs:"100%", md:"80%"},
+        width: { xs: '100vw', md: 'auto' },
+        m: { xs: 0, md: 'auto' },
+        position:"absolute",
+        bottom:"0",
+        borderRadius:"20px 20px 0 0",
+        transform: `translateY(${dragY}px)`,
+        transition: isDragging ? 'none' : 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)'
       },
     }}>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary' }}>
+      <DialogTitle
+        onMouseDown={handleDragStart}
+        onTouchStart={handleDragStart}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          cursor: 'grab',
+          touchAction: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none'
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <HomeIcon color="primary" />
           <Typography variant="h6" fontWeight={600}>{direccion || 'Sin dirección'}</Typography>
         </Box>
         <IconButton onClick={onClose}>

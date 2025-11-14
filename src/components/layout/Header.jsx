@@ -30,27 +30,32 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import PaidIcon from '@mui/icons-material/Paid';
+import ContactMailIcon from '@mui/icons-material/ContactMail';
 import Modal from '@mui/material/Modal';
 import QRCode from 'react-qr-code';
 import DesktopMenu from './DesktopMenu';
 import ChatModal from '../common/Chat/ChatModal';
 import useGoogleLink from '../../hooks/useGoogleLink';
+import SubscriptionModal from '../common/SubscriptionModal/SubscriptionModal';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 export const Header = ({ toggleTheme, darkMode }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const { usuarioFetch, authUser, hasCalendarEvents, logout, logoTimestamp } = useAuth();
+  const { usuarioFetch, authUser, hasCalendarEvents, logout, logoTimestamp, plan} = useAuth();
   const { isLinked, isLoading, googleProfile, handleLink, handleUnlink } = useGoogleLink();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isChatOpen, setChatOpen] = useState(false);
   const [openQR, setOpenQR] = useState(false);
+  const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
   const hideTimer = useRef(null);
 
-  console.log(googleProfile)
-  
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
   };
@@ -68,7 +73,22 @@ export const Header = ({ toggleTheme, darkMode }) => {
 
   const handleOpenQR = () => setOpenQR(true);
   const handleCloseQR = () => setOpenQR(false);
-console.log(usuarioFetch)
+
+  const handleOpenSubscriptionModal = () => {
+    setDrawerOpen(false);
+    setTimeout(() => {
+      setSubscriptionModalOpen(true);
+    }, 300);
+  };
+
+  const handleCloseSubscriptionModal = () => {
+    setSubscriptionModalOpen(false);
+  };
+
+  const handleSelectPlan = (plan) => {
+    // Aquí puedes agregar la lógica para manejar la selección del plan
+    setSubscriptionModalOpen(false);
+  };
   useEffect(() => {
     const handleScroll = () => {
       if (!isMobile) return;
@@ -83,9 +103,12 @@ console.log(usuarioFetch)
         setVisible(false);
       } else {
         setVisible(true);
-        hideTimer.current = setTimeout(() => {
-          setVisible(false);
-        }, 4000);
+        // No auto-hide on specific pages
+        if (location.pathname !== '/contabilidad' && location.pathname !== '/') {
+          hideTimer.current = setTimeout(() => {
+            setVisible(false);
+          }, 4000);
+        }
       }
       
       lastScrollY.current = currentScrollY;
@@ -132,7 +155,7 @@ console.log(usuarioFetch)
       children: initials,
     };
   }
-
+const authorities = localStorage.getItem('authorities');
   const drawerContent = (
     <Box
       sx={{ width: 250, height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.mode === 'dark' ? 'rgb(35, 35, 35)' : '#fff' }}
@@ -144,13 +167,78 @@ console.log(usuarioFetch)
           {...(!usuarioFetch?.logo && { ...stringAvatar((usuarioFetch?.username || '').toUpperCase()) })}
           sx={{ width: 80, height: 80, mx: 'auto', mb: 1 }}
         />
-        <Typography variant="h6">{usuarioFetch?.username}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {authUser?.authorities?.includes('ROLE_ADMIN') ? 'Usuario' : 'Administrador'}
-        </Typography>
+        <Typography variant="body1">{usuarioFetch?.nombreNegocio}</Typography>
+       
+<Typography variant="body2" color="text.secondary">
+  {authorities?.includes('ROLE_SUPER_ADMIN')
+    ? 'Super Admin'
+    : authorities?.includes('ROLE_ADMIN')
+    ? 'Administrador'
+    : authorities?.includes('ROLE_USER')
+    ? 'Usuario'
+    : 'Usuario'}
+</Typography>
+      {authorities?.includes('ROLE_SUPER_ADMIN') ? (
+  // 🟡 Plan ilimitado para Super Admin
+  <Box
+    sx={{
+      background: "linear-gradient(135deg, #8B0000 0%, #DC143C 25%, #FF69B4 50%, #FFB6C1 75%, #8B0000 100%)",
+      boxShadow: "0 4px 15px rgba(243, 153, 171, 0.29), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
+      width: "100%",
+      borderRadius: 3,
+      height: "1.7rem",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <Typography variant="body1" sx={{ color: "rgb(250, 250, 250)", fontWeight: "bold" }}>
+      Unlimited Version
+    </Typography>
+  </Box>
+) : plan?.status === "ACTIVE" && 
+   (plan?.planName === "pro+" || plan?.planName === "Pro" || plan?.planName === "Superior") ? (
+  // 🟡 Plan Pro o Superior activo
+  <Box
+    sx={{
+      background: "linear-gradient(135deg, #B8860B 0%, #FFD700 15%, #FFF8DC 30%, #FFD700 45%, #DAA520 60%, #FFF8DC 75%, #FFD700 90%, #B8860B 100%)",
+      boxShadow: "inset 0 2px 8px rgba(255, 215, 0, 0.3), inset 0 -2px 8px rgba(184, 134, 11, 0.4), 0 4px 12px rgba(255, 215, 0, 0.2)",
+      width: "100%",
+      borderRadius: 3,
+      height: "1.7rem",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <Typography variant="body1" sx={{ color: "rgb(49,49,49)" }}>
+      {plan?.planName}
+    </Typography>
+  </Box>
+) : (
+  // 🟣 Plan Free
+  <Box
+    sx={{
+      background: "linear-gradient(135deg, #4B0082 0%, #8A2BE2 15%, #DDA0DD 30%, #9370DB 45%, #6A5ACD 60%, #E6E6FA 75%, #8A2BE2 90%, #4B0082 100%)",
+      boxShadow: "inset 0 2px 8px rgba(138, 43, 226, 0.3), inset 0 -2px 8px rgba(75, 0, 130, 0.4), 0 4px 12px rgba(138, 43, 226, 0.2)",
+      width: "100%",
+      borderRadius: 3,
+      height: "1.7rem",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <Typography variant="body1" sx={{ color: "rgb(255,255,254)" }}>
+      Plan Free
+    </Typography>
+  </Box>
+)}
+
+         
       </Box>
       <Divider sx={{ my: 1 }} />
-      <List sx={{ flexGrow: 1 }}>
+      <List>
         <ListItem disablePadding>
           <ListItemButton data-tour="drawer-calculadora" onClick={() => handleNavigate('/calculadora-de-alquileres')}>
             <ListItemIcon><CalculateIcon /></ListItemIcon>
@@ -168,9 +256,28 @@ console.log(usuarioFetch)
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
+          <ListItemButton data-tour="drawer-presupuestos" onClick={() => handleNavigate('/presupuestos')}>
+            <ListItemIcon><ReceiptIcon /></ListItemIcon>
+            <ListItemText primary="Presupuestos" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleNavigate('/contabilidad')}>
+            <ListItemIcon><PaidIcon /></ListItemIcon>
+            <ListItemText primary="Ingresos" />
+          </ListItemButton>
+        </ListItem>
+      
+        <ListItem disablePadding>
           <ListItemButton data-tour="drawer-compartir" onClick={() => { setDrawerOpen(false); handleOpenQR(); }}>
             <ListItemIcon><QrCode2Icon  /></ListItemIcon>
             <ListItemText primary="Compartir Contacto" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton data-tour="drawer-suscripcion" onClick={handleOpenSubscriptionModal}>
+            <ListItemIcon><WorkspacePremiumIcon sx={{ color: '#FF9800' }} /></ListItemIcon>
+            <ListItemText primary="Planes Premium" />
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
@@ -179,18 +286,27 @@ console.log(usuarioFetch)
             <ListItemText primary="Ajustes" />
           </ListItemButton>
         </ListItem>
-        <ListItem>
-          <ListItemIcon>{darkMode ? <DarkModeIcon /> : <LightModeIcon />}</ListItemIcon>
-          <ListItemText primary="Tema Oscuro" />
-          <Switch edge="end" data-tour="toggle-tema" onChange={toggleTheme} checked={darkMode} />
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleNavigate('/contacto')}>
+            <ListItemIcon><ContactMailIcon /></ListItemIcon>
+            <ListItemText primary="Contacto" />
+          </ListItemButton>
         </ListItem>
+        {isMobile && (
+          <ListItem>
+            <ListItemIcon>{darkMode ? <DarkModeIcon /> : <LightModeIcon />}</ListItemIcon>
+            <ListItemText primary="Tema Oscuro" />
+            <Switch edge="end" data-tour="toggle-tema" onChange={toggleTheme} checked={darkMode} />
+          </ListItem>
+        )}
+        
         <ListItem disablePadding>
           <ListItemButton onClick={handleLogout}>
             <ListItemIcon><LogoutIcon color="error" /></ListItemIcon>
             <ListItemText primary="Cerrar Sesión" primaryTypographyProps={{ color: 'error' }} />
           </ListItemButton>
         </ListItem>
-        <Box sx={{ p: 2, mt: 'auto' }}>
+        {/* <Box sx={{ p: 2, mt: 'auto' }}>
         <Button
           data-tour="open-chat"
           variant="contained"
@@ -213,9 +329,9 @@ console.log(usuarioFetch)
         >
           tuinmoIA
         </Button>
-      </Box>
+        </Box> */}
+       
       </List>
-      
     </Box>
   );
 
@@ -237,7 +353,7 @@ console.log(usuarioFetch)
           left: 16,
           zIndex: 1200,
           transition: 'transform 0.3s ease-in-out',
-                    transform: (visible || location.pathname === '/ajustes' || location.pathname === '/calendario') ? 'translateX(0)' : 'translateX(-100px)',
+                    transform: (visible || location.pathname === '/ajustes' || location.pathname === '/calendario' || location.pathname === '/') ? 'translateX(0)' : 'translateX(-100px)',
         }}>
           <IconButton onClick={handleDrawerToggle} sx={{ p: 0, boxShadow: 3, bgcolor: 'background.paper', '&:hover': { bgcolor: 'background.paper' } }}>
             <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} />
@@ -256,39 +372,47 @@ console.log(usuarioFetch)
           <Drawer anchor="right" open={drawerOpen} onClose={handleDrawerToggle}>{drawerContent}</Drawer>
         </Box>
       )}
-      <Tooltip title="Abrir Chat IA">
+     <Tooltip title="Abrir Chat IA">
         <Box
           component={motion.div}
           onClick={handleOpenChat}
-          whileTap={{ scaleX: 1.8, scaleY: 0.9, originX: 1 }}
+          whileTap={{ scale: 1.15 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          sx={{
-            position: 'fixed',
-            width: '15px',
-            height: '80px',
-            bottom: 100,
-            right: 0,
-            zIndex: 1200,
-            borderRadius: '20px 0 0 20px',
-            color: 'white',
-            background: 'linear-gradient(45deg, #F871B880 0%, #6E42CA80 50%, #3B82F680 100%)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            '&:hover': {
-              transform: 'scale(1.1)',
-              transition: 'transform 0.2s ease-in-out',
-            },
-          }}
-        >
-          <AutoAwesomeIcon  sx={{ fontSize: 17 }} />
-        </Box>
-      </Tooltip>
+              sx={{
+      position: 'fixed',
+      width: 50,
+      height: 50,
+      bottom: 80,
+      right: 10,
+      zIndex: 1200,
+      borderRadius: '50%',
+      background: 'linear-gradient(45deg, #F871B8 0%, #6E42CA 50%, #3B82F6 100%)',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white',
+      boxShadow: '0 0 12px rgba(111,51,241,0.5)',
+      '&:hover': {
+        transform: 'scale(1.12)',
+        transition: '0.2s ease-in-out',
+      },
+    }}
+  >
+          <AutoAwesomeIcon  sx={{ fontSize: 20 }} />
+
+  </Box>
+</Tooltip>
       {qrModal}
       <AnimatePresence>
         {isChatOpen && <ChatModal open={isChatOpen} onClose={handleCloseChat} />}
       </AnimatePresence>
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        open={subscriptionModalOpen}
+        onClose={handleCloseSubscriptionModal}
+        onSelectPlan={handleSelectPlan}
+      />
     </>
   );
 };

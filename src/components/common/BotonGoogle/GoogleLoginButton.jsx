@@ -2,7 +2,8 @@ import GoogleLogo from "../../../assets/logoGoogle.png";
 import { Button } from "@mui/material";
 import { generateStateToken } from "../../../hooks/outh";
 
-const GOOGLE_AUTH_URL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${import.meta.env.VITE_GOOGLE_CLIENT_ID}&redirect_uri=https://primary-production-9170b.up.railway.app/rest/oauth2-credential/callback&response_type=code&scope=openid%20email%20profile&access_type=offline`;
+const GOOGLE_AUTH_URL = `https://crminmobiliario-app-production.up.railway.app/oauth2/authorization/google`;
+
 
 const STATE_TOKEN = generateStateToken();
 sessionStorage.setItem("OAUTH_STATE", STATE_TOKEN);
@@ -10,9 +11,8 @@ sessionStorage.setItem("OAUTH_STATE", STATE_TOKEN);
 const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${
   encodeURIComponent(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 }&redirect_uri=${
-  encodeURIComponent(`http://${import.meta.env.VITE_API_URL_2}/rest/oauth2-credential/callback`)
+  encodeURIComponent(`http://${import.meta.env.VITE_API_URL}/rest/oauth2-credential/callback`)
 }&response_type=code&scope=${encodeURIComponent("openid email profile")}&state=${STATE_TOKEN}`;
-console.log(authUrl)
 
 export default function GoogleLoginButton({ onClick, children }) {
   return (

@@ -10,3 +10,49 @@ html, body {
   .my-calendar .fc .fc-toolbar-title { font-size:20px !important;
      margin-left: 3rem; }
 }
+
+/* estilos swal */
+.swal2-popup.custom-popup {
+  border-radius: 30px !important;
+  padding: 1rem !important;
+  background-color: #5617a4 !important;
+  color: white !important;
+  height: 60vh !important;
+  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+}
+
+.swal2-title.custom-header {
+  font-size: 1.5rem !important;
+  font-weight: bold;
+  color: #fff !important;
+}
+
+.swal2-html-container.custom-content {
+  font-size: 1rem !important;
+  color: #ddd !important;
+}
+
+.swal2-confirm.custom-confirm-button {
+  border-radius: 20px !important;
+  background: #369a9f !important;
+  color: white !important;
+  padding: 0.5rem 1.5rem;
+}
+
+.swal2-cancel.custom-cancel-button {
+  border-radius: 20px !important;
+  background: #d9534f !important;
+  color: white !important;
+}
+
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="light"], html[data-theme="light"] body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  html[data-theme="light"] img, html[data-theme="light"] svg, html[data-theme="light"] canvas, html[data-theme="light"] video {
+    filter: none !important;
+  }
+}

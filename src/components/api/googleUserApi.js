@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const googleApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL_2,
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
 
@@ -14,7 +14,6 @@ googleApi.interceptors.request.use((config) => {
 export const googleUserApi = {
   getLinkStatus: async () => {
     const response = await googleApi.get('/oauth/google/link/status');
-    console.log(response.data.linked);
     return response.data;
   },
 };

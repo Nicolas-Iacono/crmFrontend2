@@ -30,16 +30,20 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import PersonIcon from '@mui/icons-material/Person';
 import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
+import { ThemeProvider } from "@mui/material/styles";
+import themeBreakPoints from "../../utils/themeBreakPoints";
+import HomeCard from "../common/cards/HomeCard";
+import http from "../api/http";
 const Home = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
+  const isDesktop = useMediaQuery(theme.breakpoints.between('lg', 'xl'));
   const [user, setUser] = useState({
     name: '',
     authorities: '',
   });
   const { usuarioFetch } = useAuth();
-  console.log(usuarioFetch)
-  console.log(user.name)
   useEffect(() => {
     if (localStorage.getItem("username")) {
       setUser({
@@ -48,7 +52,6 @@ const Home = () => {
       });
     }
   }, []);
-  console.log(user)
   const navigate = useNavigate();
   const [ultimosContratos,setUltimosContratos] = useState([]);
   const [page, setPage] = useState(0);
@@ -74,7 +77,7 @@ const Home = () => {
   useEffect(() => {
     const fetchUltimosContratos = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/latest`);
+        const response = await http.get(`${import.meta.env.VITE_API_URL}/contrato/latest`);
         setUltimosContratos(response.data);
       } catch (error) {
         console.error("Error al obtener los últimos contratos:", error);
@@ -84,7 +87,7 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    if (!user?.name) return;
+    if (!usuarioFetch?.username) return;
 
     const fetchCounts = async () => {
       const setters = {
@@ -97,7 +100,7 @@ const Home = () => {
       try {
         await Promise.all(
           Object.keys(setters).map(async (tipo) => {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/${tipo}/enum/${user.name}`);
+            const response = await http.get(`${import.meta.env.VITE_API_URL}/${tipo}/enum/${usuarioFetch.username}`);
             setters[tipo](response.data);
           })
         );
@@ -107,9 +110,8 @@ const Home = () => {
     };
 
     fetchCounts();
-  }, [user?.name]);
+  }, [usuarioFetch?.username]);
 
-console.log(ultimosContratos)
 
   const irHacia = (url) =>{
     navigate(url);
@@ -159,8 +161,14 @@ console.log(ultimosContratos)
                 }),
          
           marginBottom: { xs: 3, md: 4 },
-          fontSize: { xs: "1.75rem", md: "2.125rem" },
+          fontSize: { 
+            xs: "1.75rem",
+            sm: "2.125rem",
+            md: "3.125rem",
+             },
+          
           width: "100%",
+        
           textAlign: { xs: "left", md: "left" },
           marginLeft: { xs: 0, md: 4 },
           fontFamily: "Poppins, sans-serif",
@@ -182,435 +190,40 @@ console.log(ultimosContratos)
         }}
       >
         {/* Propietarios Card */}
-        <Grid2 
-          xs={15} 
-          sm={6} 
-          md={3} 
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: {md:"center",xs:"flex-start"}
-          }}
-        >
-          <Paper
-            elevation={2}
-            onClick={() => navigate("/propietarios")}
-            sx={{
-              width: {  xs: '100%',  
-                sm: '75%',   
-                md: '13rem',   
-                lg: '15rem',  
-                xl: '20rem',
-              },
-              maxWidth: { xs: '100%',  
-                md: '20rem',   
-                },
-              minHeight: { xs: "70px", sm: "auto" },
-              height: {xs:"40%",sm:"80%"},
-              borderRadius: 3,
-              overflow: "hidden",
-              transition: "all 0.3s ease",
-              background: "linear-gradient(135deg, #1a237e 0%, #283593 100%)",
-              color: "white",
-              display: "flex",
-              flexDirection: "column",
-              cursor: "pointer",
-              "&:hover": {
-                transform: "translateY(-4px)",
-                boxShadow: "0 8px 20px -4px rgba(26, 35, 126, 0.3)"
-              }
-            }}
-          > 
-        {isMobile ? (<>
-        <Box sx={{ 
-             p: { xs: 2, md: 1 },
-             height: "100%",
-             display: "flex",
-             flexDirection: { xs: "row", md: "column" },
-             justifyContent:{xs:"space-between",md:"center"},
-             alignItems: "center"
-              
-            }}>
-              <Typography variant="h6" sx={{ 
-                fontSize: { xs: "0.9rem", md: "1.25rem" },
-                fontWeight: 400,
-                mb: 1,
-                fontFamily: "Poppins, sans-serif",
-              }}>
-                Propietarios
-              </Typography>
-              <Typography variant="h4" sx={{ 
-                fontSize: { xs: "1.5rem", md: "2rem" },
-                fontWeight: 400,
-                fontFamily: "Poppins, sans-serif",
-              }}>
-                {numPropietario}
-              </Typography>
-            </Box>
-            
-            </>)
-        :
-        (<>
-          <Box sx={{ 
-                p: { xs: 2, md: 1 },
-                height: "100%",
-                display: "flex",
-                flexDirection: { xs: "row", md: "row" },
-                justifyContent: {xs:"space-between",md:"space-around"},
-                alignItems: "start",
-                paddingTop: { xs: 0, md: 3 },
-                
-              }}>
-                <Typography variant="h6" sx={{ 
-                  fontSize: { xs: "0.9rem", md: "1.25rem" },
-                  fontWeight: 400,
-                  mb: 1,
-                  fontFamily: "Poppins, sans-serif",
-                }}>
-                  Propietarios
-                </Typography>
-                <Typography variant="h4" sx={{ 
-                  fontSize: { xs: "1.5rem", md: "2rem" },
-                  fontWeight: 400,
-                  fontFamily: "Poppins, sans-serif",
-                }}>
-                  {numPropietario}
-                </Typography>
-              </Box>
-              <Box sx={{width:"100%",
-                height:"130px", display:"flex", justifyContent:"flex-end",
-                 alignItems:"center", marginLeft:"-2rem" }}>
-                <PersonIcon sx={{ fontSize: 50 }} />
-              </Box>
-              </>)
-        }
-            
-          </Paper>
-        </Grid2>
+        <HomeCard
+          title="Propietarios"
+          count={numPropietario}
+          icon={PersonIcon}
+          route="/propietarios"
+        />
 
         {/* Inquilinos Card */}
-        <Grid2 
-          xs={15} 
-          sm={6} 
-          md={3} 
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: {md:"center",xs:"flex-start"}
-          }}
-        >
-          <Paper
-            elevation={2}
-            onClick={() => navigate("/inquilinos")}
-            sx={{
-              width: {  xs: '100%',  
-                sm: '75%',   
-                md: '13rem',   
-                lg: '15rem',  
-                xl: '20rem',
-              },
-              maxWidth: { xs: '100%',  
-                md: '20rem',   
-                },
-              minHeight: { xs: "70px", sm: "auto" },
-              height: {xs:"40%",sm:"80%"},
-              borderRadius: 3,
-              overflow: "hidden",
-              transition: "all 0.3s ease",
-              background: "linear-gradient(135deg, #00796b 0%, #009688 100%)",
-              color: "white",
-              display: "flex",
-              flexDirection: "column",
-              cursor: "pointer",
-              "&:hover": {
-                transform: "translateY(-4px)",
-                boxShadow: "0 8px 20px -4px rgba(26, 35, 126, 0.3)"
-              }
-            }}
-          > 
-        {isMobile ? (<>
-        <Box sx={{ 
-             p: { xs: 2, md: 1 },
-             height: "100%",
-             display: "flex",
-             flexDirection: { xs: "row", md: "column" },
-             justifyContent:{xs:"space-between",md:"center"},
-             alignItems: "center"
-              
-            }}>
-              <Typography variant="h6" sx={{ 
-                fontSize: { xs: "0.9rem", md: "1.25rem" },
-                fontWeight: 400,
-                mb: 1,
-                fontFamily: "Poppins, sans-serif",
-              }}>
-                Inquilinos
-              </Typography>
-              <Typography variant="h4" sx={{ 
-                fontSize: { xs: "1.5rem", md: "2rem" },
-                fontWeight: 400,
-                fontFamily: "Poppins, sans-serif",
-              }}>
-                {numInquilino}
-              </Typography>
-            </Box>
-            
-            </>)
-        :
-        (<>
-          <Box sx={{ 
-                p: { xs: 2, md: 1 },
-                height: "100%",
-                display: "flex",
-                flexDirection: { xs: "row", md: "row" },
-                justifyContent: {xs:"space-between",md:"space-around"},
-                alignItems: "start",
-                paddingTop: { xs: 0, md: 3 },
-                
-              }}>
-                <Typography variant="h6" sx={{ 
-                  fontSize: { xs: "0.9rem", md: "1.25rem" },
-                  fontWeight: 400,
-                  mb: 1,
-                  fontFamily: "Poppins, sans-serif",
-                }}>
-                  Inquilinos
-                </Typography>
-                <Typography variant="h4" sx={{ 
-                  fontSize: { xs: "1.5rem", md: "2rem" },
-                  fontWeight: 400,
-                  fontFamily: "Poppins, sans-serif",
-                }}>
-                  {numInquilino}
-                </Typography>
-              </Box>
-              <Box sx={{width:"100%",
-                height:"130px", display:"flex", justifyContent:"flex-end",
-                 alignItems:"center", marginLeft:"-2rem" }}>
-                <PeopleAltIcon sx={{ fontSize: 50 }} />
-              </Box>
-              </>)
-        }
-            
-          </Paper>
-        </Grid2>
+        <HomeCard
+          title="Inquilinos"
+          count={numInquilino}
+          icon={PeopleAltIcon}
+          route="/inquilinos"
+          gradient="linear-gradient(135deg, #00796b 0%, #009688 100%)"
+        />
 
 
         {/* Propiedades Card */}
-
-        <Grid2 
-          xs={15} 
-          sm={6} 
-          md={3} 
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: {md:"center",xs:"flex-start"}
-          }}
-        >
-          <Paper
-            elevation={2}
-            onClick={() => navigate("/propiedades")}
-            sx={{
-              width: {  xs: '100%',  
-                sm: '75%',   
-                md: '13rem',   
-                lg: '15rem',  
-                xl: '20rem',
-              },
-              maxWidth: { xs: '100%',  
-                md: '20rem',   
-                },
-              minHeight: { xs: "70px", sm: "auto" },
-              height: {xs:"40%",sm:"80%"},
-              borderRadius: 3,
-              overflow: "hidden",
-              transition: "all 0.3s ease",
-              background: "linear-gradient(135deg, #c62828 0%, #d32f2f 100%)",
-              color: "white",
-              display: "flex",
-              flexDirection: "column",
-              cursor: "pointer",
-              "&:hover": {
-                transform: "translateY(-4px)",
-                boxShadow: "0 8px 20px -4px rgba(26, 35, 126, 0.3)"
-              }
-            }}
-          > 
-        {isMobile ? (<>
-        <Box sx={{ 
-             p: { xs: 2, md: 1 },
-             height: "100%",
-             display: "flex",
-             flexDirection: { xs: "row", md: "column" },
-             justifyContent:{xs:"space-between",md:"center"},
-             alignItems: "center"
-              
-            }}>
-              <Typography variant="h6" sx={{ 
-                fontSize: { xs: "0.9rem", md: "1.25rem" },
-                fontWeight: 400,
-                mb: 1,
-                fontFamily: "Poppins, sans-serif",
-              }}>
-                Propiedades
-              </Typography>
-              <Typography variant="h4" sx={{ 
-                fontSize: { xs: "1.5rem", md: "2rem" },
-                fontWeight: 400,
-                fontFamily: "Poppins, sans-serif",
-              }}>
-                {numPropiedad}
-              </Typography>
-            </Box>
-            
-            </>)
-        :
-        (<>
-          <Box sx={{ 
-                p: { xs: 2, md: 1 },
-                height: "100%",
-                display: "flex",
-                flexDirection: { xs: "row", md: "row" },
-                justifyContent: {xs:"space-between",md:"space-around"},
-                alignItems: "start",
-                paddingTop: { xs: 0, md: 3 },
-                
-              }}>
-                <Typography variant="h6" sx={{ 
-                  fontSize: { xs: "0.9rem", md: "1.25rem" },
-                  fontWeight: 400,
-                  mb: 1,
-                  fontFamily: "Poppins, sans-serif",
-                }}>
-                  Propiedades
-                </Typography>
-                <Typography variant="h4" sx={{ 
-                  fontSize: { xs: "1.5rem", md: "2rem" },
-                  fontWeight: 400,
-                  fontFamily: "Poppins, sans-serif",
-                }}>
-                  {numPropiedad}
-                </Typography>
-              </Box>
-              <Box sx={{width:"100%",
-                height:"130px", display:"flex", justifyContent:"flex-end",
-                 alignItems:"center", marginLeft:"-2rem" }}>
-                <MapsHomeWorkIcon sx={{ fontSize: 50 }} />
-              </Box>
-              </>)
-        }
-            
-          </Paper>
-        </Grid2>
-
+        <HomeCard
+          title="Propiedades"
+          count={numPropiedad}
+          icon={MapsHomeWorkIcon}
+          route="/propiedades"
+          gradient="linear-gradient(135deg, #c62828 0%, #d32f2f 100%)"
+        />
 
         {/* Contratos Card */}
-        <Grid2 
-          xs={15} 
-          sm={6} 
-          md={3} 
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: {md:"center",xs:"flex-start"}
-          }}
-        >
-          <Paper
-            elevation={2}
-            onClick={() => navigate("/contratos")}
-            sx={{
-              width: {  xs: '100%',  
-                sm: '75%',   
-                md: '13rem',   
-                lg: '15rem',  
-                xl: '20rem',
-              },
-              maxWidth: { xs: '100%',  
-                md: '20rem',   
-                },
-              minHeight: { xs: "70px", sm: "auto" },
-              height: {xs:"40%",sm:"80%"},
-              borderRadius: 3,
-              overflow: "hidden",
-              transition: "all 0.3s ease",
-              background: "linear-gradient(135deg, #f57c00 0%, #fb8c00 100%)",
-              color: "white",
-              display: "flex",
-              flexDirection: "column",
-              cursor: "pointer",
-              "&:hover": {
-                transform: "translateY(-4px)",
-                boxShadow: "0 8px 20px -4px rgba(26, 35, 126, 0.3)"
-              }
-            }}
-          > 
-        {isMobile ? (<>
-        <Box sx={{ 
-             p: { xs: 2, md: 1 },
-             height: "100%",
-             display: "flex",
-             flexDirection: { xs: "row", md: "column" },
-             justifyContent:{xs:"space-between",md:"center"},
-             alignItems: "center"
-              
-            }}>
-              <Typography variant="h6" sx={{ 
-                fontSize: { xs: "0.9rem", md: "1.25rem" },
-                fontWeight: 400,
-                mb: 1,
-                fontFamily: "Poppins, sans-serif",
-              }}>
-                Contratos
-              </Typography>
-              <Typography variant="h4" sx={{ 
-                fontSize: { xs: "1.5rem", md: "2rem" },
-                fontWeight: 400,
-                fontFamily: "Poppins, sans-serif",
-              }}>
-                {numContrato}
-              </Typography>
-            </Box>
-            
-            </>)
-        :
-        (<>
-          <Box sx={{ 
-                p: { xs: 2, md: 1 },
-                height: "100%",
-                display: "flex",
-                flexDirection: { xs: "row", md: "row" },
-                justifyContent: {xs:"space-between",md:"space-around"},
-                alignItems: "start",
-                paddingTop: { xs: 0, md: 3 },
-                
-              }}>
-                <Typography variant="h6" sx={{ 
-                  fontSize: { xs: "0.9rem", md: "1.25rem" },
-                  fontWeight: 400,
-                  mb: 1,
-                  fontFamily: "Poppins, sans-serif",
-                }}>
-                  Contratos
-                </Typography>
-                <Typography variant="h4" sx={{ 
-                  fontSize: { xs: "1.5rem", md: "2rem" },
-                  fontWeight: 400,
-                  fontFamily: "Poppins, sans-serif",
-                }}>
-                  {numContrato}
-                </Typography>
-              </Box>
-              <Box sx={{width:"100%",
-                height:"130px", display:"flex", justifyContent:"flex-end",
-                 alignItems:"center", marginLeft:"-2rem" }}>
-                <TextSnippetIcon sx={{ fontSize: 50 }} />
-              </Box>
-              </>)
-        }
-            
-          </Paper>
-        </Grid2>
+        <HomeCard
+          title="Contratos"
+          count={numContrato}
+          icon={TextSnippetIcon}
+          route="/contratos"
+          gradient="linear-gradient(135deg, #f57c00 0%, #fb8c00 100%)"
+        />
 
       </Grid2>
 
@@ -741,47 +354,16 @@ console.log(ultimosContratos)
                   }
                 })}>
                   <Table stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={(theme) => ({ 
-                          ...(theme.palette.mode === "dark"
-                            ? {
-                              fontWeight: 600,
-                              backgroundColor: "#f1f5f9",
-                              color: " #1a237e"
-                            }
-                            : {
-                              fontWeight: 600,
-                              backgroundColor: " #f1f5f9",
-                              color: "#1a237e"
-                            }),
-                        })}>ID</TableCell>
-                        <TableCell sx={(theme) => ({ 
-                          ...(theme.palette.mode === "dark"
-                            ? {
-                              fontWeight: 600,
-                              backgroundColor: "#f1f5f9",
-                              color: " #1a237e"
-                            }
-                            : {
-                              fontWeight: 600,
-                              backgroundColor: " #f1f5f9",
-                              color: "#1a237e"
-                            }),
-                        })}>Contrato</TableCell>
-    
-                      </TableRow>
-                    </TableHead>
+                  
                     <TableBody>
                       {ultimosContratos
                           .filter(
                             (contrato) =>
-                              contrato.usuarioDtoSalida?.username?.toLowerCase() === (user.name || "").toLowerCase()
+                              contrato.usuarioDtoSalida?.username?.toLowerCase() === (usuarioFetch?.username || "").toLowerCase()
                           )
                           .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                           .map((contrato) => (
                             <TableRow key={contrato.id}>
-                              <TableCell>{contrato.id}</TableCell>
                               <TableCell>{contrato.nombreContrato}</TableCell>
                             </TableRow>
                         ))}
@@ -789,9 +371,8 @@ console.log(ultimosContratos)
                   </Table>
                 </TableContainer>
                 <TablePagination
-                  rowsPerPageOptions={[5, 10, 25]}
                   component="div"
-                  count={ultimosContratos.filter((contrato) => contrato.usuarioDtoSalida.username === user.name).length}
+                  count={ultimosContratos.filter((contrato) => contrato.usuarioDtoSalida?.username === usuarioFetch?.username).length}
                   rowsPerPage={rowsPerPage}
                   page={page}
                   onPageChange={handleChangePage}

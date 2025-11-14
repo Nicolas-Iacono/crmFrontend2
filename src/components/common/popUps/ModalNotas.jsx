@@ -7,6 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import ModalImgFull from './ModalImgFull';
 import SharedNota from '../SharedNota';
+import http from '../../api/http';
 
 const estadoColor = {
   'PENDIENTE': 'warning',
@@ -29,29 +30,51 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
   const [imgFull, setImgFull] = useState(null); // Nueva: imagen en pantalla completa
   const fileInputRef = useRef();
   const [imagenes, setImagenes] = useState([]);
+  const [galleryVersion, setGalleryVersion] = useState(Date.now());
   const [loadingImgs, setLoadingImgs] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errorImgs, setErrorImgs] = useState(null);
 
 
-  // Cargar imágenes al abrir el modal o cambiar la nota
-  useEffect(() => {
+  // Helper: refetch imágenes de la nota
+  const refetchImagenes = async () => {
     if (!nota?.id) return;
-  
     setLoadingImgs(true);
     setErrorImgs(null);
-  
-    fetch(`${import.meta.env.VITE_API_URL}/notas/${nota.id}`)
-      .then(res => res.json())
-      .then(data => {
-        setImagenes(Array.isArray(data.imagenes) ? data.imagenes : []);
-        setLoadingImgs(false);
-      })
-      .catch(() => {
-        setErrorImgs('Error al cargar imágenes');
-        setLoadingImgs(false);
-      });
+    try {
+      const res = await http.get(`${import.meta.env.VITE_API_URL}/notas/${nota.id}`, { params: { t: Date.now() } });
+      const data = res?.data ?? {};
+      setImagenes(Array.isArray(data.imagenes) ? data.imagenes : []);
+      setGalleryVersion(Date.now());
+    } catch {
+      setErrorImgs('Error al cargar imágenes');
+    } finally {
+      setLoadingImgs(false);
+    }
+  };
+
+  // Cargar imágenes al abrir el modal o cambiar la nota
+  useEffect(() => {
+    refetchImagenes();
   }, [nota]);
+
+  // Helper: esperar a que la URL esté disponible usando un Image() (evita CORS issues de HEAD)
+  const waitForImageAvailability = async (url, tries = 6, delayMs = 600) => {
+    if (!url) return false;
+    for (let i = 0; i < tries; i++) {
+      const attemptUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}_${i+1}`;
+      const ok = await new Promise(resolve => {
+        const img = new Image();
+        const timer = setTimeout(() => { resolve(false); }, delayMs);
+        img.onload = () => { clearTimeout(timer); resolve(true); };
+        img.onerror = () => { clearTimeout(timer); resolve(false); };
+        img.src = attemptUrl;
+      });
+      if (ok) return true;
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+    return false;
+  };
 
   // Subir imagen
   const handleUpload = async (e) => {
@@ -61,14 +84,41 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
     setErrorImgs(null);
     const formData = new FormData();
     formData.append('files', file);
+    // Vista previa optimista local
+    const tempId = `temp-${Date.now()}`;
+    const tempUrl = URL.createObjectURL(file);
+    setImagenes(prev => [...prev, { id: tempId, url: tempUrl, temp: true }]);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/notas/${nota.id}/imagenes`, {
-        method: 'POST',
-        body: formData,
+      const res = await http.post(`${import.meta.env.VITE_API_URL}/notas/${nota.id}/imagenes`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      if (!res.ok) throw new Error('Error al subir imagen');
-      const img = await res.json();
-      setImagenes(prev => [...prev, img]);
+      const payload = res?.data;
+      const imgRaw = Array.isArray(payload)
+        ? payload[0]
+        : (Array.isArray(payload?.data)
+            ? payload.data[0]
+            : (payload?.data ?? payload));
+      const img = imgRaw && (imgRaw.imageUrl || imgRaw.url) ? imgRaw : null;
+      if (!img) throw new Error('Error al subir imagen');
+      const url = img.imageUrl || img.url;
+      // Esperar disponibilidad para evitar <img> roto por CDN cache
+      const available = await waitForImageAvailability(url);
+      if (available) {
+        // Reemplazar preview local con la versión del servidor
+        setImagenes(prev => {
+          const withoutTemp = prev.filter(i => !i.temp);
+          return [...withoutTemp, img];
+        });
+        // Refetch para asegurar URL final y evitar caches
+        await refetchImagenes();
+        setGalleryVersion(Date.now());
+      } else {
+        // Mantener preview local y reintentar un refetch diferido
+        setTimeout(() => {
+          refetchImagenes();
+          setGalleryVersion(Date.now());
+        }, 1500);
+      }
     } catch {
       setErrorImgs('Error al subir imagen');
     }
@@ -84,11 +134,9 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
     }
     setErrorImgs(null);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/notas/${nota.id}/imagenes/${imgId}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Error al eliminar imagen');
+      await http.delete(`${import.meta.env.VITE_API_URL}/notas/${nota.id}/imagenes/${imgId}`);
       setImagenes(prev => prev.filter(i => i.idImage !== imgId));
+      setGalleryVersion(Date.now());
     } catch {
       setErrorImgs('Error al eliminar imagen');
     }
@@ -128,6 +176,8 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
+            maxHeight: '90vh',
+            overflowY: 'auto',
           })}
         >
           <IconButton
@@ -198,14 +248,31 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
               <Typography color="text.secondary" variant="body2">No hay imágenes adjuntas.</Typography>
             ) : (
               <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                {imagenes.map((img, idx) => (
-                  <Grid item xs={6} sm={4} key={img.id || idx}>
+                {imagenes.filter(i => (i?.url || i?.imageUrl)).map((img, idx) => {
+                  const baseUrl = img.url || img.imageUrl;
+                  const ts = img.fechaSubida ? new Date(img.fechaSubida).getTime() : Date.now();
+                  const srcUrl = baseUrl ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}t=${ts}&v=${galleryVersion}` : '';
+                  return (
+                  <Grid item xs={6} sm={4} key={(img.idImage || img.id || idx) + '-' + galleryVersion}>
                     <Box sx={{ position: 'relative', width: '100%', borderRadius: 2, overflow: 'hidden', boxShadow: 2 }}>
                       <img
-                        src={img.url || img.imageUrl}
+                        src={srcUrl}
                         alt={`Imagen ${idx + 1}`}
                         style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8 }}
-                        onClick={() => setImgFull(img.url || img.imageUrl)}
+                        onClick={() => setImgFull(baseUrl)}
+                        onError={(e) => {
+                          // Reintentos de carga con cache-busting incremental
+                          const imgEl = e.currentTarget;
+                          const tries = Number(imgEl.dataset.tries || 0);
+                          if (tries < 3 && baseUrl) {
+                            imgEl.dataset.tries = String(tries + 1);
+                            const nextSrc = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}t=${Date.now()}_${tries+1}`;
+                            imgEl.src = nextSrc;
+                          } else {
+                            // Último recurso: refetch listado
+                            refetchImagenes();
+                          }
+                        }}
                       />
                       <IconButton
                       onClick={e => {
@@ -222,7 +289,7 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
                     
                     </Box>
                   </Grid>
-                ))}
+                );})}
               </Grid>
             )}
           </Box> 

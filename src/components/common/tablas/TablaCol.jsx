@@ -679,7 +679,7 @@ const TablaCol = () => {
                         color: theme.palette.primary.main,
                         fontWeight: 600
                       }}>
-                        Editor de Contrato - {selectedContract.nombreContrato}
+                        Editor de Contrat - {selectedContract.nombreContrato}
                       </Typography>
                       <IconButton 
                         onClick={handleCloseEditor}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Header } from './Header';
 import { Outlet } from 'react-router-dom';
 import Grid2 from '@mui/material/Grid2';
@@ -43,6 +43,27 @@ export const Layout = () => {
     setDarkMode(newMode);
     localStorage.setItem('darkMode', JSON.stringify(newMode));
   };
+
+  // Sincronizar atributo data-theme y color-scheme del documento
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    // Sugerir al UA el esquema de color correcto para formularios/scrollbars
+    root.style.colorScheme = darkMode ? 'dark' : 'light';
+
+    // Actualizar la barra de estado en Android/Chrome
+    const metaThemes = document.querySelectorAll('meta[name="theme-color"]');
+    metaThemes.forEach((el) => {
+      el.setAttribute('content', darkMode ? '#121212' : '#8D2EE6');
+      if (el.hasAttribute('media')) el.removeAttribute('media');
+    });
+
+    // Actualizar preferencia de esquema de color del documento
+    const metaColorScheme = document.querySelector('meta[name="color-scheme"]');
+    if (metaColorScheme) {
+      metaColorScheme.setAttribute('content', darkMode ? 'dark light' : 'light only');
+    }
+  }, [darkMode]);
 
   return (
     <ThemeProvider theme={theme}>

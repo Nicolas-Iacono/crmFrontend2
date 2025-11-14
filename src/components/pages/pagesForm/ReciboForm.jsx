@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import logoInmo from '../../../assets/logoInmo.png';
@@ -65,6 +65,13 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import InfoIcon from '@mui/icons-material/Info';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import PriceChangeIcon from '@mui/icons-material/PriceChange';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import DeleteIcon from '@mui/icons-material/Delete';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ReceiptFormTour from '../../common/tour/ReceiptFormTour';
 
 const ReciboForm = () => {
@@ -73,7 +80,19 @@ const ReciboForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams(); // Obtenemos el ID del contrato de los parámetros de URL
-  const { usuarioFetch } = useAuth();
+  const { usuarioFetch, token } = useAuth();
+
+  // Function to format number with thousand separators
+  const formatNumber = (num) => {
+    if (!num) return '';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Function to parse formatted number back to numeric value
+  const parseNumber = (str) => {
+    if (!str) return 0;
+    return parseInt(str.replace(/\./g, '')) || 0;
+  };
   // Estados para manejar el contrato y la carga
   const [contrato, setContrato] = useState(location.state?.contrato || null);
   const [loadingContrato, setLoadingContrato] = useState(!contrato && !!id);
@@ -90,8 +109,12 @@ const ReciboForm = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [openModal, setOpenModal] = useState(false);
   const [selectedRecibo, setSelectedRecibo] = useState(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(null); // Para mostrar loading en descarga
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [currentPdfUrl, setCurrentPdfUrl] = useState('');
+  const [currentPdfTitle, setCurrentPdfTitle] = useState('');
   const logo = usuarioFetch?.logo;
-
+  
   // Update recibos when contrato changes
   useEffect(() => {
     if (contrato) {
@@ -120,17 +143,18 @@ const ReciboForm = () => {
   useEffect(() => {
     // Si recibimos el contrato vía location.state
     if (location.state?.contrato) {
-      console.log("Contrato recibido vía estado:", location.state.contrato);
       setContrato(location.state.contrato);
     }
     // Si tenemos un ID pero no contrato, necesitamos buscarlo 
     else if (id && !contrato) {
-      console.log("Obteniendo contrato por ID:", id);
       const fetchContract = async () => {
         try {
-          const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/buscar/${id}`);
+          const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/buscar/${id}` , {
+            headers: {
+              Authorization: `Bearer ${token ?? localStorage.getItem('token') ?? ''}`,
+            }
+          });
           const data = response.data.data || response.data;
-          console.log("Contrato obtenido por API:", data);
           setContrato(data);
         } catch (error) {
           console.error("Error obteniendo contrato:", error);
@@ -162,7 +186,8 @@ const ReciboForm = () => {
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: contrato?.aguaPorcentaje || 0
+        porcentaje: contrato?.aguaPorcentaje || 0,
+        archivoPDF: null
       },
       luz: {
         descripcion: 'Luz',
@@ -171,7 +196,8 @@ const ReciboForm = () => {
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: contrato?.luzPorcentaje || 0
+        porcentaje: contrato?.luzPorcentaje || 0,
+        archivoPDF: null
       },
       gas: {
         descripcion: 'Gas',
@@ -180,7 +206,8 @@ const ReciboForm = () => {
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: contrato?.gasPorcentaje || 0
+        porcentaje: contrato?.gasPorcentaje || 0,
+        archivoPDF: null
       },
       municipal: {
         descripcion: 'Municipal',
@@ -189,7 +216,8 @@ const ReciboForm = () => {
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: contrato?.municipalPorcentaje || 0
+        porcentaje: contrato?.municipalPorcentaje || 0,
+        archivoPDF: null
       },
       deudasPendientes: {
         descripcion: 'Deudas Pendientes',
@@ -198,7 +226,8 @@ const ReciboForm = () => {
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: 100
+        porcentaje: 100,
+        archivoPDF: null
       },
       expensasOrdinarias: {
         descripcion: 'Expensas Ordinarias',
@@ -207,7 +236,8 @@ const ReciboForm = () => {
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: 100
+        porcentaje: 100,
+        archivoPDF: null
       },
       expensasExtraordinarias: {
         descripcion: 'Expensas Extraordinarias',
@@ -216,7 +246,8 @@ const ReciboForm = () => {
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: 100
+        porcentaje: 100,
+        archivoPDF: null
       }
     },
     metodoPago: '',
@@ -270,79 +301,106 @@ const ReciboForm = () => {
     }
   }, [contrato]);
 
-  // Obtener recibos cuando el contrato esté disponible
-  useEffect(() => {
-    const fetchRecibos = async () => {
-      // Verificar que tengamos un contrato para filtrar recibos
-      if (!contrato || !contrato.id) {
-        console.log("No hay contrato o ID de contrato para obtener recibos");
-        return;
-      }
+  // Obtener recibos cuando el contrato esté disponible y para refrescar la lista
+  const fetchRecibos = useCallback(async () => {
+    // Verificar que tengamos un contrato para filtrar recibos
+    if (!contrato || !contrato.id) {
+      console.warn('[ReciboForm] fetchRecibos: contrato.id no definido, se aborta fetch');
+      return;
+    }
 
-      setIsLoading(true);
-      setError(null);
-      
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const authHeaders = {
+        headers: {
+          Authorization: `Bearer ${token ?? localStorage.getItem('token') ?? ''}`,
+        }
+      };
+      // 1) Intentar obtener directamente por contrato (endpoint correcto)
+      let recibosData = [];
+      let gotByContrato = false;
       try {
-        console.log('Obteniendo recibos para contrato ID:', contrato.id);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/recibo/all`);
-        console.log(response)
-        // Procesamiento uniforme de la respuesta (patrón común)
-        const recibosData = Array.isArray(response.data) 
-          ? response.data 
-          : (response.data && response.data.data && Array.isArray(response.data.data)) 
-            ? response.data.data 
+        const resByContrato = await axios.get(`${import.meta.env.VITE_API_URL}/recibo/por-contrato/${contrato.id}`, authHeaders);
+        recibosData = Array.isArray(resByContrato.data)
+          ? resByContrato.data
+          : (resByContrato.data && Array.isArray(resByContrato.data.data))
+            ? resByContrato.data.data
             : [];
-        
-        console.log('Recibos obtenidos (sin filtrar):', recibosData);
-        
-        // Normalizar los datos para prevenir valores undefined
-        const recibosNormalizados = recibosData.map(recibo => ({
-          id: recibo.id || 0,
-          numeroRecibo: recibo.numeroRecibo || recibo.id || 0,
-          // Convertir fechas de array a string si es necesario
-          fechaEmision: Array.isArray(recibo.fechaEmision) 
-            ? `${recibo.fechaEmision[0]}-${String(recibo.fechaEmision[1]).padStart(2, '0')}-${String(recibo.fechaEmision[2]).padStart(2, '0')}` 
-            : recibo.fechaEmision || new Date().toISOString(),
-          fechaVencimiento: Array.isArray(recibo.fechaVencimiento) 
-            ? `${recibo.fechaVencimiento[0]}-${String(recibo.fechaVencimiento[1]).padStart(2, '0')}-${String(recibo.fechaVencimiento[2]).padStart(2, '0')}` 
-            : recibo.fechaVencimiento || new Date().toISOString(),
-          periodo: recibo.periodo || 'No especificado',
-          concepto: recibo.concepto || 'No especificado',
-          montoTotal: parseFloat(recibo.montoTotal || 0),
-          estado: recibo.estado === undefined ? false : recibo.estado,
-          impuestos: Array.isArray(recibo.impuestos) ? recibo.impuestos.map(imp => ({
-            id: imp.id || 0,
-            tipoImpuesto: imp.tipoImpuesto || 'Otro',
-            montoAPagar: parseFloat(imp.montoAPagar || 0),
-            estadoPago: imp.estadoPago === undefined ? false : imp.estadoPago,
-            porcentaje: parseFloat(imp.porcentaje || 0)
-          })) : [],
-          contrato: recibo.contrato || {},
-          idContrato: recibo.idContrato || recibo.contrato?.id || 0
-        }));
-        
-        // Filtrar recibos por contrato
-        const filteredRecibos = recibosNormalizados.filter(rec => 
-          (rec.contrato && rec.contrato.id === contrato.id) || 
-          (rec.idContrato && rec.idContrato === contrato.id)
-        );
-        
-        console.log('Recibos filtrados para contrato ID', contrato.id, ':', filteredRecibos);
-        setRecibos(filteredRecibos);
-      } catch (error) {
-        console.error('Error obteniendo recibos:', error);
-        setError(`Error al cargar los recibos: ${error.message || 'Error desconocido'}`);
-        showSnackbar('Error al cargar los recibos. Por favor, intente nuevamente.', 'error');
-      } finally {
-        setIsLoading(false);
+        gotByContrato = true;
+      } catch (_) {
+        // 2) Fallback a obtener todos si el endpoint por contrato no existe o falla
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/recibo/all`, authHeaders);
+        recibosData = Array.isArray(response.data)
+          ? response.data
+          : (response.data && response.data.data && Array.isArray(response.data.data))
+            ? response.data.data
+            : [];
       }
-    };
+      
+      // Normalizar los datos para prevenir valores undefined
+      const recibosNormalizados = recibosData.map(recibo => ({
+        id: recibo.id || 0,
+        numeroRecibo: recibo.numeroRecibo || recibo.id || 0,
+        // Convertir fechas de array a string si es necesario
+        fechaEmision: Array.isArray(recibo.fechaEmision) 
+          ? `${recibo.fechaEmision[0]}-${String(recibo.fechaEmision[1]).padStart(2, '0')}-${String(recibo.fechaEmision[2]).padStart(2, '0')}` 
+          : recibo.fechaEmision || new Date().toISOString(),
+        fechaVencimiento: Array.isArray(recibo.fechaVencimiento) 
+          ? `${recibo.fechaVencimiento[0]}-${String(recibo.fechaVencimiento[1]).padStart(2, '0')}-${String(recibo.fechaVencimiento[2]).padStart(2, '0')}` 
+          : recibo.fechaVencimiento || new Date().toISOString(),
+        periodo: recibo.periodo || 'No especificado',
+        concepto: recibo.concepto || 'No especificado',
+        montoTotal: parseFloat(recibo.montoTotal || 0),
+        estado: recibo.estado === undefined ? false : recibo.estado,
+        impuestos: Array.isArray(recibo.impuestos) ? recibo.impuestos.map(imp => ({
+          id: imp.id || 0,
+          tipoImpuesto: imp.tipoImpuesto || 'Otro',
+          descripcion: imp.descripcion || '',
+          empresa: imp.empresa || '',
+          montoAPagar: parseFloat(imp.montoAPagar || 0),
+          estadoPago: imp.estadoPago === undefined ? false : imp.estadoPago,
+          porcentaje: parseFloat(imp.porcentaje || 0),
+          fechaFactura: imp.fechaFactura || '',
+          numeroCliente: imp.numeroCliente || '',
+          numeroMedidor: imp.numeroMedidor || '',
+          archivoFactura: imp.urlFactura || null // ✅ Mapear urlFactura a archivoFactura
+        })) : [],
+        contrato: recibo.contrato || {},
+        idContrato: recibo.idContrato || recibo.contratoId || recibo.contrato?.id || 0,
+        nombreContrato: recibo.nombreContrato || ''
+      }));
+      
+      if (gotByContrato) {
+        // Confiamos en que el endpoint ya filtra por contrato
+      
+        setRecibos(recibosNormalizados);
+      } else {
+        // Filtrar recibos por contrato (robusto ante tipos string/number)
+        const cId = Number(contrato.id);
+        const filteredRecibos = recibosNormalizados.filter(rec => {
+          const recContratoId = Number(rec?.contrato?.id ?? rec?.idContrato ?? rec?.contratoId);
+          return !Number.isNaN(recContratoId) && recContratoId === cId;
+        });
+       
+        setRecibos(filteredRecibos);
+      }
+    } catch (error) {
+      console.error('Error obteniendo recibos:', error);
+      setError(`Error al cargar los recibos: ${error.message || 'Error desconocido'}`);
+      showSnackbar('Error al cargar los recibos. Por favor, intente nuevamente.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [contrato, loadingContrato]);
 
+  useEffect(() => {
     // Solo ejecutamos el fetch si tenemos un contrato y no estamos cargándolo
     if (contrato && contrato.id && !loadingContrato) {
       fetchRecibos();
     }
-  }, [contrato, loadingContrato]); // Dependencias correctas
+  }, [contrato, loadingContrato, fetchRecibos]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -363,6 +421,38 @@ const ReciboForm = () => {
         }
       }
     }));
+  };
+
+  const handleFileUpload = (impuesto, file) => {
+    if (file && file.type === 'application/pdf') {
+      setFormData(prevState => ({
+        ...prevState,
+        impuestos: {
+          ...prevState.impuestos,
+          [impuesto]: {
+            ...prevState.impuestos[impuesto],
+            archivoPDF: file
+          }
+        }
+      }));
+      showSnackbar(`Archivo PDF cargado para ${formData.impuestos[impuesto].descripcion}`, 'success');
+    } else {
+      showSnackbar('Por favor seleccione un archivo PDF válido', 'error');
+    }
+  };
+
+  const handleFileRemove = (impuesto) => {
+    setFormData(prevState => ({
+      ...prevState,
+      impuestos: {
+        ...prevState.impuestos,
+        [impuesto]: {
+          ...prevState.impuestos[impuesto],
+          archivoPDF: null
+        }
+      }
+    }));
+    showSnackbar(`Archivo PDF eliminado para ${formData.impuestos[impuesto].descripcion}`, 'info');
   };
 
   const getImpuestoIcon = (tipo) => {
@@ -390,42 +480,6 @@ const ReciboForm = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // Transformar el formato de impuestos para que coincida con lo que espera el backend
-      const impuestosTransformados = [];
-
-      // Solo incluimos impuestos seleccionados (incluir=true)
-      Object.entries(formData.impuestos)
-        .filter(([_, impuesto]) => impuesto.incluir)
-        .forEach(([tipo, impuesto]) => {
-          // Asignar el tipo de impuesto correcto para los casos especiales
-          let tipoImpuestoEnviado;
-          switch(tipo) {
-            case 'expensasOrdinarias':
-              tipoImpuestoEnviado = 'EXP_ORD';
-              break;
-            case 'expensasExtraordinarias':
-              tipoImpuestoEnviado = 'EXP_EXT_ORD';
-              break;
-            case 'deudasPendientes':
-              tipoImpuestoEnviado = 'DEUDA_PENDIENTE';
-              break;
-            default:
-              tipoImpuestoEnviado = tipo.toUpperCase();
-          }
-          
-          impuestosTransformados.push({
-            tipoImpuesto: tipoImpuestoEnviado,
-            descripcion: impuesto.descripcion,
-            Empresa: impuesto.empresa, 
-            porcentaje: impuesto.porcentaje,
-            numeroCliente: impuesto.numeroCliente || "",
-            numeroMedidor: impuesto.numeroMedidor || "",
-            montoAPagar: parseFloat(impuesto.montoAPagar),
-            fechaFactura: impuesto.fechaFactura, 
-            estadoPago: impuesto.estadoPago
-          });
-        });
-
       // Verificar que tenemos un contrato válido
       if (!contrato || !contrato.id) {
         alert('No hay un contrato seleccionado. Por favor, seleccione un contrato antes de crear un recibo.');
@@ -433,27 +487,78 @@ const ReciboForm = () => {
         return;
       }
 
-      const reciboData = {
-        idContrato: contrato.id,
-        numeroRecibo: parseInt(formData.numeroRecibo) || 0,
-        fechaEmision: formData.fechaEmision || new Date().toISOString(),
-        fechaVencimiento: formData.fechaVencimiento || new Date().toISOString(),
-        periodo: formData.periodo || '',
-        concepto: formData.concepto || '',
-        montoTotal: contrato?.montoAlquiler || contrato?.monto || 0,
-        impuestos: impuestosTransformados
-      };
+      // Crear FormData para enviar archivos
+      const formDataToSend = new FormData();
+      
+      // Agregar datos básicos del recibo
+      formDataToSend.append('idContrato', contrato.id);
+      // Algunos backends esperan 'contratoId'; enviamos ambos para asegurar asociación
+      formDataToSend.append('contratoId', contrato.id);
+      formDataToSend.append('numeroRecibo', parseInt(formData.numeroRecibo) || 0);
+      formDataToSend.append('fechaEmision', formData.fechaEmision || new Date().toISOString());
+      formDataToSend.append('fechaVencimiento', formData.fechaVencimiento || new Date().toISOString());
+      formDataToSend.append('periodo', formData.periodo || '');
+      formDataToSend.append('concepto', formData.concepto || '');
+      formDataToSend.append('montoTotal', contrato?.montoAlquiler || contrato?.monto || 0);
+      
+      
+      // Agregar impuestos con índices numéricos para Spring Boot
+      const impuestosIncluidos = Object.entries(formData.impuestos)
+        .filter(([_, impuesto]) => impuesto.incluir);
 
-      console.log('Datos enviados al servidor:', reciboData);
+      impuestosIncluidos.forEach(([tipo, impuesto], index) => {
+        // Determinar el tipo de impuesto
+        let tipoImpuestoEnviado;
+        switch (tipo) {
+          case "agua": 
+            tipoImpuestoEnviado = "AGUA"; 
+            break;
+          case "luz": 
+            tipoImpuestoEnviado = "LUZ"; 
+            break;
+          case "gas": 
+            tipoImpuestoEnviado = "GAS"; 
+            break;
+          case "municipal": 
+            tipoImpuestoEnviado = "MUNICIPAL"; 
+            break;
+          case "expensasOrdinarias": 
+            tipoImpuestoEnviado = "EXP_ORD"; 
+            break;
+          case "expensasExtraordinarias": 
+            tipoImpuestoEnviado = "EXP_EXT_ORD"; 
+            break;
+          case "deudasPendientes": 
+            tipoImpuestoEnviado = "DEUDA_PENDIENTE"; 
+            break;
+          default: 
+            tipoImpuestoEnviado = tipo.toUpperCase();
+        }
 
-      // Corregir la URL para evitar el duplicado de /api
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/recibo/create`, reciboData);
+        // 📌 Usar índices numéricos en lugar del nombre textual
+        formDataToSend.append(`impuestos[${index}].tipoImpuesto`, tipoImpuestoEnviado);
+        formDataToSend.append(`impuestos[${index}].descripcion`, impuesto.descripcion);
+        formDataToSend.append(`impuestos[${index}].empresa`, impuesto.empresa || "");
+        formDataToSend.append(`impuestos[${index}].porcentaje`, impuesto.porcentaje);
+        formDataToSend.append(`impuestos[${index}].numeroCliente`, impuesto.numeroCliente || "");
+        formDataToSend.append(`impuestos[${index}].numeroMedidor`, impuesto.numeroMedidor || "");
+        formDataToSend.append(`impuestos[${index}].montoAPagar`, parseFloat(impuesto.montoAPagar) || 0);
+        formDataToSend.append(`impuestos[${index}].fechaFactura`, impuesto.fechaFactura || "");
+        formDataToSend.append(`impuestos[${index}].estadoPago`, impuesto.estadoPago);
 
-      console.log('Respuesta del servidor:', response.data);
+        // Si hay PDF, se agrega
+        if (impuesto.archivoPDF) {
+          formDataToSend.append(`impuestos[${index}].archivoFactura`, impuesto.archivoPDF);
+        }
+      });
+
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/recibo/create`, formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token ?? localStorage.getItem('token') ?? ''}`,
+        },
+      });
       const newRecibo = response.data.data || response.data;
-      console.log('newRecibo:', newRecibo);
-      console.log('newRecibo.id:', newRecibo.id);
-      console.log('newRecibo.numeroRecibo:', newRecibo.numeroRecibo);
       
       // Intentar extraer el ID de diferentes posibles ubicaciones en la respuesta
       let reciboId = newRecibo.id || newRecibo.reciboId || response.data.id;
@@ -463,14 +568,8 @@ const ReciboForm = () => {
         const locationMatch = response.headers.location.match(/\/recibo\/(\d+)/);
         if (locationMatch) {
           reciboId = parseInt(locationMatch[1]);
-          console.log('ID extraído de location header:', reciboId);
         }
       }
-      
-      // Verificar que tenemos un ID válido del backend
-  
-      
-      console.log('ID final asignado al recibo:', reciboId);
       
       const reciboNormalizado = {
         id: reciboId || 0,
@@ -511,10 +610,16 @@ const ReciboForm = () => {
         } : contrato
       };
 
-      setRecibos(prev => [...prev, reciboNormalizado]);
+      if (reciboId) {
+        setRecibos(prev => [...prev, reciboNormalizado]);
+      }
 
       // Mostrar mensaje de éxito
       alert('Recibo creado con éxito');
+      // Refrescar solo las cards de recibos sin recargar toda la app
+      await fetchRecibos();
+      // Retry rápido por si el backend demora en reflejar el nuevo recibo
+      setTimeout(() => { fetchRecibos(); }, 600);
 
     } catch (error) {
       console.error('Error creating recibo:', error);
@@ -551,10 +656,6 @@ const ReciboForm = () => {
       }
 
       const nuevoEstado = !recibo.estado;
-
-      console.log(`Actualizando recibo ${recibo.id} a estado: ${nuevoEstado ? 'Pagado' : 'Pendiente'}`);
-      console.log('Recibo completo:', recibo);
-
       const response = await axios.put(`${import.meta.env.VITE_API_URL}/recibo/estado`, 
         { 
           id: recibo.id,
@@ -563,11 +664,10 @@ const ReciboForm = () => {
         {
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token ?? localStorage.getItem('token') ?? ''}`,
           }
         }
       );
-
-      console.log('Respuesta del servidor:', response.data);
 
       // Actualizar el estado local
       setRecibos(prev => prev.map(r => 
@@ -598,8 +698,7 @@ const ReciboForm = () => {
     }
 
     try {
-      console.log(`Generando PDF del recibo ${recibo.id}`);
-
+      
       // Normalizar el recibo para evitar valores undefined
       const reciboNormalizado = {
         id: recibo.id || 0,
@@ -845,11 +944,15 @@ const ReciboForm = () => {
         }
       } else {
         // En navegadores de escritorio, usamos descarga normal
-        doc.save(`Recibo_${reciboNormalizado.id}_${reciboNormalizado.periodo || 'Sin_Periodo'}.pdf`);
-        showSnackbar('PDF descargado exitosamente', 'success');
+      const blob = doc.output("blob");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Recibo_${reciboNormalizado.id}_${reciboNormalizado.periodo || 'Sin_Periodo'}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showSnackbar('PDF descargado exitosamente', 'success');
       }
-
-      console.log('PDF generado exitosamente');
     } catch (error) {
       console.error('Error generando PDF:', error);
       showSnackbar('Error: No se pudo generar el PDF.', 'error');
@@ -932,9 +1035,14 @@ const ReciboForm = () => {
         id: imp.id || 0,
         tipoImpuesto: imp.tipoImpuesto || 'Otro',
         descripcion: imp.descripcion || imp.tipoImpuesto || 'Otro',
+        empresa: imp.empresa || '',
         montoAPagar: parseFloat(imp.montoAPagar || 0),
         estadoPago: imp.estadoPago || false,
-        porcentaje: parseFloat(imp.porcentaje || 0)
+        porcentaje: parseFloat(imp.porcentaje || 0),
+        fechaFactura: imp.fechaFactura || '',
+        numeroCliente: imp.numeroCliente || '',
+        numeroMedidor: imp.numeroMedidor || '',
+        archivoFactura: imp.urlFactura || imp.archivoFactura || null // ✅ Mapear correctamente
       })) : [],
       contrato: recibo.contrato || contrato || {}
     };
@@ -953,6 +1061,18 @@ const ReciboForm = () => {
   const handleCloseReciboModal = () => {
     setOpenModal(false);
     setSelectedRecibo(null);
+  };
+
+  const handleOpenPdfViewer = (pdfUrl, title) => {
+    setCurrentPdfUrl(pdfUrl);
+    setCurrentPdfTitle(title);
+    setPdfViewerOpen(true);
+  };
+
+  const handleClosePdfViewer = () => {
+    setPdfViewerOpen(false);
+    setCurrentPdfUrl('');
+    setCurrentPdfTitle('');
   };
 
   return (
@@ -987,30 +1107,29 @@ const ReciboForm = () => {
 
         <CardContent sx={{ p: 3, backgroundColor: theme.palette.mode === 'dark' ? "#111111" : "white" }}>
           <Box>
-          <IconButton 
-        onClick={() => navigate(-1)}
-        sx={{ 
-          marginTop:10,
-          mb: 2,
-          backgroundColor: theme.palette.background.paper,
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          '&:hover': {
-            backgroundColor: theme.palette.background.paper,
-            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-            }
-        }}
-      >
-        <ArrowBackIcon />
-      </IconButton> 
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, marginTop:"1rem" }}>
-            <ReceiptIcon sx={{ mr: 2, color: theme.palette.primary.main, fontSize: 32 }} />
-            <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }} data-tour="reciboform-title">
-              Generar Recibo
-            </Typography>
-          </Box>
+          
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 ,flexDirection:"row", justifyContent:"start",
+              height:"5rem",mt:3 }}>
+                <IconButton 
+                  onClick={() => navigate(-1)}
+                  sx={{ 
+                    backgroundColor: theme.palette.background.paper,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    '&:hover': {
+                      backgroundColor: theme.palette.background.paper,
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                      }
+                        }}
+                >
+                <ArrowBackIcon />
+                </IconButton> 
+                <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }} data-tour="reciboform-title">
+                Generar Recibo
+                </Typography>
+            </Box>
           </Box>
           <Box sx={{ 
-            backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#f8fafc',
+            background: theme.palette.mode === 'dark' ? '' : ' #f8fafc',
             p: { xs: 2, sm: 3 }, 
             borderRadius: 2,
             mb: 3
@@ -1023,50 +1142,22 @@ const ReciboForm = () => {
                 fontWeight: 600, 
                 display: 'flex', 
                 alignItems: 'center',
-                color: theme.palette.primary.main
+                color: theme.palette.mode === 'dark' ? "rgb(248, 248, 248)" : "rgb(34, 59, 121)"
               }}
               data-tour="reciboform-contract"
             >
-              <DescriptionIcon sx={{ mr: 1 }} />
+              <DescriptionIcon sx={{ mr: 1,
+                color: theme.palette.mode === 'dark' ? "rgb(175, 175, 175)" : "rgb(37, 68, 136)"
+               }} />
               Datos del Contrato
             </Typography>
 
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <HomeIcon color="primary" sx={{ mr: 1, fontSize: '1.1rem' }} />
-                  <Typography variant="subtitle1" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ fontWeight: 500 }}>
-                    Propiedad: 
-                    <Typography component="span" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ ml: 1 }}>
-                      {contrato?.propiedad?.direccion || 'No disponible'}
-                    </Typography>
-                  </Typography>
-                </Box>
-              </Grid>
+            <Grid container spacing={2} sx={{ mt:1}}>
+              
 
-              <Grid item xs={12} sm={6} md={4}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <PersonIcon color="secondary" sx={{ mr: 1, fontSize: '1.1rem' }} />
-                  <Typography variant="subtitle1" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ fontWeight: 500 }}>
-                    Inquilino: 
-                    <Typography component="span" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ ml: 1 }}>
-                      {contrato?.inquilino ? `${contrato.inquilino.nombre} ${contrato.inquilino.apellido}` : 'No disponible'}
-                    </Typography>
-                  </Typography>
-                </Box>
-              </Grid>
+             
 
-              <Grid item xs={12} sm={6} md={4}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <GroupIcon color="info" sx={{ mr: 1, fontSize: '1.1rem' }} />
-                  <Typography variant="subtitle1" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ fontWeight: 500 }}>
-                    Propietario: 
-                    <Typography component="span" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ ml: 1 }}>
-                      {contrato?.propietario ? `${contrato.propietario.nombre} ${contrato.propietario.apellido}` : 'No disponible'}
-                    </Typography>
-                  </Typography>
-                </Box>
-              </Grid>
+              
 
               <Grid item xs={12} sm={6} md={4}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -1110,13 +1201,13 @@ const ReciboForm = () => {
             sx={{ 
               mb: 4, 
               p: 2,
-              backgroundColor: theme.palette.mode === 'dark' ? "#232323" : "white",
+              background: theme.palette.mode === 'dark' ? 'linear-gradient(90deg,rgba(9, 11, 29, 0.45) 0%,rgba(11, 7, 61, 0.39)70%)' : ' #f8fafc',
               boxShadow: 'none',
               border: theme.palette.mode === 'dark' ? "1px solid #232323" : "1px solid #E0E0E0",
               borderRadius: 2,
             }}
           >
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <PersonIcon color="primary" fontSize="small" />
                 <Typography variant="subtitle1"  color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ fontWeight: 500}}>
@@ -1202,10 +1293,10 @@ const ReciboForm = () => {
                 <TextField
                   required
                   fullWidth
-                  type="number"
+                  type="text"
                   label="Monto Total"
                   name="montoTotal"
-                  value={contrato?.montoAlquiler || contrato?.monto || 0}
+                  value={formatNumber(contrato?.montoAlquiler || contrato?.monto || 0)}
                   disabled
                   InputProps={{
                     startAdornment: <PaymentIcon sx={{ mr: 1, color: theme.palette.primary.main }} />,
@@ -1342,9 +1433,9 @@ const ReciboForm = () => {
                           <TextField
                             fullWidth
                             label="Monto"
-                            type="number"
-                            value={impuesto.montoAPagar}
-                            onChange={(e) => handleImpuestoChange(tipo, 'montoAPagar', e.target.value)}
+                            type="text"
+                            value={formatNumber(impuesto.montoAPagar || 0)}
+                            onChange={(e) => handleImpuestoChange(tipo, 'montoAPagar', parseNumber(e.target.value))}
                             disabled={!impuesto.incluir}
                             sx={{ 
                               '& .MuiOutlinedInput-root': { 
@@ -1382,6 +1473,88 @@ const ReciboForm = () => {
                               }
                             }}
                           />
+                        </Grid>
+                        
+                        {/* Campo para subir PDF */}
+                        <Grid item xs={12}>
+                          <Box sx={{ mt: 2 }}>
+                            {!impuesto.archivoPDF ? (
+                              <Button
+                                variant="outlined"
+                                component="label"
+                                fullWidth
+                                startIcon={<CloudUploadIcon />}
+                                disabled={!impuesto.incluir}
+                                sx={{
+                                  py: 1.5,
+                                  borderStyle: 'dashed',
+                                  borderWidth: 2,
+                                  borderColor: theme.palette.primary.main,
+                                  color: theme.palette.primary.main,
+                                  backgroundColor: theme.palette.mode === 'dark' 
+                                    ? 'rgba(25, 118, 210, 0.04)' 
+                                    : 'rgba(25, 118, 210, 0.04)',
+                                  '&:hover': {
+                                    backgroundColor: theme.palette.mode === 'dark' 
+                                      ? 'rgba(25, 118, 210, 0.08)' 
+                                      : 'rgba(25, 118, 210, 0.08)',
+                                    borderColor: theme.palette.primary.dark
+                                  },
+                                  '&.Mui-disabled': {
+                                    borderColor: theme.palette.action.disabled,
+                                    color: theme.palette.action.disabled
+                                  }
+                                }}
+                              >
+                                Subir Factura PDF
+                                <input
+                                  type="file"
+                                  hidden
+                                  accept=".pdf"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      handleFileUpload(tipo, file);
+                                    }
+                                  }}
+                                />
+                              </Button>
+                            ) : (
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  p: 2,
+                                  border: `1px solid ${theme.palette.success.main}`,
+                                  borderRadius: 1,
+                                  backgroundColor: theme.palette.mode === 'dark' 
+                                    ? 'rgba(76, 175, 80, 0.04)' 
+                                    : 'rgba(76, 175, 80, 0.04)'
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <AttachFileIcon color="success" />
+                                  <Typography variant="body2" color="success.main">
+                                    {impuesto.archivoPDF.name}
+                                  </Typography>
+                                  <Chip 
+                                    label={`${(impuesto.archivoPDF.size / 1024 / 1024).toFixed(2)} MB`}
+                                    size="small"
+                                    color="success"
+                                    variant="outlined"
+                                  />
+                                </Box>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleFileRemove(tipo)}
+                                  sx={{ color: theme.palette.error.main }}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Box>
+                            )}
+                          </Box>
                         </Grid>
                       </Grid>
                     </AccordionDetails>
@@ -1998,6 +2171,179 @@ const ReciboForm = () => {
                   </Typography>
                 </Box>
               </Paper>
+
+          
+
+              {/* Sección de PDFs adjuntos */}
+              {selectedRecibo.impuestos && selectedRecibo.impuestos.some(imp => imp.archivoFactura) && (
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  mb: 3,
+                  borderRadius: 2,
+                  border: `1px solid ${theme.palette.divider}`,
+                  mt: 2
+                }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                    <PictureAsPdfIcon sx={{ fontSize: 18, mr: 0.5, color: theme.palette.primary.main, verticalAlign: 'text-bottom' }} />
+                    Facturas PDF Adjuntas
+                  </Typography>
+                  
+                  <Grid container spacing={2} >
+                    {selectedRecibo.impuestos
+                      .filter(imp => imp.archivoFactura)
+                      .map((impuesto, idx) => (
+                        <Grid item xs={12} sm={6} md={4} key={impuesto.id || idx}>
+                          <Card sx={{ 
+                            border: `1px solid ${theme.palette.divider}`,
+                            borderRadius: 2,
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              boxShadow: theme.shadows[4],
+                              transform: 'translateY(-2px)'
+                            }
+                          }}>
+                            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <PictureAsPdfIcon sx={{ 
+                                    color: theme.palette.success.main, 
+                                    fontSize: 20, 
+                                    mr: 1 
+                                  }} />
+                                  <Typography variant="subtitle2" sx={{ 
+                                    fontWeight: 600,
+                                    fontSize: '0.875rem'
+                                  }}>
+                                    {impuesto.tipoImpuesto}
+                                  </Typography>
+                                </Box>
+                                <Chip 
+                                  label="PDF"
+                                  size="small"
+                                  color="success"
+                                  variant="filled"
+                                />
+                              </Box>
+                              
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                {impuesto.descripcion} - {impuesto.empresa}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                                ${parseFloat(impuesto.montoAPagar || 0).toLocaleString('es-AR')}
+                              </Typography>
+                              
+                              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<VisibilityIcon />}
+                                  onClick={() => {
+                                    // Si es un archivo local (File object)
+                                    if (impuesto.archivoFactura instanceof File) {
+                                      const url = URL.createObjectURL(impuesto.archivoFactura);
+                                      handleOpenPdfViewer(url, `${impuesto.tipoImpuesto} - ${impuesto.descripcion}`);
+                                    } 
+                                    // Si es una URL del servidor
+                                    else if (typeof impuesto.archivoFactura === 'string') {
+                                      handleOpenPdfViewer(impuesto.archivoFactura, `${impuesto.tipoImpuesto} - ${impuesto.descripcion}`);
+                                    }
+                                  }}
+                                  sx={{ 
+                                    flex: 1,
+                                    fontSize: '0.75rem',
+                                    py: 0.5,
+                                    backgroundColor: theme.palette.primary.main,
+                                    color: 'white',
+                                    '&:hover': {
+                                      backgroundColor: theme.palette.primary.dark,
+                                    },
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                >
+                                  Ver PDF
+                                </Button>
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  disabled={downloadingPdf === impuesto.id}
+                                  onClick={async () => {
+                                    try {
+                                      setDownloadingPdf(impuesto.id);
+                                      
+                                      // Si es un archivo local (File object)
+                                      if (impuesto.archivoFactura instanceof File) {
+                                        const url = URL.createObjectURL(impuesto.archivoFactura);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `${impuesto.tipoImpuesto}_factura.pdf`;
+                                        document.body.appendChild(a); // Agregar al DOM
+                                        a.click();
+                                        document.body.removeChild(a); // Remover del DOM
+                                        URL.revokeObjectURL(url);
+                                        showSnackbar('Archivo descargado exitosamente', 'success');
+                                      }
+                                      // Si es una URL del servidor
+                                      else if (typeof impuesto.archivoFactura === 'string') {
+                                        // Usar fetch para descargar el archivo
+                                        const response = await fetch(impuesto.archivoFactura, {
+                                          mode: 'cors',
+                                          headers: {
+                                            'Accept': 'application/pdf'
+                                          }
+                                        });
+                                        
+                                        if (!response.ok) {
+                                          throw new Error('Error al descargar el archivo');
+                                        }
+                                        
+                                        const blob = await response.blob();
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `${impuesto.tipoImpuesto}_factura.pdf`;
+                                        a.style.display = 'none';
+                                        document.body.appendChild(a); // Agregar al DOM
+                                        a.click();
+                                        document.body.removeChild(a); // Remover del DOM
+                                        URL.revokeObjectURL(url);
+                                        showSnackbar('Archivo descargado exitosamente', 'success');
+                                      }
+                                    } catch (error) {
+                                      console.error('Error descargando archivo:', error);
+                                      showSnackbar('Error al descargar. Abriendo en nueva pestaña...', 'warning');
+                                      // Fallback: abrir en nueva pestaña
+                                      setTimeout(() => {
+                                        window.open(impuesto.archivoFactura, '_blank');
+                                      }, 500);
+                                    } finally {
+                                      setDownloadingPdf(null);
+                                    }
+                                  }}
+                                  sx={{ 
+                                    backgroundColor: theme.palette.primary.main,
+                                    color: 'white',
+                                    '&:hover': {
+                                      backgroundColor: theme.palette.primary.dark,
+                                      transform: 'scale(1.1)'
+                                    },
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                >
+                                  {downloadingPdf === impuesto.id ? (
+                                    <CircularProgress size={16} color="inherit" />
+                                  ) : (
+                                    <CloudDownloadIcon fontSize="small" />
+                                  )}
+                                </IconButton>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))
+                    }
+                  </Grid>
+                </Paper>
+              )}
             </Box>
 
             {/* Botón de descarga */}
@@ -2024,6 +2370,134 @@ const ReciboForm = () => {
             </Box>
           </>
         )}
+      </Box>
+    </Modal>
+
+    {/* Modal visor de PDF integrado */}
+    <Modal
+      open={pdfViewerOpen}
+      onClose={handleClosePdfViewer}
+      aria-labelledby="pdf-viewer-modal"
+      aria-describedby="visor-de-pdf-integrado"
+    >
+      <Box sx={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: isMobile ? '95%' : '90%',
+        height: isMobile ? '90%' : '85%',
+        maxWidth: '1200px',
+        maxHeight: '800px',
+        bgcolor: theme.palette.background.paper,
+        borderRadius: 2,
+        boxShadow: 24,
+        p: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        {/* Header del visor */}
+        <Box sx={{ 
+          bgcolor: theme.palette.primary.main, 
+          py: 2, 
+          px: 3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
+            <PictureAsPdfIcon sx={{ mr: 1, verticalAlign: 'text-bottom' }} />
+            {currentPdfTitle}
+          </Typography>
+          <IconButton 
+            onClick={handleClosePdfViewer}
+            sx={{ color: 'white' }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        {/* Contenedor del PDF */}
+        <Box sx={{ 
+          flex: 1,
+          position: 'relative',
+          backgroundColor: '#f5f5f5'
+        }}>
+          {currentPdfUrl && (
+            <iframe
+              src={`https://docs.google.com/viewer?url=${encodeURIComponent(currentPdfUrl)}&embedded=true`}
+              width="100%"
+              height="100%"
+              style={{
+                border: 'none',
+                backgroundColor: 'white'
+              }}
+              title={currentPdfTitle}
+              sandbox="allow-scripts allow-same-origin"
+            />
+          )}
+          
+          {/* Botón de descarga flotante */}
+          <IconButton
+            onClick={async () => {
+              try {
+                setDownloadingPdf('viewer');
+                
+                if (currentPdfUrl.startsWith('blob:')) {
+                  // Es un archivo local
+                  const a = document.createElement('a');
+                  a.href = currentPdfUrl;
+                  a.download = `${currentPdfTitle.replace(/[^a-z0-9\s]/gi, '_')}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                } else {
+                  // Es una URL externa
+                  const response = await fetch(currentPdfUrl, {
+                    mode: 'cors',
+                    headers: { 'Accept': 'application/pdf' }
+                  });
+                  const blob = await response.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${currentPdfTitle.replace(/[^a-z0-9\s]/gi, '_')}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }
+                
+                showSnackbar('Archivo descargado exitosamente', 'success');
+              } catch (error) {
+                console.error('Error descargando:', error);
+                showSnackbar('Error al descargar archivo', 'error');
+              } finally {
+                setDownloadingPdf(null);
+              }
+            }}
+            sx={{
+              position: 'absolute',
+              bottom: 16,
+              right: 16,
+              backgroundColor: theme.palette.primary.main,
+              color: 'white',
+              '&:hover': {
+                backgroundColor: theme.palette.primary.dark,
+                transform: 'scale(1.1)'
+              },
+              boxShadow: theme.shadows[4],
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {downloadingPdf === 'viewer' ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              <CloudDownloadIcon />
+            )}
+          </IconButton>
+        </Box>
       </Box>
     </Modal>
 

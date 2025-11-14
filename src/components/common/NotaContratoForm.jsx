@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Paper, Typography, TextField, Button, MenuItem, Grid, Collapse, IconButton } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useTheme } from '@mui/material';
 
 const estados = [
   { value: 'EN_PROCESO', label: 'En proceso' },
@@ -23,6 +24,7 @@ const tipos = [
 ];
 
 const NotaContratoForm = ({ idContrato, onSuccess }) => {
+  
   const [contenido, setContenido] = useState('');
   const [motivo, setMotivo] = useState('');
   const [estado, setEstado] = useState('EN_PROCESO');
@@ -33,7 +35,7 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [openNotes, setOpenNotes] = useState(false); // State for collapse/expand
-
+  const theme = useTheme();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -49,13 +51,24 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
         tipo,
         observaciones,
       };
-      console.log('Enviando nota:', notaPayload);
+      const token = localStorage.getItem('token');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/notas/crear`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(notaPayload),
       });
       if (!response.ok) throw new Error('Error al guardar la nota');
+      // Intentar obtener la nota creada desde el backend
+      let createdNote = null;
+      try {
+        const payload = await response.json();
+        createdNote = Array.isArray(payload) ? payload[0] : (payload?.data || payload);
+      } catch (_) {
+        // si no se puede parsear, continuamos sin la nota
+      }
       setSuccess(true);
       setContenido('');
       setMotivo('');
@@ -63,7 +76,20 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
       setPrioridad('Media');
       setTipo('reparacion');
       setObservaciones('');
-      if (onSuccess) onSuccess();
+      // Notificar globalmente que se creó una nota para refrescar listas sin recargar
+      try {
+        window.dispatchEvent(new CustomEvent('nota-creada', { detail: createdNote || {
+          idContrato,
+          contenido,
+          motivo,
+          estado,
+          prioridad,
+          tipo,
+          observaciones,
+          fechaCreacion: new Date().toISOString(),
+        }}));
+      } catch (_) {}
+      if (onSuccess) onSuccess(createdNote);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -74,7 +100,7 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
   return (
     <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: openNotes ? '16px' : 0 }}>
-        <Typography variant="h6" color="#1F2C61" sx={{ fontWeight: 600 }}>
+        <Typography variant="h6" color={theme.palette.mode === 'dark' ? 'rgb(16, 51, 167)' : "#1F2C61"} sx={{ fontWeight: 600 }}>
           Notas
         </Typography>
         <IconButton
@@ -94,6 +120,25 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
       <Collapse in={openNotes} timeout="auto" unmountOnExit>
         <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
+
+    <Grid item xs={12} sm={6}>
+            <TextField
+              label="Titulo"
+              fullWidth
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              variant="outlined"
+              required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                },
+              }}
+            />
+          </Grid>
+
+
+
           <Grid item xs={12}>
             <TextField
               label="Contenido"
@@ -109,21 +154,16 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : '#f5f5f5',
                 },
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Motivo"
-              fullWidth
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              variant="outlined"
-              required
-            />
-          </Grid>
+
+
+
+      
+
+
           <Grid item xs={12} sm={6}>
             <TextField
               select
@@ -132,6 +172,12 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               value={estado}
               onChange={(e) => setEstado(e.target.value)}
               variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '48px',
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : '#f5f5f5',
+                },
+              }}
             >
               {estados.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -148,6 +194,12 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               value={prioridad}
               onChange={(e) => setPrioridad(e.target.value)}
               variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '48px',
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : '#f5f5f5',
+                },
+              }}
             >
               {prioridades.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -164,6 +216,13 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
               variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '48px',
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : '#f5f5f5',
+                 
+                },
+              }}
             >
               {tipos.map((option) => (
                 <MenuItem key={option.value} value={option.value}>

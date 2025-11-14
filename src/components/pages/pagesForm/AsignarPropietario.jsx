@@ -14,10 +14,12 @@ import {
 } from '@mui/material';
 import PropietarioApi from '../../api/propietarios';
 import PropiedadesApi from '../../api/propiedades';
+import http from '../../api/http';
 import Swal from 'sweetalert2';
 import SearchIcon from '@mui/icons-material/Search';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import { showSuccess, showError, showWarning } from '../../alertas/showAlert';
 
 const AsignarPropietario = () => {
   const { id: propiedadId } = useParams();
@@ -44,8 +46,7 @@ const AsignarPropietario = () => {
   useEffect(() => {
     const fetchPropietarios = async () => {
       try {
-        if (!user.name) return;
-        const response = await PropietarioApi.buscarPropietarioPorUsuario(user.name);
+        const response = await http.get(`${import.meta.env.VITE_API_URL}/propietario/me`);
 
         const propietariosObtenidos = Array.isArray(response.data)
           ? response.data
@@ -79,10 +80,10 @@ const AsignarPropietario = () => {
           onSubmit={async (values, { setSubmitting }) => {
             try {
               await PropiedadesApi.asignarPropietario(propiedadId, values.id_propietario);
-              Swal.fire('¡Éxito!', 'Propietario asignado correctamente.', 'success');
+              showSuccess('Propietario asignado exitosamente');
               navigate('/propiedades');
             } catch (error) {
-              Swal.fire('Error', 'No se pudo asignar el propietario.', 'error');
+              showError('No se pudo asignar el propietario.');
             } finally {
               setSubmitting(false);
             }

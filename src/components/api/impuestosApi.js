@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+import http from './http';
 const URL_IMPUESTOS = `${import.meta.env.VITE_API_URL}/impuesto`;
 
 
@@ -7,7 +7,7 @@ export const ImpuestosApi =  {
   
   getImpuestos: async () => {
     try {
-      const response = await axios.get(`${URL_IMPUESTOS}/all`);
+      const response = await http.get(`${URL_IMPUESTOS}/all`);
       return { data: response.data, isLoading: false, error: null };
     } catch (error) {
       console.error('Error fetching impuestos:', error);
@@ -17,14 +17,14 @@ export const ImpuestosApi =  {
 
   crearImpuesto:async(impuesto) => {
   try{
-    const response = await axios.post(`${URL_IMPUESTOS}/create`, impuesto);
+    const response = await http.post(`${URL_IMPUESTOS}/create`, impuesto);
     return response.data;
   }catch (error){
     console.error('Error al crear impuesto:', error);
     throw new Error("Error al crear impuesto", error);
     }
   },
-  buscarImpuestoPorUsuario: (username) => axios.get(`${URL_IMPUESTOS}/${username}`)
+  buscarImpuestoPorUsuario: (username) => http.get(`${URL_IMPUESTOS}/${username}`)
 
 }
 

@@ -57,7 +57,6 @@ const IntervinienteForm = () => {
 
   if(contratos.data){
     contratos.data.forEach((contrato) => {
-      console.log(contrato);
     })
   }
   const fetchPropietarios = async () => {
@@ -73,7 +72,6 @@ const IntervinienteForm = () => {
 
   if(propietarios.data){
     propietarios.data.forEach((propietario)=>{
-      console.log(propietario.id)
     })
   }
 
@@ -130,8 +128,16 @@ const IntervinienteForm = () => {
   // Función para manejar el envío del formulario
   const onSubmit = async (values, { setSubmitting }) => {
     try {
-      await InquilinosApi.crearInquilino(values);
-      console.log('Inquilino creado exitosamente');
+      const onlyDigits = (v) => (v == null ? '' : String(v).replace(/\D/g, ''));
+      const processed = {
+        ...values,
+        dni: values.dni ? parseInt(onlyDigits(values.dni), 10) : values.dni,
+        cuit: values.cuit ? parseInt(onlyDigits(values.cuit), 10) : values.cuit,
+        telefono: values.telefono ? parseInt(onlyDigits(values.telefono), 10) : values.telefono,
+        legajo: values.legajo ? parseInt(onlyDigits(values.legajo), 10) : values.legajo,
+        cuitEmpresa: values.cuitEmpresa ? parseInt(onlyDigits(values.cuitEmpresa), 10) : values.cuitEmpresa,
+      };
+      await InquilinosApi.crearInquilino(processed);
       Swal.fire({
         title: '¡Éxito!',
         text: 'Inquilino creado exitosamente',
@@ -166,7 +172,7 @@ const IntervinienteForm = () => {
       validationSchema={SchemaValidation.inquilinoValidation}
       onSubmit={onSubmit}
     >
-      {({ values, handleChange, handleBlur }) => (
+      {({ values, handleChange, handleBlur, setFieldValue }) => (
         <Form>
           <Grid2 sx={{display:"flex" ,  flexDirection:"column", width:"80vw", justifyContent:"flex-start"}}>
               <Grid2 sx={{ width: '100%', padding:".5rem",height:"30rem", display:"flex", flexDirection:"column", justifyContent:"space-around"
@@ -283,32 +289,51 @@ const IntervinienteForm = () => {
                
                <Grid2 sx={{width:"13.8rem"}}>
                <Box sx={{ marginTop: '.5rem' }}>
-                  <Field
-                    name="dni"
-                    as={TextField}
-                    label="DNI"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.dni}
-                  />
+                  <Field name="dni">
+                    {({ field }) => (
+                      <TextField
+                        {...field}
+                        label="DNI"
+                        variant="outlined"
+                        fullWidth
+                        value={field.value}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                          setFieldValue('dni', formatted);
+                        }}
+                        onBlur={handleBlur}
+                      />
+                    )}
+                  </Field>
                   <ErrorMessage name="dni" component="div" style={{ color: 'red' }} />
                 </Box>
                 <Box sx={{ marginTop: '2rem',width:"13.8rem"}}>
-                  <Field
-                    name="cuit"
-                    as={TextField}
-                    label="CUIT"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.cuit}
-                  />
-                  <ErrorMessage name="dni" component="div" style={{ color: 'red' }} />
+                  <Field name="cuit">
+                    {({ field }) => (
+                      <TextField
+                        {...field}
+                        label="CUIT"
+                        variant="outlined"
+                        fullWidth
+                        value={field.value}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          const a = digits.slice(0, 2);
+                          const b = digits.slice(2, 10);
+                          const c = digits.slice(10, 11);
+                          const formatted = [a, b, c]
+                            .map((seg, idx) => (idx === 0 ? seg : seg ? '-' + seg : ''))
+                            .join('')
+                            .replace(/^-/, '');
+                          setFieldValue('cuit', formatted);
+                        }}
+                        onBlur={handleBlur}
+                      />
+                    )}
+                  </Field>
+                  <ErrorMessage name="cuit" component="div" style={{ color: 'red' }} />
                 </Box>
-
                </Grid2>
                <Box sx={{display:"flex",justifyContent:"flex-start", gap:"3rem", width:"100%" }}>
               <Box sx={{ marginTop: '.5rem', width:"13.8rem"}}>
