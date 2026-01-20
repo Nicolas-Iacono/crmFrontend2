@@ -90,12 +90,13 @@ export const Layout = () => {
           width: '100%',
           overflow: 'hidden',// Prevenir scroll horizontal
           fontFamily: 'Poppins, sans-serif',
-        }}>
+          
+          pr: {sx:2,sm:0,md:0}        }}>
                     <Grid2 
             container 
             sx={{ 
               justifyContent: "center", 
-              pt: '10px', // Adjusted padding for the header
+              pt: {xs:'10px',sm:'0px',md:'0px'}, // Adjusted padding for the header
               px: 0, 
               flexGrow: 1,
               width: '100vw',

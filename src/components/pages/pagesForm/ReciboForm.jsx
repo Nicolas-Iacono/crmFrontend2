@@ -73,6 +73,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ReceiptFormTour from '../../common/tour/ReceiptFormTour';
+import RecibosGeneradosSection from './RecibosGeneradosSection.jsx';
 
 const ReciboForm = () => {
   const theme = useTheme();
@@ -182,37 +183,37 @@ const ReciboForm = () => {
       agua: {
         descripcion: 'Agua',
         empresa: contrato?.aguaEmpresa || '',
-        montoAPagar: 0,
+        montoBase: 0,     
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: contrato?.aguaPorcentaje || 0,
+        porcentaje: contrato?.aguaPorcentaje || null,
         archivoPDF: null
       },
       luz: {
         descripcion: 'Luz',
         empresa: contrato?.luzEmpresa || '',
-        montoAPagar: 0,
+        montoBase: 0,
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: contrato?.luzPorcentaje || 0,
+        porcentaje: contrato?.luzPorcentaje || null,
         archivoPDF: null
       },
       gas: {
         descripcion: 'Gas',
         empresa: contrato?.gasEmpresa || '',
-        montoAPagar: 0,
+        montoBase: 0,     
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: contrato?.gasPorcentaje || 0,
+        porcentaje: contrato?.gasPorcentaje || null,
         archivoPDF: null
       },
       municipal: {
         descripcion: 'Municipal',
         empresa: contrato?.municipalEmpresa || '',
-        montoAPagar: 0,
+        montoBase: 0,     
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
@@ -222,31 +223,31 @@ const ReciboForm = () => {
       deudasPendientes: {
         descripcion: 'Deudas Pendientes',
         empresa: contrato?.deudasPendientesEmpresa || '',
-        montoAPagar: 0,
+        montoBase: 0,
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: 100,
+        porcentaje: null,
         archivoPDF: null
       },
       expensasOrdinarias: {
         descripcion: 'Expensas Ordinarias',
         empresa: contrato?.expensasOrdinariasEmpresa || '',
-        montoAPagar: 0,
+        montoBase: 0,
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: 100,
+        porcentaje: null,
         archivoPDF: null
       },
       expensasExtraordinarias: {
         descripcion: 'Expensas Extraordinarias',
         empresa: contrato?.expensasExtraordinariasEmpresa || '',
-        montoAPagar: 0,
+        montoBase: 0,
         fechaFactura: new Date().toISOString().split('T')[0],
         estadoPago: false,
         incluir: false,
-        porcentaje: 100,
+        porcentaje: null,
         archivoPDF: null
       }
     },
@@ -359,7 +360,7 @@ const ReciboForm = () => {
           tipoImpuesto: imp.tipoImpuesto || 'Otro',
           descripcion: imp.descripcion || '',
           empresa: imp.empresa || '',
-          montoAPagar: parseFloat(imp.montoAPagar || 0),
+          montoBase: parseFloat(imp.montoBase || 0),
           estadoPago: imp.estadoPago === undefined ? false : imp.estadoPago,
           porcentaje: parseFloat(imp.porcentaje || 0),
           fechaFactura: imp.fechaFactura || '',
@@ -404,9 +405,10 @@ const ReciboForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const limitedValue = name === 'concepto' ? (value || '').slice(0, 255) : value;
     setFormData(prevState => ({
       ...prevState,
-      [name]: value
+      [name]: limitedValue
     }));
   };
 
@@ -539,12 +541,18 @@ const ReciboForm = () => {
         formDataToSend.append(`impuestos[${index}].tipoImpuesto`, tipoImpuestoEnviado);
         formDataToSend.append(`impuestos[${index}].descripcion`, impuesto.descripcion);
         formDataToSend.append(`impuestos[${index}].empresa`, impuesto.empresa || "");
-        formDataToSend.append(`impuestos[${index}].porcentaje`, impuesto.porcentaje);
         formDataToSend.append(`impuestos[${index}].numeroCliente`, impuesto.numeroCliente || "");
         formDataToSend.append(`impuestos[${index}].numeroMedidor`, impuesto.numeroMedidor || "");
-        formDataToSend.append(`impuestos[${index}].montoAPagar`, parseFloat(impuesto.montoAPagar) || 0);
+        formDataToSend.append(`impuestos[${index}].montoBase`, parseFloat(impuesto.montoBase) || 0);
         formDataToSend.append(`impuestos[${index}].fechaFactura`, impuesto.fechaFactura || "");
         formDataToSend.append(`impuestos[${index}].estadoPago`, impuesto.estadoPago);
+
+        if (impuesto.porcentaje !== null && impuesto.porcentaje !== undefined) {
+          formDataToSend.append(
+            `impuestos[${index}].porcentaje`,
+            impuesto.porcentaje
+          );
+        }
 
         // Si hay PDF, se agrega
         if (impuesto.archivoPDF) {
@@ -1079,12 +1087,14 @@ const ReciboForm = () => {
     <>
     <Box 
       sx={{ 
-        width: isMobile ? "100%" : "80%",
-        margin: "0 auto",
+        width: { xs: '95%', sm: '100%', md: '84vw' },
+        maxWidth: '100vw',
+        mx: { xs: 'auto', md: 0 },
         pt: isMobile ? 0 : 4,
         pb: 4,
         backgroundColor: theme.palette.mode === 'dark' ? "#232323" : "white",
-        minHeight: '100vh'
+        minHeight: '100vh',
+        marginLeft: { md: '15rem' }
       }}
     >
      <ReceiptFormTour />
@@ -1177,7 +1187,7 @@ const ReciboForm = () => {
                   <Typography variant="subtitle1" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ fontWeight: 500 }}>
                     Fecha Inicio: 
                     <Typography component="span" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ ml: 1 }}>
-                      {contrato?.fecha_inicio ? new Date(contrato.fecha_inicio).toLocaleDateString() : 'No disponible'}
+                      {contrato?.fecha_inicio}
                     </Typography>
                   </Typography>
                 </Box>
@@ -1189,7 +1199,7 @@ const ReciboForm = () => {
                   <Typography variant="subtitle1" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ fontWeight: 500 }}>
                     Fecha Fin: 
                     <Typography component="span" color={theme.palette.mode === 'dark' ? "white" : "#2A2C31"} sx={{ ml: 1 }}>
-                      {contrato?.fecha_fin ? new Date(contrato.fecha_fin).toLocaleDateString() : 'No disponible'}
+                      {contrato?.fecha_fin}
                     </Typography>
                   </Typography>
                 </Box>
@@ -1327,7 +1337,8 @@ const ReciboForm = () => {
                   onChange={handleChange}
                   multiline
                   rows={2}
-                  inputProps={{ 'data-tour': 'reciboform-concepto' }}
+                  inputProps={{ maxLength: 255, 'data-tour': 'reciboform-concepto' }}
+                  helperText={`${(formData.concepto || '').length}/255`}
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
               </Grid>
@@ -1434,8 +1445,8 @@ const ReciboForm = () => {
                             fullWidth
                             label="Monto"
                             type="text"
-                            value={formatNumber(impuesto.montoAPagar || 0)}
-                            onChange={(e) => handleImpuestoChange(tipo, 'montoAPagar', parseNumber(e.target.value))}
+                            value={formatNumber(impuesto.montoBase ?? 0)}
+                            onChange={(e) => handleImpuestoChange(tipo, 'montoBase', parseNumber(e.target.value))}
                             disabled={!impuesto.incluir}
                             sx={{ 
                               '& .MuiOutlinedInput-root': { 
@@ -1570,6 +1581,7 @@ const ReciboForm = () => {
                   size="large"
                   sx={{ 
                     mt: 2,
+                    mb:4,
                     height: '48px',
                     textTransform: 'none',
                     fontSize: '1rem',
@@ -1585,7 +1597,7 @@ const ReciboForm = () => {
                     <CircularProgress size={24} color="inherit" />
                   ) : (
                     <>
-                      <SaveIcon sx={{ mr: 1 }} />
+                      <SaveIcon sx={{ mr: 1}} />
                       Guardar Recibo
                     </>
                   )}
@@ -1594,362 +1606,7 @@ const ReciboForm = () => {
             </Grid>
           </Box>
 
-          <Box sx={{ mt: 5 }}>
-            <Typography 
-              variant="h6" 
-              gutterBottom 
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1,
-                fontWeight: 600,
-                mb: 3
-              }}
-              data-tour="reciboform-list-title"
-            >
-              <ReceiptIcon color="primary" />
-              Recibos Generados
-            </Typography>
-
-            {isLoading || !contrato ? (
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  py: 4
-                }}
-              >
-                {isLoading ? (
-                  <>
-                    <CircularProgress color="primary" />
-                    <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>
-                      Cargando información del contrato...
-                    </Typography>
-                  </>
-                ) : (
-                  <>
-                    <InfoIcon color="warning" sx={{ fontSize: 48, mb: 2 }} />
-                    <Typography variant="h6" align="center" gutterBottom>
-                      No se pudo cargar la información del contrato
-                    </Typography>
-                    <Button 
-                      variant="contained" 
-                      color="primary" 
-                      onClick={() => navigate('/contratos')}
-                      startIcon={<ArrowBackIcon />}
-                      sx={{ mt: 2 }}
-                    >
-                      Volver a contratos
-                    </Button>
-                  </>
-                )}
-              </Box>
-            ) : error ? (
-              <Box sx={{ 
-                bgcolor: theme.palette.error.light,
-                color: theme.palette.error.dark,
-                p: 2,
-                borderRadius: 2,
-                textAlign: 'center'
-              }}>
-                <Typography>{error}</Typography>
-              </Box>
-            ) : recibos.length === 0 ? (
-              <Box sx={{ 
-                textAlign: 'center',
-                py: 4,
-                color: theme.palette.text.secondary
-              }}>
-                <Typography>No hay recibos generados</Typography>
-              </Box>
-            ) : isMobile ? (
-              // Vista móvil con tarjetas
-
-
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }} data-tour="reciboform-list">
-
-                <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, justifyContent: 'space-between', alignItems: 'center' }} data-tour="reciboform-filters">
-                  <Button 
-                    onClick={() => setFiltro('pagados')}
-                    sx={{ 
-                      textTransform: 'none', 
-                      fontSize: '1rem', 
-                      fontWeight: 500,
-                      height: '2rem',
-                      borderRadius: '16px',
-                      backgroundColor: filtro === 'pagados' ? 'rgba(50, 140, 55, 0.9)' : 'rgba(63, 163, 68, 0.84)',
-                      color: 'black', 
-                      width: '7rem', 
-                      border: '2px solid rgba(21, 99, 25, 0.84)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(50, 140, 55, 0.9)'
-                      }
-                    }}
-                  >
-                    Pagados
-                  </Button>
-                  <Button 
-                    onClick={() => setFiltro('pendientes')}
-                    sx={{ 
-                      textTransform: 'none', 
-                      fontSize: '1rem', 
-                      fontWeight: 500,
-                      height: '2rem',
-                      borderRadius: '16px',
-                      backgroundColor: filtro === 'pendientes' ? 'rgba(225, 153, 71, 0.9)' : 'rgba(245, 173, 91, 0.9)',
-                      color: 'black', 
-                      width: '7rem', 
-                      border: '2px solid rgba(228, 121, 0, 0.9)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(225, 153, 71, 0.9)'
-                      }
-                    }}
-                  >
-                    Pendientes
-                  </Button>
-                  <Button 
-                    onClick={() => setFiltro('todos')}
-                    sx={{ 
-                      textTransform: 'none', 
-                      fontSize: '1rem', 
-                      fontWeight: 500,
-                      height: '2rem',
-                      borderRadius: '16px',
-                      backgroundColor: filtro === 'todos' ? 'rgba(171, 115, 198, 0.9)' : 'rgba(191, 135, 218, 0.9)',
-                      color: 'black', 
-                      width: '7rem', 
-                      border: '2px solid rgba(108, 14, 151, 0.9)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(171, 115, 198, 0.9)'
-                      }
-                    }}
-                  >
-                    Todos
-                  </Button>
-                </Box>
-                {filteredRecibos.length === 0 ? (
-                  <Box sx={{ textAlign: 'center', py: 4, color: theme.palette.text.secondary }}>
-                    <Typography>No hay recibos que coincidan con el filtro seleccionado</Typography>
-                  </Box>
-                ) : (
-                  filteredRecibos.map((recibo, index) => (
-                    <Card 
-                      key={recibo.id || index}
-                      elevation={2}
-                      sx={{ 
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                        }
-                      }}
-                      onClick={() => handleOpenReciboModal(recibo)}
-                    >
-
-                    <Box 
-                      sx={{ 
-                        backgroundColor: theme.palette.primary.main, 
-                        py: 1.5, 
-                        px: 2,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <Typography variant="subtitle1" sx={{ color: 'white', fontWeight: 600 }}>
-                        #{recibo.numeroRecibo || recibo.id || 'N/A'}
-                      </Typography>
-                      <Chip 
-                        icon={recibo.estado ? <CheckCircleIcon /> : <CancelIcon />}
-                        label={recibo.estado ? "Pagado" : "Pendiente"}
-                        color={recibo.estado ? "success" : "warning"}
-                        size="small"
-                        className="estado-chip"
-                        sx={{ 
-                          fontWeight: 500,
-                          '& .MuiChip-icon': {
-                            fontSize: 16
-                          },
-                          cursor: 'pointer'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUpdateEstado(recibo);
-                        }}
-                      />
-                    </Box>
-                    <CardContent sx={{ p: 2 }}>
-                      <Box sx={{ mb: 1.5 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Periodo:
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {recibo.periodo || 'N/A'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ mb: 1.5 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Fecha:
-                        </Typography>
-                        <Typography variant="body1">
-                          {formatFecha(recibo.fechaEmision) || 'N/A'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ mb: 1.5 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Concepto:
-                        </Typography>
-                        <Typography variant="body1">
-                          {recibo.concepto || 'N/A'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Monto:
-                        </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: "#273D97" }}>
-                          ${recibo.montoTotal ? recibo.montoTotal.toLocaleString('es-AR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          }) : '0'}
-                        </Typography>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                  ))
-                )}
-              </Box>
-            ) : (
-              // Vista desktop con tabla
-              <TableContainer 
-                component={Paper}
-                sx={{
-                  borderRadius: 2,
-                  boxShadow: theme.shadows[1],
-                  bgcolor: theme.palette.background.paper,
-                  overflow: 'hidden'
-                }}
-                data-tour="reciboform-list"
-              >
-                <Table>
-                  <TableHead sx={{ bgcolor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100] }}>
-                    <TableRow sx={{ 
-                      backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100],
-                      '& th': { 
-                        color: theme.palette.mode === 'dark' ? 'white' : 'black',
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
-                        padding: '16px',
-                      }
-                    }}>
-                      <TableCell>ID</TableCell>
-                      <TableCell>Fecha Emisión</TableCell>
-                      <TableCell>Fecha Vencimiento</TableCell>
-                      <TableCell>Periodo</TableCell>
-                      <TableCell>Concepto</TableCell>
-                      <TableCell>Monto</TableCell>
-                      <TableCell>Impuestos</TableCell>
-                      <TableCell>Estado</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredRecibos.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                          <Typography variant="body1" color="text.secondary">
-                            No hay recibos que coincidan con el filtro seleccionado
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredRecibos.map((recibo, index) => (
-                      <TableRow 
-                        key={recibo.id || index}
-                        sx={{ 
-                          backgroundColor: index % 2 === 0 ? 'white' : theme.palette.grey[50],
-                          '&:hover': { 
-                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                            transition: 'background-color 0.3s ease',
-                            cursor: 'pointer'
-                          }
-                        }}
-                        onClick={() => handleOpenReciboModal(recibo)}
-                      >
-                        <TableCell sx={{ padding: '16px' }}>{recibo.id || 'N/A'}</TableCell>
-                        <TableCell sx={{ padding: '16px' }}>{formatFecha(recibo.fechaEmision)}</TableCell>
-                        <TableCell sx={{ padding: '16px' }}>{formatFecha(recibo.fechaVencimiento)}</TableCell>
-                        <TableCell sx={{ padding: '16px' }}>{recibo.periodo || 'N/A'}</TableCell>
-                        <TableCell sx={{ padding: '16px' }}>{recibo.concepto || 'N/A'}</TableCell>
-                        <TableCell sx={{ padding: '16px' }}>${recibo.montoTotal ? recibo.montoTotal.toLocaleString('es-AR', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        }) : '0'}</TableCell>
-                        <TableCell sx={{ padding: '16px' }}>
-                          {recibo.impuestos && recibo.impuestos.length > 0 ? (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                              {recibo.impuestos.map(impuesto => (
-                                <Chip
-                                  key={impuesto.id}
-                                  icon={getTipoImpuestoIcon(impuesto.tipoImpuesto)}
-                                  label={`${impuesto.tipoImpuesto} - $${impuesto.montoAPagar.toLocaleString('es-AR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          })}`}
-                                  size="small"
-                                  color="primary"
-                                  variant="outlined"
-                                  sx={{ 
-                                    fontWeight: 500,
-                                    '& .MuiChip-icon': {
-                                      fontSize: 16
-                                    }
-                                  }}
-                                />
-                              ))}
-                            </Box>
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">Sin impuestos</Typography>
-                          )}
-                        </TableCell>
-                        <TableCell sx={{ padding: '16px' }}>
-                          <Chip 
-                            icon={recibo.estado ? <CheckCircleIcon /> : <CancelIcon />}
-                            label={recibo.estado ? "Pagado" : "Pendiente"}
-                            color={recibo.estado ? "success" : "warning"}
-                            size="small"
-                            className="estado-chip"
-                            sx={{ 
-                              fontWeight: 500,
-                              minWidth: '100px',
-                              '& .MuiChip-icon': {
-                                fontSize: 16
-                              },
-                              cursor: 'pointer',
-                              '&:hover': {
-                                opacity: 0.8,
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.15)'
-                              }
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation(); // Evitar que se propague al onClick de la fila
-                              handleUpdateEstado(recibo);
-                            }}
-                            title="Haz clic para cambiar el estado"
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Box>
+       
         </CardContent>
       </Card>
     </Box>

@@ -41,6 +41,7 @@ import useGoogleLink from '../../hooks/useGoogleLink';
 import SubscriptionModal from '../common/SubscriptionModal/SubscriptionModal';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import playstoreLogo from '../../assets/playstore.png';
 export const Header = ({ toggleTheme, darkMode }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -104,7 +105,11 @@ export const Header = ({ toggleTheme, darkMode }) => {
       } else {
         setVisible(true);
         // No auto-hide on specific pages
-        if (location.pathname !== '/contabilidad' && location.pathname !== '/') {
+        if (
+          location.pathname !== '/contabilidad' &&
+          location.pathname !== '/' &&
+          !location.pathname.startsWith('/recibos-page')
+        ) {
           hideTimer.current = setTimeout(() => {
             setVisible(false);
           }, 4000);
@@ -158,7 +163,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
 const authorities = localStorage.getItem('authorities');
   const drawerContent = (
     <Box
-      sx={{ width: 250, height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.mode === 'dark' ? 'rgb(35, 35, 35)' : '#fff' }}
+      sx={{ width: 250, height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.mode === 'dark' ? 'rgb(35, 35, 35)' : '#fff', borderRadius:"0px 15px 0px 0px" }}
       role="presentation"
     >
       <Box sx={{ p: 2, textAlign: 'center' }}>
@@ -353,26 +358,82 @@ const authorities = localStorage.getItem('authorities');
           left: 16,
           zIndex: 1200,
           transition: 'transform 0.3s ease-in-out',
-                    transform: (visible || location.pathname === '/ajustes' || location.pathname === '/calendario' || location.pathname === '/') ? 'translateX(0)' : 'translateX(-100px)',
+                    transform: (visible || location.pathname === '/ajustes' || location.pathname === '/calendario' || location.pathname === '/' || location.pathname.startsWith('/recibos-page')) ? 'translateX(0)' : 'translateX(-100px)',
         }}>
           <IconButton onClick={handleDrawerToggle} sx={{ p: 0, boxShadow: 3, bgcolor: 'background.paper', '&:hover': { bgcolor: 'background.paper' } }}>
             <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} />
           </IconButton>
-          <Drawer anchor="left" open={drawerOpen} onClose={handleDrawerToggle}>{drawerContent}</Drawer>
+          <Drawer
+            anchor="left"
+            open={drawerOpen}
+            onClose={handleDrawerToggle}
+            PaperProps={{
+              sx: {
+                borderTopRightRadius: 15,
+                borderBottomRightRadius: 0,
+                borderTopLeftRadius: 0,
+                borderBottomLeftRadius: 0,
+                overflow: 'hidden'
+              }
+            }}
+          >
+            {drawerContent}
+          </Drawer>
         </Box>
       ) : (
-        <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, background: 'white', color: 'black', px: 3, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1100, boxShadow: 1, height: '20px' }}>
-          <DesktopMenu />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body1">{authUser?.username}</Typography>
-            <IconButton data-tour="open-drawer" onClick={handleDrawerToggle} sx={{ p: 0 }}>
-              <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} />
-            </IconButton>
+        <Box sx={{ position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 1100, width: 280 }}>
+          <Box sx={{ height: '100%', display: 'flex', alignItems: 'stretch' }}>
+            
+            {/* Main curved sidebar */}
+            <Box sx={(theme) => ({ 
+              background: theme.palette.mode === 'dark' 
+                ? 'linear-gradient(180deg, #1d2240 0%, #13162b 100%)'
+                : "linear-gradient(360deg, #8f6bffff 0%, #7642eeff 14%, #50399dff 28%, #3b1299ff 100%);",
+              color: 'white',
+              height: '100%',
+              width: 240,
+              ml: '0px',
+              borderTopRightRadius: 40,
+              borderBottomRightRadius: 40,
+              boxShadow: theme.palette.mode === 'dark' ? '0 10px 30px rgba(0,0,0,0.4)' : '0 12px 28px rgba(87,70,210,0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            })}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 3, pt: 4, pb: 2 }}>
+                <Box
+                  component="img"
+                  src={playstoreLogo}
+                  alt="Play Store"
+                  sx={{ width: 28, height: 28, objectFit: 'contain', flex: '0 0 auto' }}
+                />
+
+                <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255,255,255,0.35)' }} />
+                
+                <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 0.4 }}>
+                  {usuarioFetch?.nombreNegocio || 'CRM'}
+                </Typography>
+              </Box>
+              <Box sx={{ flex: 1, px: 3, py: 1, overflowY: 'auto' }}>
+                <DesktopMenu orientation="vertical" />
+              </Box>
+              <Box sx={{ px: 3, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                <IconButton onClick={toggleTheme} sx={{ color: 'white' }}>
+                  {darkMode ? <DarkModeIcon /> : <LightModeIcon />}
+                </IconButton>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>{authUser?.username}</Typography>
+                <IconButton data-tour="open-drawer" onClick={handleDrawerToggle} sx={{ p: 0 }}>
+                  <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} />
+                </IconButton>
+              </Box>
+              <Drawer anchor="right" open={drawerOpen} onClose={handleDrawerToggle}>{drawerContent}</Drawer>
+            </Box>
           </Box>
-          <Drawer anchor="right" open={drawerOpen} onClose={handleDrawerToggle}>{drawerContent}</Drawer>
         </Box>
       )}
-     <Tooltip title="Abrir Chat IA">
+      {/* Desktop sidebar spacer (handled in Layout with padding-left) */}
+      <Box sx={{ display: { xs: 'none', md: 'none' } }} />
+     {/* <Tooltip title="Abrir Chat IA">
         <Box
           component={motion.div}
           onClick={handleOpenChat}
@@ -402,7 +463,7 @@ const authorities = localStorage.getItem('authorities');
           <AutoAwesomeIcon  sx={{ fontSize: 20 }} />
 
   </Box>
-</Tooltip>
+</Tooltip> */}
       {qrModal}
       <AnimatePresence>
         {isChatOpen && <ChatModal open={isChatOpen} onClose={handleCloseChat} />}

@@ -8,7 +8,11 @@ const http = axios.create({ baseURL: API_BASE });
 
 // --- Adjunta token en cada request ---
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  if (config?.skipAuth) return config;
+  const token =
+    localStorage.getItem('token') ||
+    localStorage.getItem('inquilino_token') ||
+    localStorage.getItem('propietario_token');
   if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }

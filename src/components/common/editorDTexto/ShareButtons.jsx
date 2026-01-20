@@ -387,7 +387,7 @@ ${rtfContent}
           }
         }}
       >
-        <MenuItem onClick={handleExportToGoogleDocs} disabled={isLoadingGoogleDocs}>
+        {/* <MenuItem onClick={handleExportToGoogleDocs} disabled={isLoadingGoogleDocs}>
           {isLoadingGoogleDocs ? (
             <CircularProgress size={20} sx={{ mr: 2, color: '#4285f4', zIndex: 200000 }} />
           ) : (
@@ -403,7 +403,7 @@ ${rtfContent}
           </Box>
         </MenuItem>
         
-        <Divider />
+        <Divider /> */}
         
         <MenuItem onClick={exportToWord} disabled={isLoadingWord}>
           {isLoadingWord ? (

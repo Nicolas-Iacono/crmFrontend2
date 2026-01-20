@@ -20,7 +20,8 @@ import {
   Google as GoogleIcon, 
   Facebook as FacebookIcon,
   Visibility,
-  VisibilityOff
+  VisibilityOff,
+  TheaterComedy
 } from '@mui/icons-material';
 import Swal from 'sweetalert2';
 import { usuarioApi } from '../../../api/usuarioApi';
@@ -36,6 +37,8 @@ import banderaEeuu from '../../../../assets/banderas/banderaEeuu.png';
 import banderaParaguay from '../../../../assets/banderas/banderaParaguay.png';
 import banderaSpain from '../../../../assets/banderas/banderaSpain.png';
 import banderaUruguay from '../../../../assets/banderas/banderaUruguay.png';
+import logoBlanco from '../../../../assets/logotipoblanco.png'
+import logoT from "../../../../assets/logoInmo512.png";
 const RegistroForm = ({ onRegistroExitoso }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -112,28 +115,80 @@ const RegistroForm = ({ onRegistroExitoso }) => {
       sx={{
         background: 'linear-gradient(135deg, rgb(117,104,218) 0%, rgb(86,23,164) 50%)',
         minHeight: '100dvh',
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    overflow: 'hidden',   
+        width: '100vw',
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
+        justifyContent: { xs: 'center', md: 'space-between' },
+        overflow: 'hidden',
       }}
     >
-      <Container
-        maxWidth="sm"
+      <Box
         sx={{
-          width: '100%',
+          display: { xs: 'none', md: 'flex' },
+          width: '50%',
+          minHeight: '100dvh',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 4,
+        }}
+      >
+        <Box
+          sx={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+          }}
+        >
+          <Box
+            sx={{
+              backgroundImage: `url(${logoT})`,
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              width: '100%',
+              maxWidth: 460,
+              height: 360,
+            }}
+          />
+          <Box
+            sx={{
+              backgroundImage: `url(${logoBlanco})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              width: '100%',
+              maxWidth: 230,
+              height: 90,
+             
+
+            }}
+          />
+        </Box>
+      </Box>
+    
+
+      <Container
+        sx={{
+          width: { xs: '100%', md: '50%' },
+          maxWidth: { xs: '100%', md: '50%' },
+          flex: 1,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'flex-start',
           py: { xs: 2, md: 4 },
           overflowY: 'auto',        // 👈 ahora el scroll está aquí
           maxHeight: '100dvh',
+          scrollbarWidth: 'none',   // Firefox
+  '&::-webkit-scrollbar': { display: 'none' }
         }}
       >
         <Box
           sx={{
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 600,
             px: 3,
             py: 2,
             display: 'flex',
@@ -390,6 +445,8 @@ const RegistroForm = ({ onRegistroExitoso }) => {
           </Formik>
         </Box>
       </Container>
+
+  
     </Box>
   );  
 

@@ -28,21 +28,25 @@ export const usuarioApi =  {
       throw new Error("Error de login", error);
       }
     },
-  eliminarCuenta: async(username) => {
-    try{
-      // const response = await axios.delete(`${URL_USER}/${username}`, {
-      //   headers: {
-      //     Authorization: `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // });
-      // return response.data;
-      const { data } = await http.delete(`${URL_USER}/${username}`);
-      return data;
-    }catch (error){
-      console.error('Error al eliminar cuenta:', error);
-      throw new Error("Error al eliminar cuenta", error);
-      }
-    },
+// api usuario
+eliminarCuenta: async (nombreNegocio) => {
+  try {
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+
+    const { data } = await axios.delete(`${URL_USER}/${nombreNegocio}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      withCredentials: true,
+    });
+
+    return data;
+  } catch (error) {
+    console.error('Error al eliminar cuenta:', error);
+    throw error;
+  }
+},
+
     refreshToken:async(refreshToken) => {
       refreshToken = localStorage.getItem('refreshToken');
       try{
@@ -58,7 +62,11 @@ export const usuarioApi =  {
       },
     forgotPassword: async (email) => {
       try {
-        const { data } = await http.post(`${URL_AUTH}/password/forgot`, { email });
+        const { data } = await http.post(
+          `${URL_AUTH}/password/forgot`,
+          { email: String(email || '').trim() },
+          { skipAuth: true }
+        );
         return data;
       } catch (error) {
         console.error('Error al solicitar recupero de contraseña:', error);
@@ -67,7 +75,15 @@ export const usuarioApi =  {
     },
     resetPassword: async ({ email, token, newPassword }) => {
       try {
-        const { data } = await http.post(`${URL_AUTH}/password/reset`, { email, token, newPassword });
+        const { data } = await http.post(
+          `${URL_AUTH}/password/reset`,
+          {
+            email: String(email || '').trim(),
+            token: String(token || '').trim(),
+            newPassword,
+          },
+          { skipAuth: true }
+        );
         return data;
       } catch (error) {
         console.error('Error al reiniciar contraseña:', error);

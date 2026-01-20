@@ -22,7 +22,6 @@ initGoogleDriveAuth();
 // ====================================================
 if ('Notification' in window && Notification.permission !== 'granted') {
   Notification.requestPermission().then((result) => {
-    console.log('🔔 Permiso de notificaciones:', result)
   })
 }
 // ====================================================
@@ -32,9 +31,26 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js")
-      .then((reg) => console.log("SW registrado", reg.scope))
-      .catch((err) =>
-        console.error("Error registrando SW", err)
-      );
+      .then((reg) => {
+
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener("statechange", () => {
+            if (
+              newWorker.state === "installed" &&
+              navigator.serviceWorker.controller
+            ) {
+              window.location.reload();
+            }
+          });
+        });
+      })
+      .catch((err) => console.error("Error registrando SW", err));
   });
 }

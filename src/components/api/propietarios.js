@@ -1,6 +1,7 @@
 import axios from 'axios';
 import useGetAxios from './useAxios';
 import http from './http';
+import { uppercaseNameFields } from '../../utils/normalizers';
 const URL_PROPIETARIO = `${import.meta.env.VITE_API_URL}/propietario`;
 
 
@@ -13,7 +14,8 @@ export const PropietarioApi =  {
   crearPropietario: async (propietario) => {
     try {
       // POST /api/propietario/create con JWT (inyectado por http interceptor)
-      const response = await http.post(`${URL_PROPIETARIO}/create`, propietario);
+      const payload = uppercaseNameFields(propietario);
+      const response = await http.post(`${URL_PROPIETARIO}/create`, payload);
       return response.data;
     } catch (error) {
       console.error('Error al crear propietario:', error);
@@ -23,7 +25,8 @@ export const PropietarioApi =  {
 
   actualizarPropietario: async(propietario) => {
     try {
-      const response = await http.put(`${URL_PROPIETARIO}/update`, propietario);
+      const payload = uppercaseNameFields(propietario);
+      const response = await http.put(`${URL_PROPIETARIO}/update`, payload);
       return response.data;
     } catch (error) {
       console.error('Error al actualizar propietario:', error);

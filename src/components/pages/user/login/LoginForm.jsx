@@ -265,12 +265,20 @@ const ir = (url) =>{
             }
             try {
               setRecoverLoading(true);
-              await usuarioApi.forgotPassword(recoverEmail);
+              await usuarioApi.forgotPassword(String(recoverEmail || '').trim());
               showInfo('Te enviamos un correo si el email existe. Revisá tu bandeja de entrada y spam.', '¡Listo!');
               setOpenRecover(false);
               setRecoverEmail('');
             } catch (error) {
-              showStyledError('No pudimos iniciar el recupero', error?.response?.data?.message || error.message || 'Intentá nuevamente en unos minutos.');
+              const status = error?.response?.status;
+              const backendMsg =
+                error?.response?.data?.message ||
+                error?.response?.data?.error ||
+                (typeof error?.response?.data === 'string' ? error.response.data : null);
+              showStyledError(
+                'No pudimos iniciar el recupero',
+                backendMsg || (status ? `Error ${status}` : error.message) || 'Intentá nuevamente en unos minutos.'
+              );
             } finally {
               setRecoverLoading(false);
             }

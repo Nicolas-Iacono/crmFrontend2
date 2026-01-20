@@ -31,7 +31,9 @@ import {
   DialogActions,
   Chip,
   TablePagination,
+  Pagination,
   Checkbox,
+  Skeleton,
 } from '@mui/material';
 import PropietarioApi from '../api/propietarios';
 import SearchIcon from '@mui/icons-material/Search';
@@ -489,10 +491,15 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
         )}
       </Box>
       {totalPaginas > 0 && (
-        <Box display="flex" justifyContent="center" mt={2} mb={3} sx={{ width: '100%', gap: 1 }}>
-          <Button variant="outlined" onClick={goPrevPage} disabled={paginaActual <= 1} startIcon={<NavigateBeforeIcon />}>Prev</Button>
-          <Chip label={`${paginaActual} / ${totalPaginas}`} sx={{ px: 1 }} />
-          <Button variant="outlined" onClick={goNextPage} disabled={paginaActual >= totalPaginas} endIcon={<NavigateNextIcon />}>Next</Button>
+        <Box display="flex" justifyContent="center" mt={2} mb={3} sx={{ width: '100%' }}>
+          <Pagination
+            count={totalPaginas}
+            page={paginaActual}
+            onChange={(_, p) => setPaginaActual(p)}
+            color="primary"
+            siblingCount={0}
+            boundaryCount={0}
+          />
         </Box>
       )}
       
@@ -500,22 +507,15 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
   );
 
   const renderDesktopView = (propietariosFiltrados) => (
-    <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: 2, boxShadow: 1 }}>
+    <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: 2, boxShadow: 1, }}>
       <TableContainer>
         <Table size="medium" sx={{width: '100vw', minWidth: 950 }}>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={selected.length > 0 && selected.length < propietariosFiltrados.length}
-                  checked={propietariosFiltrados.length > 0 && selected.length === propietariosFiltrados.length}
-                  onChange={(e) => handleSelectAll(e, propietariosFiltrados)}
-                  inputProps={{ 'aria-label': 'select all' }}
-                />
-              </TableCell>
+            
               <TableCell>Usuario</TableCell>
               <TableCell sx={{ width: '3rem', minWidth: '3rem', maxWidth: '3rem' }}>CUIT</TableCell>
-              <TableCell sx={{ width: '6rem', minWidth: '6rem', maxWidth: '6rem' }}>Email</TableCell>
+              <TableCell sx={{ width: '4rem', minWidth: '4rem', maxWidth: '4rem' }}>Email</TableCell>
               <TableCell>Teléfono</TableCell>
               <TableCell sx={{ width: '7rem', minWidth: '7rem', maxWidth: '7rem' }}>Dirección</TableCell>
               <TableCell align="right" sx={{ width: 140, minWidth: 140 }}>Acciones</TableCell>
@@ -529,13 +529,11 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
                 const nombreCompleto = `${p.nombre || ''} ${p.apellido || ''}`.trim();
                 const direccion = (p.direccionResidencial || '').trim();
                 return (
-                  <TableRow hover key={p.id} selected={checked} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
-                    <TableCell padding="checkbox">
-                      <Checkbox checked={checked} onChange={() => handleSelectOne(p.id)} />
-                    </TableCell>
+                  <TableRow hover key={p.id}  sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                  
                     <TableCell sx={{ fontWeight: 400, fontSize: '0.8rem', width:"8rem"}}>{nombreCompleto || '—'}</TableCell>
                     <TableCell sx={{ width:"3rem"}}>{p.cuit || '—'}</TableCell>
-                    <TableCell sx={{ width:"4rem"}}>{p.email || '—'}</TableCell>
+                    <TableCell sx={{ width:"2rem"}}>{p.email || '—'}</TableCell>
                     <TableCell sx={{ width:"5rem"}}>{p.telefono || '—'}</TableCell>
                     <TableCell sx={{ width: '7rem', minWidth: '7rem', maxWidth: '7rem' }}>
                       <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -610,9 +608,114 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
+      <>
+        <OwnersTour />
+        <Box sx={{
+          width: { xs: '100%', sm: '100%', md: '90vw' },
+          minHeight: '100vh',
+          pt: { xs: 3, sm: 4 },
+          pb: { xs: 12, sm: 4 },
+          pl: { xs: 0, sm: 5 },
+          pr: { xs: 0, sm: 2 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: { xs: 'center', md: 'flex-start' },
+          bgcolor: 'background.default',
+          marginLeft: { md: '15rem' }
+        }}>
+          <Box sx={{
+            width: { xs: '90%', sm: '80%' },
+            mt: { xs: '4rem', sm: 0 },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center'
+          }}>
+            <Box
+              sx={{
+                display: 'flex',
+                width: '100%',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: { xs: 0, md: '2rem' },
+                mb: { xs: 2, sm: 3 },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <IconButton
+                  onClick={() => navigate(-1)}
+                  sx={{
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+                    }
+                  }}
+                >
+                  <ArrowBackIcon />
+                </IconButton>
+                <Typography
+                  data-tour="owners-title"
+                  variant="h5"
+                  sx={{ fontWeight: 600, color: 'text.primary' }}
+                >
+                  Propietarios
+                </Typography>
+              </Box>
+              <Tooltip title="Añadir propietario">
+                <Fab
+                  color="primary"
+                  aria-label="add"
+                  size="small"
+                  data-tour="owners-add"
+                  onClick={() => navigate('/nuevo-propietario')}
+                >
+                  <AddIcon />
+                </Fab>
+              </Tooltip>
+            </Box>
+
+            <TextField
+              data-tour="owners-search"
+              placeholder="Buscar por nombre, apellido, email..."
+              variant="outlined"
+              fullWidth
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              sx={{
+                mb: 3,
+                width: { xs: '100%', sm: '100%' },
+                borderRadius: 6, '& fieldset': { borderRadius: 6 },
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'divider'
+                  }
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Box sx={{ width: '100%' }}>
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <Paper key={idx} sx={{ mb: 1.2, p: 2, borderRadius: 3, boxShadow: 1 }}>
+                  <Skeleton variant="text" width="70%" />
+                  <Skeleton variant="text" width="45%" />
+                  <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                    <Skeleton variant="rounded" width={72} height={28} />
+                    <Skeleton variant="rounded" width={72} height={28} />
+                  </Box>
+                </Paper>
+              ))}
+            </Box>
+          </Box>
+        </Box>
+      </>
     );
   }
 
@@ -657,28 +760,28 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
   return (
     <>
     <OwnersTour />
-    <Box sx={{ 
-      width: "100%", 
-      minHeight: "100vh",
-      pt: { xs: 3, sm: 4 },
-      pb: { xs: 12, sm: 4 },
-    
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      backgroundColor:theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'background.default',
-    }}>
-      <Box 
-        sx={{ 
-          width: { xs: "90%", sm: "80%" },
-          mt: { xs: '4rem', sm: 0 },
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          
-          
-        }}
-      >
+      <Box sx={{ 
+        width: { xs: '100%', sm: '100%', md: '90vw' }, 
+        minHeight: "100vh",
+        pt: { xs: 3, sm: 4 },
+        pb: { xs: 12, sm: 4 },
+        pl: { xs: 0, sm: 5 },
+        pr: { xs: 0, sm: 2 },
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: { xs: 'center', md: 'flex-start' },
+        bgcolor: 'background.default',
+        marginLeft: { md: '15rem' }
+      }}>
+        <Box 
+          sx={{ 
+            width: { xs: "90%", sm: "80%" },
+            mt: { xs: '4rem', sm: 0 },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center'
+          }}
+        >
         <Box 
           sx={{ 
             display: 'flex', 
@@ -686,7 +789,7 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
             alignItems: 'center',
             justifyContent: 'space-between',
             marginTop:{xs:0,md:"2rem"},
-            mb: { xs: 2, sm: 3 }
+            mb: { xs: 2, sm: 3 },
             
             
           }}
@@ -736,9 +839,8 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ 
             mb: 3,
-            width: { xs: '90%', sm: '80%', md: '100%' },
+            width: { xs: '100%', sm: '100%' },
               borderRadius: 6, '& fieldset': { borderRadius: 6 },
-              width:"100%",
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
             '& .MuiOutlinedInput-root': {
               borderRadius: '8px',
@@ -776,14 +878,12 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 87, 87, 0.15)' : 'rgba(255, 0, 0, 0.05)', 
             borderRadius: 2,
             color: 'error.main',
-            width: '100%' 
+            width: '100%', 
           }}>
             <Typography>Error al cargar los propietarios: {error}</Typography>
           </Box>
         ) : (
-          isMobile 
-  ? renderMobileView(propietariosPaginados) 
-  : renderDesktopView(propietariosPaginados)
+          renderMobileView(propietariosPaginados)
         )}
         <Menu
           id="simple-menu"

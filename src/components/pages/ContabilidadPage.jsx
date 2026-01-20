@@ -10,6 +10,7 @@ import {
   Modal,
   TextField,
   MenuItem,
+  Menu,
   Alert,
   Chip,
   IconButton,
@@ -33,7 +34,8 @@ import {
   SwipeLeft as SwipeLeftIcon,
   BarChart as BarChartIcon,
   FiberManualRecord as DotIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material';
 import { format, startOfMonth, endOfMonth, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -43,6 +45,7 @@ import contratoApi from '../api/contratoApi';
 import axios from 'axios';
 import { config } from '../../config/env';
 import { keyframes } from '@mui/system';
+import jsPDF from 'jspdf';
 
 /** Parse seguro: evita corrimientos por UTC cuando viene 'yyyy-MM-dd' */
 const asLocalDate = (s) => {
@@ -91,6 +94,7 @@ const ContabilidadPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [anchorDescargar, setAnchorDescargar] = useState(null);
 
   const [formData, setFormData] = useState({
     concepto: '',
@@ -125,6 +129,323 @@ const ContabilidadPage = () => {
     };
     fetchContratos();
   }, [user.name]);
+
+  // ----- EXPORTS: CSV & PDF -----
+  const toCsv = (rows) => {
+    return rows.map(r => r.map(v => {
+      const s = v == null ? '' : String(v);
+      if (s.includes(',') || s.includes('\n') || s.includes('"')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }).join(',')).join('\n');
+  };
+
+  const downloadBlob = (content, mime, filename) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const monthName = (date) => format(date, 'MMMM yyyy', { locale: es });
+
+  const downloadMonthlyCSV = () => {
+    const headers = [
+      'Contrato',
+      'Monto Alquiler (ARS)',
+      'Comisión Mensual (%)',
+      'Comisión Mensual (ARS)',
+      'Honorarios Contrato (%)',
+      'Honorarios Contrato (ARS)',
+      'Total (ARS)'
+    ];
+    const rows = ingresosMensuales.map((i) => {
+      const monto = num(i.montoAlquiler);
+      const comMes = num(i.ingresoCalculadoPorMes);
+      const comPct = num(i.porcentajeComisionMensual);
+      const honCont = num(i.ingresoCalculadoPorContrato);
+      const honPct = num(i.porcentajeComisionContrato);
+      const total = comMes + honCont;
+      return [
+        i.nombreContrato || 'Sin nombre',
+        monto.toFixed(2),
+        comPct,
+        comMes.toFixed(2),
+        honPct,
+        honCont.toFixed(2),
+        total.toFixed(2)
+      ];
+    });
+    const totalComMes = ingresosMensuales.reduce((acc, i) => acc + num(i.ingresoCalculadoPorMes), 0);
+    const totalHon = ingresosMensuales.reduce((acc, i) => acc + num(i.ingresoCalculadoPorContrato), 0);
+    const totalAll = totalComMes + totalHon;
+    rows.push([]);
+    rows.push(['Totales', '', '', totalComMes.toFixed(2), '', totalHon.toFixed(2), totalAll.toFixed(2)]);
+    const csv = toCsv([headers, ...rows]);
+    const filename = `resumen_mensual_${format(selectedMonth, 'yyyy_MM')}.csv`;
+    downloadBlob(csv, 'text/csv;charset=utf-8;', filename);
+  };
+
+  const downloadAnnualCSV = () => {
+    const headers = ['Mes', 'Comisiones Mensuales (ARS)', 'Honorarios Contrato (ARS)', 'Total (ARS)'];
+    const rows = (datosAnualesCompletos || []).map((m) => {
+      const monthDate = new Date(selectedYear, (m.mes || 1) - 1, 1);
+      return [
+        format(monthDate, 'MMM', { locale: es }),
+        num(m.totalComisionesMensuales).toFixed(2),
+        num(m.totalHonorariosContrato).toFixed(2),
+        num(m.totalDelMes).toFixed(2)
+      ];
+    });
+    const totCom = (datosAnualesCompletos || []).reduce((a, m) => a + num(m.totalComisionesMensuales), 0);
+    const totHon = (datosAnualesCompletos || []).reduce((a, m) => a + num(m.totalHonorariosContrato), 0);
+    const totAll = (datosAnualesCompletos || []).reduce((a, m) => a + num(m.totalDelMes), 0);
+    rows.push([]);
+    rows.push(['Totales', totCom.toFixed(2), totHon.toFixed(2), totAll.toFixed(2)]);
+    const csv = toCsv([headers, ...rows]);
+    const filename = `resumen_anual_${selectedYear}.csv`;
+    downloadBlob(csv, 'text/csv;charset=utf-8;', filename);
+  };
+
+  const downloadMonthlyPDF = () => {
+    const doc = new jsPDF();
+    const [pr, pg, pb] = hexToRgb(theme?.palette?.primary?.main || '#354aa8');
+    const lightRow = [245, 247, 255];
+
+    // Dimensiones y márgenes
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const tableW = pageW - margin * 2; // 182 en A4 portrait
+
+    // Header de color
+    doc.setFillColor(pr, pg, pb);
+    doc.rect(0, 0, pageW, 26, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Resumen financiero mensual', margin, 16);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text(`Periodo: ${monthName(selectedMonth)}`, margin, 22);
+
+    // Encabezado de la tabla
+    const cols = [74, 27, 27, 27, 27]; // suma = 182
+    const headers = ['Contrato', 'Alquiler', 'Comisión', 'Honorarios', 'Total'];
+    let y = 36;
+
+    // Header row
+    doc.setFillColor(pr, pg, pb);
+    doc.setDrawColor(pr, pg, pb);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(margin, y, tableW, 8, 'F');
+    let x = margin + 2;
+    doc.setFont('helvetica', 'bold');
+    headers.forEach((h, idx) => {
+      doc.text(h, x, y + 5);
+      x += cols[idx];
+    });
+    y += 8;
+
+    // Filas
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    const rowH = 8;
+
+    const drawRow = (cells, idx) => {
+      if (y + rowH > pageH - margin) {
+        // Footer antes de agregar página
+        addFooter(doc, pr, pg, pb);
+        doc.addPage();
+        // Redibujar header tabla en nueva página
+        y = margin + 12;
+        doc.setFillColor(pr, pg, pb);
+        doc.setTextColor(255, 255, 255);
+        doc.rect(margin, y, tableW, 8, 'F');
+        let tx = margin + 2;
+        doc.setFont('helvetica', 'bold');
+        headers.forEach((h, i2) => { doc.text(h, tx, y + 5); tx += cols[i2]; });
+        y += 8;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+      }
+
+      // Zebra
+      if (idx % 2 === 0) {
+        doc.setFillColor(...lightRow);
+        doc.rect(margin, y, tableW, rowH, 'F');
+      }
+
+      // Celdas
+      let cx = margin + 2;
+      cells.forEach((c, i3) => {
+        doc.text(String(c), cx, y + 5);
+        cx += cols[i3];
+      });
+
+      // Líneas divisorias horizontales
+      doc.setDrawColor(230);
+      doc.line(margin, y + rowH, margin + tableW, y + rowH);
+      // Líneas divisorias verticales principales
+      doc.setDrawColor(220);
+      let vx = margin;
+      cols.slice(0, -1).forEach((w) => { vx += w; doc.line(vx, y, vx, y + rowH); });
+
+      y += rowH;
+    };
+
+    // Calcular totales y dibujar filas
+    const filas = ingresosMensuales.map((i) => {
+      const alquiler = num(i.montoAlquiler);
+      const com = num(i.ingresoCalculadoPorMes);
+      const hon = num(i.ingresoCalculadoPorContrato);
+      const total = com + hon;
+      return [
+        (i.nombreContrato || 'Sin nombre').substring(0, 50),
+        formatCurrency(alquiler),
+        formatCurrency(com),
+        formatCurrency(hon),
+        formatCurrency(total)
+      ];
+    });
+    filas.forEach((r, idx) => drawRow(r, idx));
+
+    const totalComMes = ingresosMensuales.reduce((acc, i) => acc + num(i.ingresoCalculadoPorMes), 0);
+    const totalHon = ingresosMensuales.reduce((acc, i) => acc + num(i.ingresoCalculadoPorContrato), 0);
+    const totalAll = totalComMes + totalHon;
+
+    // Fila de totales destacada
+    doc.setFillColor(235, 239, 255);
+    doc.rect(margin, y, tableW, rowH, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(pr, pg, pb);
+    let tx2 = margin + 2;
+    const totCells = ['Totales', '', formatCurrency(totalComMes), formatCurrency(totalHon), formatCurrency(totalAll)];
+    totCells.forEach((c, i4) => { doc.text(String(c), tx2, y + 5); tx2 += cols[i4]; });
+    y += rowH + 2;
+
+    // Footer
+    addFooter(doc, pr, pg, pb);
+
+    doc.save(`resumen_mensual_${format(selectedMonth, 'yyyy_MM')}.pdf`);
+  };
+
+  const downloadAnnualPDF = () => {
+    const doc = new jsPDF();
+    const [pr, pg, pb] = hexToRgb(theme?.palette?.primary?.main || '#354aa8');
+    const lightRow = [245, 247, 255];
+
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const tableW = pageW - margin * 2;
+
+    // Header
+    doc.setFillColor(pr, pg, pb);
+    doc.rect(0, 0, pageW, 26, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Resumen financiero anual', margin, 16);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text(`Año: ${selectedYear}`, margin, 22);
+
+    // Tabla
+    const cols = [50, 44, 44, 44]; // suma = 182
+    const headers = ['Mes', 'Comisiones', 'Honorarios', 'Total'];
+    let y = 36;
+
+    // Header row
+    doc.setFillColor(pr, pg, pb);
+    doc.setDrawColor(pr, pg, pb);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(margin, y, tableW, 8, 'F');
+    let x = margin + 2;
+    doc.setFont('helvetica', 'bold');
+    headers.forEach((h, idx) => { doc.text(h, x, y + 5); x += cols[idx]; });
+    y += 8;
+
+    // Rows
+    const rowH = 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+
+    const drawRow = (cells, idx) => {
+      if (y + rowH > pageH - margin) {
+        addFooter(doc, pr, pg, pb);
+        doc.addPage();
+        y = margin + 12;
+        doc.setFillColor(pr, pg, pb);
+        doc.setTextColor(255, 255, 255);
+        doc.rect(margin, y, tableW, 8, 'F');
+        let tx = margin + 2;
+        doc.setFont('helvetica', 'bold');
+        headers.forEach((h, i2) => { doc.text(h, tx, y + 5); tx += cols[i2]; });
+        y += 8;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+      }
+
+      if (idx % 2 === 0) { doc.setFillColor(...lightRow); doc.rect(margin, y, tableW, rowH, 'F'); }
+
+      let cx = margin + 2;
+      cells.forEach((c, i3) => { doc.text(String(c), cx, y + 5); cx += cols[i3]; });
+
+      doc.setDrawColor(230); doc.line(margin, y + rowH, margin + tableW, y + rowH);
+      doc.setDrawColor(220); let vx = margin; cols.slice(0, -1).forEach((w) => { vx += w; doc.line(vx, y, vx, y + rowH); });
+      y += rowH;
+    };
+
+    const filas = (datosAnualesCompletos || []).map((m, i) => {
+      const monthDate = new Date(selectedYear, (m.mes || i + 1) - 1, 1);
+      return [
+        format(monthDate, 'MMM', { locale: es }),
+        formatCurrency(num(m.totalComisionesMensuales)),
+        formatCurrency(num(m.totalHonorariosContrato)),
+        formatCurrency(num(m.totalDelMes))
+      ];
+    });
+    filas.forEach((r, idx) => drawRow(r, idx));
+
+    const totCom = (datosAnualesCompletos || []).reduce((a, m) => a + num(m.totalComisionesMensuales), 0);
+    const totHon = (datosAnualesCompletos || []).reduce((a, m) => a + num(m.totalHonorariosContrato), 0);
+    const totAll = (datosAnualesCompletos || []).reduce((a, m) => a + num(m.totalDelMes), 0);
+
+    doc.setFillColor(235, 239, 255);
+    doc.rect(margin, y, tableW, rowH, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(pr, pg, pb);
+    let tx2 = margin + 2;
+    const totCells = ['Totales', formatCurrency(totCom), formatCurrency(totHon), formatCurrency(totAll)];
+    totCells.forEach((c, i4) => { doc.text(String(c), tx2, y + 5); tx2 += cols[i4]; });
+
+    addFooter(doc, pr, pg, pb);
+
+    doc.save(`resumen_anual_${selectedYear}.pdf`);
+  };
+
+  // Footer helper
+  const addFooter = (doc, pr, pg, pb) => {
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const pageNumber = `${doc.internal.getNumberOfPages()}`;
+    doc.setDrawColor(pr, pg, pb);
+    doc.setLineWidth(0.3);
+    doc.line(margin, pageH - 12, pageW - margin, pageH - 12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(`Generado: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, margin, pageH - 6);
+    doc.text(`Página ${pageNumber}`, pageW - margin, pageH - 6, { align: 'right' });
+  };
 
   // Generar y cargar ingresos automáticamente al cargar la página
   useEffect(() => {
@@ -201,6 +522,21 @@ const ContabilidadPage = () => {
   // --- UTILIDADES ---
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount || 0);
+
+  // Convierte #RRGGBB o rgb(a) a [r,g,b]
+  const hexToRgb = (c) => {
+    if (!c) return [53, 74, 168];
+    if (c.startsWith('#')) {
+      const bigint = parseInt(c.slice(1), 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return [r, g, b];
+    }
+    const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if (m) return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
+    return [53, 74, 168];
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -438,10 +774,24 @@ const ContabilidadPage = () => {
 
   // --- UI ---
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container
+      maxWidth={false}
+      sx={{
+        py: 4,
+        width: { xs: '95%', sm: '100%', md: '84vw' },
+        minHeight: '100vh',
+        pt: { xs: 3, sm: 4 },
+        pb: { xs: 12, sm: 4 },
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: { xs: 'center', md: 'flex-start' },
+        bgcolor: 'background.default',
+        marginLeft: { md: '15rem' }
+      }}
+    >
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 ,marginTop: 3}}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 4 ,marginTop: 4, width:"100%"}}>
+        <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'start', gap: 2, }}>
           <Typography
             variant="h5"
             component="h1"
@@ -450,7 +800,7 @@ const ContabilidadPage = () => {
             Mis ingresos
           </Typography>
         </Box>
-
+        
       </Box>
 
       {/* Alerts */}
@@ -466,7 +816,8 @@ const ContabilidadPage = () => {
       )}
 
       {/* Selector de Mes + botón regenerar */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+      <Box sx={{ mb: 3, display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: 2, }}>
+        <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'start', gap: 2, width:{xs:"90vw",md:"70vw"}}}>
         <TextField
           select
           label="Seleccionar Mes/Año"
@@ -488,27 +839,39 @@ const ContabilidadPage = () => {
             );
           })}
         </TextField>
-
         <IconButton
-          aria-label="Regenerar ingresos"
-          onClick={handleRegenerarIngresos}
-          disabled={refreshing}
+          aria-label="Descargar resumen"
+          onClick={(e) => setAnchorDescargar(e.currentTarget)}
           sx={{ ml: 1, color: 'success.main', border: '1px solid', borderColor: 'success.main' }}
         >
-          <RefreshIcon sx={{
-            animation: refreshing ? 'spin 1s linear infinite' : 'none',
-            '@keyframes spin': {
-              from: { transform: 'rotate(0deg)' },
-              to: { transform: 'rotate(360deg)' }
-            }
-          }} />
+          <DownloadIcon />
         </IconButton>
+        <Menu
+          anchorEl={anchorDescargar}
+          open={Boolean(anchorDescargar)}
+          onClose={() => setAnchorDescargar(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <MenuItem disabled>
+            Mensual ({format(selectedMonth, 'MMMM yyyy', { locale: es })})
+          </MenuItem>
+          <MenuItem onClick={() => { downloadMonthlyCSV(); setAnchorDescargar(null); }}>CSV</MenuItem>
+          <MenuItem onClick={() => { downloadMonthlyPDF(); setAnchorDescargar(null); }}>PDF</MenuItem>
+          <Divider sx={{ my: 0.5 }} />
+          <MenuItem disabled>
+            Anual ({selectedYear})
+          </MenuItem>
+          <MenuItem onClick={() => { downloadAnnualCSV(); setAnchorDescargar(null); }}>CSV</MenuItem>
+          <MenuItem onClick={() => { downloadAnnualPDF(); setAnchorDescargar(null); }}>PDF</MenuItem>
+        </Menu>
       </Box>
+     </Box>
 
       {/* Cards de Resumen de Ingresos */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {/* Resumen de Ingresos */}
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={7}>
           <Card sx={{ borderRadius:3, height: '100%', background: 'linear-gradient(135deg,rgb(53, 74, 168) 0%,rgb(122, 15, 228) 100%)', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -604,7 +967,7 @@ const ContabilidadPage = () => {
         </Grid>
 
         {/* Lista de Ingresos Mensuales */}
-        <Grid item xs={12}>
+        <Grid item xs={12} md={11}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
@@ -675,24 +1038,13 @@ const ContabilidadPage = () => {
           display: 'flex',
           gap: 1
         }}>
-          {[0, 1].map((index) => (
-            <DotIcon 
-              key={index}
-              sx={{ 
-                fontSize: 12,
-                color: currentCardLayer === index ? theme.palette.primary.main : theme.palette.grey[400],
-                cursor: 'pointer',
-                transition: 'color 0.3s ease'
-              }}
-              onClick={() => setCurrentCardLayer(index)}
-            />
-          ))}
+         
         </Box>
         
         {/* Container con animación de deslizamiento */}
         <Box sx={{ 
           position: 'relative',
-          width: '100%', // Doble ancho para contener ambas capas
+          width: '80vw', // Doble ancho para contener ambas capas
           display: 'flex',
          
         }}>

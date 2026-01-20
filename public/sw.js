@@ -1,16 +1,15 @@
 // ===============================
-//  SW — Tuinmo (versión estable)
+//  SW — Tuinmo (versión v11)
 // ===============================
-const SW_VERSION = "tuinmo-sw-v10";
+const SW_VERSION = "tuinmo-sw-v11";
 const STATIC_CACHE = `${SW_VERSION}-static`;
-const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
+const ASSETS_CACHE = `${SW_VERSION}-assets`;
 const CONTRACTS_CACHE = `${SW_VERSION}-contracts`;
 
 const API_PREFIX = "/api";
 const CONTRACTS_API = "/api/contratos";
 
-// ⚠️ NO precachear index.html (Causa pantalla blanca)
-const PRECACHE_URLS = [
+const STATIC_ASSETS = [
   "/manifest.json",
   "/logoInmo192.png",
   "/logoInmo512.png",
@@ -21,11 +20,37 @@ const PRECACHE_URLS = [
 // ==========================
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-
   self.skipWaiting(); // activar nueva versión ya mismo
 });
+
+// ==========================
+// HELPERS
+// ==========================
+// Helper genérico
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  const networkPromise = fetch(request)
+    .then((res) => {
+      if (res && res.ok) cache.put(request, res.clone());
+      return res;
+    })
+    .catch(() => null);
+
+  if (cached) {
+    // Devuelvo rápido desde cache y actualizo en segundo plano
+    networkPromise;
+    return cached;
+  }
+
+  // Si no hay nada en cache, espero la red
+  const res = await networkPromise;
+  return res || Response.error();
+}
+
 
 // ==========================
 // ACTIVATE
@@ -52,56 +77,40 @@ const isSameOrigin = (url) =>
   new URL(url, self.location.origin).origin === self.location.origin;
 
 const isAssetPath = (p) =>
-  /\.(js|css|png|jpg|jpeg|svg|webp|ico|woff2?|ttf|eot)$/.test(p);
-
-// ==========================
-// NAVIGATION — NetworkFirst
-// ==========================
-async function handleNavigation(request) {
-  try {
-    return await fetch(request);
-  } catch {
-    const cache = await caches.open(STATIC_CACHE);
-    return (
-      (await cache.match("/index.html")) ||
-      new Response("Offline", { status: 503 })
-    );
-  }
-}
+  /\.(?:js|css|png|jpg|jpeg|svg|webp|ico|woff2?|ttf|eot)$/.test(p);
 
 // ==========================
 // ASSETS — Stale-While-Revalidate
 // ==========================
 async function handleAsset(request) {
-  const cache = await caches.open(RUNTIME_CACHE);
-
+  const cache = await caches.open(ASSETS_CACHE);
   const cached = await cache.match(request);
-  const network = fetch(request)
+
+  const networkPromise = fetch(request)
     .then((res) => {
-      if (res.ok) cache.put(request, res.clone());
+      if (res && res.ok) cache.put(request, res.clone());
       return res;
     })
     .catch(() => null);
 
-  return cached || network;
+  return cached || networkPromise || Response.error();
 }
 
 // ==========================
 // API /contratos — NetworkFirst
 // ==========================
 async function handleContracts(request) {
-  const cache = await caches.open(CONTRACTS_CACHE);
-  try {
-    const res = await fetch(request);
-    if (res.ok) cache.put(request, res.clone());
-    return res;
-  } catch {
-    return (
-      (await cache.match(request)) ||
-      new Response(JSON.stringify({ offline: true }), { status: 503 })
-    );
-  }
+  // ahora CONTRATS_CACHE se usa con stale-while-revalidate
+  return staleWhileRevalidate(request, CONTRACTS_CACHE);
 }
+// ==========================
+// MENSAJES (para futuras órdenes)
+// ==========================
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
 
 // ==========================
 // FETCH
@@ -110,7 +119,7 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Solo GET
+  // Sólo GET
   if (request.method !== "GET") return;
 
   // Misma origin
@@ -122,19 +131,50 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Otras API
+  // Otras APIs → que las maneje el navegador/servidor, sin cache SW
   if (url.pathname.startsWith(API_PREFIX)) {
     return;
   }
 
-  // Navegación (HTML)
-  if (request.mode === "navigate") {
-    event.respondWith(handleNavigation(request));
-    return;
-  }
-
-  // Assets
+  // Assets estáticos
   if (isAssetPath(url.pathname)) {
     event.respondWith(handleAsset(request));
+  }
+
+  // ⚠️ IMPORTANTE: No tocamos request.mode === "navigate"
+  // Deja que el navegador y el servidor resuelvan el HTML.
+});
+
+// ==========================
+// PUSH NOTIFICATIONS (si las usás)
+// ==========================
+// ====== NOTIFICACIONES ======
+self.addEventListener("push", (event) => {
+  const data = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/logoInmo512.png",
+      badge: "/logoInmo192.png",
+      vibrate: [200, 100, 200],
+      actions: [{ action: "view", title: "Ver recibo" }],
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  if (event.action === "view") {
+    clients.openWindow("/recibos");
+  } else {
+    clients.openWindow("/");
+  }
+});
+
+// ====== Mensajes ======
+self.addEventListener("message", async (event) => {
+  if (event.data?.type === "CLEAR_CONTRACTS_CACHE") {
+    await caches.delete(CONTRACTS_CACHE);
+    event.ports?.[0]?.postMessage?.({ ok: true });
   }
 });

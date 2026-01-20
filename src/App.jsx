@@ -29,6 +29,7 @@ import NuevoInterviniente from "./components/pages/pagesForm/NuevoInterviniente.
 import NuevoServicio from "./components/pages/pagesForm/NuevoServicio.jsx";
 import NuevoRecibo from "./components/pages/pagesForm/NuevoRecibo.jsx";
 import ReciboForm from "./components/pages/pagesForm/ReciboForm.jsx";
+import RecibosPage from "./components/pages/RecibosPage.jsx";
 import CrearContratoPage from "./components/pages/CrearContratoPage.jsx";
 import "./styles/swal-toast.css";
 import { useAuth } from "./components/context/GlobalAuth";
@@ -163,6 +164,7 @@ function AppRoutes() {
         <Route path="contratos/crear" element={<CrearContratoPage />} />
         <Route path="recibo" element={<ReciboForm />} />
         <Route path="recibos/:id" element={<ReciboForm />} />
+        <Route path="recibos-page/:id" element={<RecibosPage />} />
         <Route path="nuevo-servicio" element={<NuevoServicio />} />
         <Route path="nuevo-recibo" element={<NuevoRecibo />} />
         <Route path="garantes" element={<GarantesPage />} />

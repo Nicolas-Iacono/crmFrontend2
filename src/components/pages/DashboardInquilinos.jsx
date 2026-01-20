@@ -27,7 +27,16 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  Tabs,
+  Tab,
+  TextField,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Avatar,
+  InputAdornment
 } from '@mui/material';
 import {
   ExitToApp as LogoutIcon,
@@ -41,6 +50,14 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Message as MessageIcon,
+  ReportProblem as ReportProblemIcon,
+  Notifications as NotificationsIcon,
+  Send as SendIcon,
+  PhotoCamera as PhotoCameraIcon,
+  Delete as DeleteIcon,
+  Build as BuildIcon,
+  CheckCircle as CheckCircleIcon,
+  Schedule as ScheduleIcon,
   PictureAsPdf as PdfIcon,
   Visibility as ViewIcon,
   Close as CloseIcon,
@@ -49,6 +66,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import ModalNotas from '../common/popUps/ModalNotas';
 
 const DashboardInquilinos = () => {
   const theme = useTheme();
@@ -63,6 +81,11 @@ const DashboardInquilinos = () => {
   const [expandedRecibos, setExpandedRecibos] = useState(new Set());
   const [activeSection, setActiveSection] = useState('recibos'); // 'recibos', 'home', 'comunicaciones'
   const [contratoInfo, setContratoInfo] = useState(null);
+  const [notasContrato, setNotasContrato] = useState([]);
+  const [loadingNotasContrato, setLoadingNotasContrato] = useState(false);
+  const [errorNotasContrato, setErrorNotasContrato] = useState(null);
+  const [modalNotaOpen, setModalNotaOpen] = useState(false);
+  const [notaSeleccionada, setNotaSeleccionada] = useState(null);
   const [loadingContrato, setLoadingContrato] = useState(false);
   const [openContractModal, setOpenContractModal] = useState(false);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
@@ -72,11 +95,242 @@ const DashboardInquilinos = () => {
   const [downloadingRecibo, setDownloadingRecibo] = useState(null);
   const [nombreInmoContrato, setNombreInmoContrato] = useState('');
   const [contratoCompleto, setContratoCompleto] = useState(null);
-  
+
+  const [commTab, setCommTab] = useState(0); // 0: mensajes, 1: reportes, 2: notificaciones
+  const [selectedThreadId, setSelectedThreadId] = useState('inmo');
+  const [messageDraft, setMessageDraft] = useState('');
+  const [reportForm, setReportForm] = useState({
+    tipo: 'problema',
+    asunto: '',
+    descripcion: '',
+    urgencia: 'media',
+  });
+  const [reportPhotos, setReportPhotos] = useState([]);
+  const [reportSent, setReportSent] = useState(false);
+  const [sendingReport, setSendingReport] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 'n1',
+      title: 'Recordatorio de pago',
+      body: 'Tenés un recibo próximo a vencer. Revisá la sección “Recibos”.',
+      date: 'Hoy',
+      severity: 'info',
+      icon: <ScheduleIcon fontSize="small" />,
+    },
+    {
+      id: 'n2',
+      title: 'Actualización de estado',
+      body: 'Tu reporte de mantenimiento fue recibido y está en revisión.',
+      date: 'Ayer',
+      severity: 'success',
+      icon: <CheckCircleIcon fontSize="small" />,
+    },
+  ]);
+
   // Estados para filtro de fecha
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [filteredRecibos, setFilteredRecibos] = useState([]);
+
+  const commThreads = [
+    {
+      id: 'inmo',
+      title: nombreInmoContrato || 'Tu inmobiliaria',
+      subtitle: 'Atención y consultas',
+      unread: 1,
+      avatarIcon: <MessageIcon fontSize="small" />,
+    },
+    {
+      id: 'mantenimiento',
+      title: 'Mantenimiento',
+      subtitle: 'Reparaciones y soporte',
+      unread: 0,
+      avatarIcon: <BuildIcon fontSize="small" />,
+    },
+  ];
+
+  const commMessagesByThread = {
+    inmo: [
+      {
+        id: 'm1',
+        from: 'inmo',
+        text: 'Hola, ¿en qué podemos ayudarte?',
+        time: '09:20',
+      },
+      {
+        id: 'm2',
+        from: 'me',
+        text: 'Necesito confirmar el horario para retirar las llaves.',
+        time: '09:23',
+      },
+    ],
+    mantenimiento: [
+      {
+        id: 'm3',
+        from: 'inmo',
+        text: 'Podés cargar un reporte y te respondemos por acá.',
+        time: 'Ayer',
+      },
+    ],
+  };
+
+  const activeThread = commThreads.find(t => t.id === selectedThreadId) || commThreads[0];
+  const activeMessages = commMessagesByThread[selectedThreadId] || [];
+
+  const handleAddReportPhotos = (e) => {
+    const files = Array.from(e?.target?.files || []);
+    if (!files.length) return;
+
+    const mapped = files
+      .filter(f => (f?.type || '').startsWith('image/'))
+      .map((file) => ({
+        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(16).slice(2)}`,
+        file,
+        url: URL.createObjectURL(file),
+      }));
+
+    setReportPhotos(prev => {
+      const next = [...prev, ...mapped].slice(0, 6);
+      const overflow = [...prev, ...mapped].slice(6);
+      overflow.forEach(p => {
+        try { URL.revokeObjectURL(p.url); } catch (_) {}
+      });
+      return next;
+    });
+
+    e.target.value = '';
+  };
+
+  const handleRemoveReportPhoto = (photoId) => {
+    setReportPhotos(prev => {
+      const found = prev.find(p => p.id === photoId);
+      if (found?.url) {
+        try { URL.revokeObjectURL(found.url); } catch (_) {}
+      }
+      return prev.filter(p => p.id !== photoId);
+    });
+  };
+
+  const submitReporte = async () => {
+    const token = localStorage.getItem('inquilino_token');
+    const idContrato = contratoInfo?.id;
+
+    if (!token) {
+      navigate('/login-inquilinos');
+      return;
+    }
+
+    if (!idContrato) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No se pudo enviar el reporte',
+        text: 'No se encontró el contrato asociado.',
+      });
+      return;
+    }
+
+    const prioridadMap = {
+      alta: 'Alta',
+      media: 'Media',
+      baja: 'Baja',
+    };
+
+    const tipoMap = {
+      reparacion: 'reparacion',
+      problema: 'otro',
+    };
+
+    const notaPayload = {
+      idContrato,
+      contenido: reportForm.descripcion,
+      motivo: reportForm.asunto,
+      estado: 'EN_PROCESO',
+      prioridad: prioridadMap[reportForm.urgencia] || 'Media',
+      tipo: tipoMap[reportForm.tipo] || 'reparacion',
+      observaciones: '',
+      visibilidad: 'PUBLICA',
+    };
+
+    const apiRoot = `${API_BASE}${String(API_BASE || '').includes('/api') ? '' : '/api'}`;
+    const formData = new FormData();
+    formData.append('data', new Blob([JSON.stringify(notaPayload)], { type: 'application/json' }));
+    (reportPhotos || []).forEach((p) => {
+      if (p?.file) formData.append('imagenes', p.file);
+    });
+
+    setSendingReport(true);
+    try {
+      const res = await fetch(`${apiRoot}/notas/crear-con-imagenes`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        let detail = null;
+        try {
+          detail = await res.json();
+        } catch (_) {
+          try {
+            detail = await res.text();
+          } catch (_) {}
+        }
+        const msg = (detail && (detail.message || detail.error)) || 'Error al enviar el reporte.';
+        throw new Error(msg);
+      }
+
+      let createdNote = null;
+      try {
+        const payload = await res.json();
+        createdNote = Array.isArray(payload) ? payload[0] : (payload?.data || payload);
+      } catch (_) {}
+
+      if (createdNote && createdNote.idContrato === idContrato) {
+        setNotasContrato((prev) => {
+          const next = [createdNote, ...(prev || [])];
+          next.sort((a, b) => {
+            if (a?.id && b?.id) return b.id - a.id;
+            const ta = new Date(a?.fechaCreacion || 0).getTime();
+            const tb = new Date(b?.fechaCreacion || 0).getTime();
+            return tb - ta;
+          });
+          return next;
+        });
+      }
+
+      setReportSent(true);
+      setReportForm({ tipo: 'problema', asunto: '', descripcion: '', urgencia: 'media' });
+      setReportPhotos(prev => {
+        prev.forEach(p => {
+          try { URL.revokeObjectURL(p.url); } catch (_) {}
+        });
+        return [];
+      });
+
+      try {
+        window.dispatchEvent(new CustomEvent('nota-creada', { detail: createdNote || {
+          ...notaPayload,
+          fechaCreacion: new Date().toISOString(),
+        }}));
+      } catch (_) {}
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Reporte enviado',
+        text: 'Quedó registrado para que la inmobiliaria lo gestione.',
+      });
+    } catch (e) {
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo enviar el reporte',
+        text: e?.message || 'Ocurrió un error',
+      });
+    } finally {
+      setSendingReport(false);
+    }
+  };
 
   useEffect(() => {
     // Verificar si hay token y username
@@ -91,6 +345,44 @@ const DashboardInquilinos = () => {
     setUsername(storedUsername || '');
     fetchRecibos(token);
   }, [navigate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('inquilino_token');
+    const idContrato = contratoInfo?.id;
+
+    if (activeSection !== 'comunicaciones') return;
+    if (!token || !idContrato) return;
+
+    const fetchNotasPorContrato = async () => {
+      try {
+        setLoadingNotasContrato(true);
+        setErrorNotasContrato(null);
+
+        const url = `${API_BASE}${String(API_BASE || '').includes('/api') ? '' : '/api'}/notas/por-contrato/${idContrato}`;
+        const res = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const payload = res?.data;
+        const data = Array.isArray(payload)
+          ? payload
+          : (payload?.data && Array.isArray(payload.data) ? payload.data : []);
+        setNotasContrato(data);
+      } catch (e) {
+        if (e?.response?.status === 401) {
+          handleLogout();
+          return;
+        }
+        setErrorNotasContrato('Error al cargar las notas.');
+      } finally {
+        setLoadingNotasContrato(false);
+      }
+    };
+
+    fetchNotasPorContrato();
+  }, [API_BASE, activeSection, contratoInfo?.id]);
 
   // Efecto para cargar información del contrato cuando se accede a la sección home
   useEffect(() => {
@@ -181,7 +473,6 @@ const DashboardInquilinos = () => {
       setLoading(false);
     }
   };
-  console.log('contratoInfo', contratoInfo);
   const fetchContratoInfo = async (token) => {
     try {
       setLoadingContrato(true);
@@ -326,6 +617,8 @@ const DashboardInquilinos = () => {
     localStorage.removeItem('inquilino_token') ;
     localStorage.removeItem('inquilino_username') ;
     localStorage.removeItem('chat_session_id');
+    localStorage.removeItem('username');
+    localStorage.removeItem('authorities');
     navigate('/login-inquilinos');
   };
 
@@ -409,10 +702,20 @@ if (contratoInfo) {
     if (Array.isArray(fecha) && fecha.length >= 3) {
       return `${String(fecha[2]).padStart(2, '0')}/${String(fecha[1]).padStart(2, '0')}/${fecha[0]}`;
     }
+
+    if (typeof fecha === 'string') {
+      const trimmed = fecha.trim();
+
+      // Evitar corrimientos por timezone cuando viene como YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        const [yyyy, mm, dd] = trimmed.split('-');
+        return `${dd}/${mm}/${yyyy}`;
+      }
+    }
     
     // Si es una fecha válida
     if (fecha && !isNaN(Date.parse(fecha))) {
-      return new Date(fecha).toLocaleDateString('es-AR');
+      return new Date(fecha).toLocaleDateString('es-AR', { timeZone: 'UTC' });
     }
     
     return 'N/A';
@@ -479,7 +782,6 @@ if (contratoInfo) {
       const logoHeight = 30;
       const logoX = 20;
       const logoY = 32;
-      console.log(reciboNormalizado)
       // Agregar la imagen al PDF si existe logo válido
       if (contratoInfo && contratoInfo.usuarioDtoSalida.logo) {
         try {
@@ -803,7 +1105,7 @@ if (contratoInfo) {
                         Fecha de Inicio
                       </Typography>
                       <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                        {new Date(contratoInfo.fechaInicio).toLocaleDateString('es-AR')}
+                        {formatFecha(contratoInfo.fechaInicio)}
                       </Typography>
                     </Grid2>
                     <Grid2 item xs={12} md={6}>
@@ -811,7 +1113,7 @@ if (contratoInfo) {
                         Fecha de Fin
                       </Typography>
                       <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                        {new Date(contratoInfo.fechaFin).toLocaleDateString('es-AR')}
+                        {formatFecha(contratoInfo.fechaFin)}
                       </Typography>
                     </Grid2>
                     </Box>
@@ -984,20 +1286,325 @@ if (contratoInfo) {
             <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: '#1a237e' }}>
               Comunicaciones
             </Typography>
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <MessageIcon sx={{ fontSize: 60, color: '#ccc', mb: 2 }} />
-              <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
-                Próximamente
-              </Typography>
-              <Typography variant="body1" color="textSecondary">
-                La sección de comunicaciones estará disponible próximamente. Aquí podrás:
-              </Typography>
-              <Box sx={{ mt: 2, textAlign: 'left', maxWidth: 400, mx: 'auto' }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>• Enviar mensajes a la inmobiliaria</Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>• Reportar problemas en la propiedad</Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>• Solicitar reparaciones</Typography>
-                <Typography variant="body2">• Ver notificaciones importantes</Typography>
+
+            
+
+            <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
+              <Box sx={{ px: 2, pt: 1.5, bgcolor: 'rgba(243, 240, 248, 0.41)' }}>
+                <Tabs
+                  value={commTab}
+                  onChange={(_, v) => {
+                    setCommTab(v);
+                    setReportSent(false);
+                  }}
+                  variant={isMobile ? 'scrollable' : 'standard'}
+                  scrollButtons={isMobile ? 'auto' : false}
+                  sx={{
+                    '& .MuiTab-root': { textTransform: 'none', fontWeight: 800 },
+                  }}
+                >
+                  <Tab icon={<ReportProblemIcon />} iconPosition="start" label="Reportar / Reparaciones" />
+                </Tabs>
               </Box>
+
+              <Divider />
+
+              
+
+              {commTab === 0 && (
+                <Box sx={{ p: { xs: 1.5, md: 2 } }}>
+                  <Grid2 container spacing={2}>
+                    <Grid2 item xs={12} md={7}>
+                      <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, border: '1px solid rgba(15, 23, 42, 0.08)' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <ReportProblemIcon sx={{ color: 'rgb(86, 23, 164)' }} />
+                          <Typography sx={{ fontWeight: 900, color: 'rgba(30, 27, 36, 0.92)' }}>
+                            Crear reporte
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ color: 'rgba(60,60,72,0.72)', mb: 2 }}>
+                          Completá el formulario para informar un problema o solicitar una reparación.
+                        </Typography>
+
+                        <Grid2 container spacing={2} sx={{display:"flex",
+                          flexDirection:"column"
+                        }}>
+                          <Grid2 item xs={12} md={6}>
+                            <FormControl fullWidth size="small">
+                              <InputLabel>Tipo</InputLabel>
+                              <Select
+                                value={reportForm.tipo}
+                                label="Tipo"
+                                onChange={(e) => setReportForm((p) => ({ ...p, tipo: e.target.value }))}
+                              >
+                                <MenuItem value="problema">Problema</MenuItem>
+                                <MenuItem value="reparacion">Reparación</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Grid2>
+                          <Grid2 item xs={12} md={6}>
+                            <FormControl fullWidth size="small">
+                              <InputLabel>Urgencia</InputLabel>
+                              <Select
+                                value={reportForm.urgencia}
+                                label="Urgencia"
+                                onChange={(e) => setReportForm((p) => ({ ...p, urgencia: e.target.value }))}
+                              >
+                                <MenuItem value="baja">Baja</MenuItem>
+                                <MenuItem value="media">Media</MenuItem>
+                                <MenuItem value="alta">Alta</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Grid2>
+                          <Grid2 item xs={12}>
+                            <TextField
+                              size="small"
+                              fullWidth
+                              label="Asunto"
+                              value={reportForm.asunto}
+                              onChange={(e) => setReportForm((p) => ({ ...p, asunto: e.target.value }))}
+                            />
+                          </Grid2>
+                          <Grid2 item xs={12}>
+                            <TextField
+                              fullWidth
+                              label="Descripción"
+                              multiline
+                              minRows={4}
+                              value={reportForm.descripcion}
+                              onChange={(e) => setReportForm((p) => ({ ...p, descripcion: e.target.value }))}
+                            />
+                          </Grid2>
+
+                          <Grid2 item xs={12}>
+                            <Box
+                              sx={{
+                                border: '1px dashed rgba(15, 23, 42, 0.18)',
+                                borderRadius: 3,
+                                p: 2,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 1.25,
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                                <Box>
+                                  <Typography sx={{ fontWeight: 900, color: 'rgba(30, 27, 36, 0.92)' }}>
+                                    Fotos (opcional)
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ color: 'rgba(60,60,72,0.72)' }}>
+                                    Podés adjuntar hasta 6 imágenes.
+                                  </Typography>
+                                </Box>
+
+                                <Button
+                                  component="label"
+                                  variant="outlined"
+                                  startIcon={<PhotoCameraIcon />}
+                                  sx={{ borderRadius: 999, textTransform: 'none' }}
+                                >
+                                  Agregar fotos
+                                  <input
+                                    hidden
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleAddReportPhotos}
+                                  />
+                                </Button>
+                              </Box>
+
+                              {reportPhotos.length > 0 && (
+                                <Grid2 container spacing={1}>
+                                  {reportPhotos.map((p) => (
+                                    <Grid2 item xs={4} sm={3} key={p.id}>
+                                      <Box
+                                        sx={{
+                                          position: 'relative',
+                                          width: '100%',
+                                          paddingTop: '100%',
+                                          borderRadius: 2,
+                                          overflow: 'hidden',
+                                          border: '1px solid rgba(15, 23, 42, 0.10)',
+                                          bgcolor: 'rgba(15, 23, 42, 0.04)',
+                                        }}
+                                      >
+                                        <Box
+                                          component="img"
+                                          src={p.url}
+                                          alt={p.file?.name || 'foto'}
+                                          sx={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                          }}
+                                        />
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleRemoveReportPhoto(p.id)}
+                                          sx={{
+                                            position: 'absolute',
+                                            top: 6,
+                                            right: 6,
+                                            bgcolor: 'rgba(255,255,255,0.92)',
+                                            '&:hover': { bgcolor: 'rgba(255,255,255,1)' },
+                                          }}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </Box>
+                                    </Grid2>
+                                  ))}
+                                </Grid2>
+                              )}
+                            </Box>
+                          </Grid2>
+                        </Grid2>
+
+                        <Box sx={{ display: 'flex', gap: 1.5, mt: 2, flexWrap: 'wrap' }}>
+                          <Button
+                            variant="contained"
+                            startIcon={<SendIcon />}
+                            disabled={!reportForm.asunto.trim() || !reportForm.descripcion.trim()}
+                            onClick={() => {
+                              submitReporte();
+                            }}
+                            sx={{ borderRadius: 999, textTransform: 'none' }}
+                          >
+                            Enviar reporte
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            onClick={() => {
+                              setReportForm({ tipo: 'problema', asunto: '', descripcion: '', urgencia: 'media' });
+                              setReportPhotos(prev => {
+                                prev.forEach(p => {
+                                  try { URL.revokeObjectURL(p.url); } catch (_) {}
+                                });
+                                return [];
+                              });
+                              setReportSent(false);
+                            }}
+                            sx={{ borderRadius: 999, textTransform: 'none' }}
+                          >
+                            Limpiar
+                          </Button>
+                          {reportSent && (
+                            <Chip
+                              icon={<CheckCircleIcon />}
+                              label="Enviado"
+                              color="success"
+                              variant="outlined"
+                              sx={{ borderRadius: 999 }}
+                            />
+                          )}
+                        </Box>
+                      </Paper>
+                    </Grid2>
+                         
+                    {/* <Grid2 item xs={12} md={5}>
+                      <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, border: '1px solid rgba(15, 23, 42, 0.08)' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <BuildIcon sx={{ color: 'rgb(86, 23, 164)' }} />
+                          <Typography sx={{ fontWeight: 900, color: 'rgba(30, 27, 36, 0.92)' }}>
+                            Tips para un buen reporte
+                          </Typography>
+                        </Box>
+                        <Divider sx={{ my: 1.5 }} />
+                        <Box sx={{ display: 'grid', gap: 1.25 }}>
+                          <Typography variant="body2" sx={{ color: 'rgba(60,60,72,0.80)' }}>
+                            - Contá qué pasó y desde cuándo.
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(60,60,72,0.80)' }}>
+                            - Indicá si afecta servicios (agua/luz/gas).
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(60,60,72,0.80)' }}>
+                            - Si podés, agregá fotos cuando lo conectemos al backend.
+                          </Typography>
+                        </Box>
+                        <Divider sx={{ my: 1.5 }} />
+                        <Typography variant="caption" sx={{ color: 'rgba(60,60,72,0.72)' }}>
+                          Próximo paso: adjuntos, tracking de estado y chat asociado al reporte.
+                        </Typography>
+                      </Paper>
+                    </Grid2> */}
+
+                     <Grid2 item xs={12} md={5}>
+                            <Paper sx={{ p: { xs: 2, md: 3 }, width:"78vw", borderRadius: 4, border: '1px solid rgba(15, 23, 42, 0.08)' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <Typography sx={{ fontWeight: 900, color: 'rgba(30, 27, 36, 0.92)' }}>
+                                 Historial de reportes
+                                </Typography>
+                              </Box>
+                              <Divider sx={{ my: 1.5 }} />
+
+                              {loadingNotasContrato ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                                  <CircularProgress size={26} />
+                                </Box>
+                              ) : errorNotasContrato ? (
+                                <Alert severity="error">{errorNotasContrato}</Alert>
+                              ) : notasContrato.length === 0 ? (
+                                <Typography variant="body2" sx={{ color: 'rgba(60,60,72,0.72)' }}>
+                                  No hay notas para este contrato.
+                                </Typography>
+                              ) : (
+                                <Box sx={{ display: 'grid', gap: 1.25, }}>
+                                  {notasContrato.slice(0, 6).map((n) => (
+                                    <Paper
+                                      key={n.id || `${n.motivo}-${n.fechaCreacion}`}
+                                      variant="outlined"
+                                      onClick={() => {
+                                        setNotaSeleccionada(n);
+                                        setModalNotaOpen(true);
+                                      }}
+                                      sx={{
+                                        p: 1.25,
+                                        borderRadius: 2,
+                                        cursor: 'pointer',
+                                        transition: 'box-shadow 0.2s, transform 0.2s',
+                                        '&:hover': {
+                                          boxShadow: 3,
+                                          transform: 'translateY(-1px)',
+                                        },
+                                      }}
+                                    >
+                                      <Typography sx={{ fontWeight: 800, fontSize: 14 }}>
+                                        {n.motivo || 'Sin título'}
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ mt: 0.5, color: 'rgba(60,60,72,0.80)', whiteSpace: 'pre-line' }}>
+                                        {n.contenido || ''}
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+                                        {n.estado ? <Chip size="small" label={n.estado} /> : null}
+                                        {n.prioridad ? <Chip size="small" variant="outlined" label={n.prioridad} /> : null}
+                                        {n.tipo ? <Chip size="small" variant="outlined" label={n.tipo} /> : null}
+                                      </Box>
+                                    </Paper>
+                                  ))}
+                                </Box>
+                              )}
+                            </Paper>
+                          </Grid2>
+                  </Grid2>
+                  
+                </Box>
+              )}
+
+              <ModalNotas
+                open={modalNotaOpen}
+                onClose={() => {
+                  setModalNotaOpen(false);
+                  setNotaSeleccionada(null);
+                }}
+                nota={notaSeleccionada}
+                contrato={contratoInfo?.id}
+                contratoInfo={contratoInfo}
+              />
+
+             
             </Paper>
           </Box>
         )}
@@ -1129,7 +1736,7 @@ if (contratoInfo) {
                           {recibo.nombreContrato}
                         </Typography>
                         <Typography variant="body2" color="textSecondary">
-                          Recibo #{recibo.numeroRecibo} - {recibo.periodo}
+                          Recibo #{recibo.numeroRecibo} - {recibo.periodo} 
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -1162,7 +1769,7 @@ if (contratoInfo) {
                           Fecha de Emisión
                         </Typography>
                         <Typography variant="body1">
-                          {new Date(recibo.fechaEmision).toLocaleDateString('es-AR')}
+                          {formatFecha(recibo.fechaEmision)}
                         </Typography>
                       </Grid2>
                       <Grid2 item xs={12} sm={6}>
@@ -1170,7 +1777,7 @@ if (contratoInfo) {
                           Fecha de Vencimiento
                         </Typography>
                         <Typography variant="body1">
-                          {new Date(recibo.fechaVencimiento).toLocaleDateString('es-AR')}
+                          {formatFecha(recibo.fechaVencimiento)}
                         </Typography>
                       </Grid2>
                     </Grid2>
@@ -1266,7 +1873,7 @@ if (contratoInfo) {
                                     <Box sx={{ mb: 2 }}>
                                       {impuesto.fechaFactura && (
                                         <Typography variant="caption" display="block" sx={{ mb: 1 }}>
-                                          Fecha: {new Date(impuesto.fechaFactura).toLocaleDateString('es-AR')}
+                                          Fecha: {formatFecha(impuesto.fechaFactura)}
                                         </Typography>
                                       )}
                                       {impuesto.empresa && (
@@ -1542,7 +2149,7 @@ if (contratoInfo) {
               fontSize: { xs: '0.7rem', md: '0.75rem' },
               fontWeight: activeSection === 'comunicaciones' ? 'bold' : 'normal'
             }}>
-              Mensajes
+              Reportes
             </Typography>
           </Button>
         </Box>

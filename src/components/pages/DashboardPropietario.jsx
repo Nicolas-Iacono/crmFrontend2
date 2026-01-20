@@ -11,6 +11,7 @@ import {
   Toolbar,
   IconButton,
   CircularProgress,
+  Alert,
   Paper,
   useTheme,
   useMediaQuery,
@@ -51,11 +52,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import ModalNotas from '../common/popUps/ModalNotas';
 
 const DashboardPropietario = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_URL;
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -98,6 +101,14 @@ const DashboardPropietario = () => {
   const [contratoModalOpen, setContratoModalOpen] = useState(false);
   const [selectedContrato, setSelectedContrato] = useState(null);
 
+  // Reportes / Notas por contrato
+  const [selectedContratoReportesId, setSelectedContratoReportesId] = useState('');
+  const [notasContrato, setNotasContrato] = useState([]);
+  const [loadingNotasContrato, setLoadingNotasContrato] = useState(false);
+  const [errorNotasContrato, setErrorNotasContrato] = useState(null);
+  const [modalNotaOpen, setModalNotaOpen] = useState(false);
+  const [notaSeleccionada, setNotaSeleccionada] = useState(null);
+
   // Estados para modal de contenido del contrato PDF
   const [contratoPdfModalOpen, setContratoPdfModalOpen] = useState(false);
 
@@ -127,6 +138,51 @@ const DashboardPropietario = () => {
       fetchDatosPropietario(token);
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (selectedContratoReportesId) return;
+    if (!Array.isArray(contratosPropietario) || contratosPropietario.length === 0) return;
+    const firstId = contratosPropietario[0]?.id;
+    if (firstId) setSelectedContratoReportesId(String(firstId));
+  }, [contratosPropietario, selectedContratoReportesId]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('propietario_token');
+    const idContrato = selectedContratoReportesId;
+
+    if (activeSection !== 'comunicaciones') return;
+    if (!token || !idContrato) return;
+
+    const fetchNotasPorContrato = async () => {
+      try {
+        setLoadingNotasContrato(true);
+        setErrorNotasContrato(null);
+
+        const url = `${API_BASE}${String(API_BASE || '').includes('/api') ? '' : '/api'}/notas/por-contrato/${idContrato}`;
+        const res = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const payload = res?.data;
+        const data = Array.isArray(payload)
+          ? payload
+          : (payload?.data && Array.isArray(payload.data) ? payload.data : []);
+        setNotasContrato(data);
+      } catch (e) {
+        if (e?.response?.status === 401) {
+          handleLogout();
+          return;
+        }
+        setErrorNotasContrato('Error al cargar los reportes.');
+      } finally {
+        setLoadingNotasContrato(false);
+      }
+    };
+
+    fetchNotasPorContrato();
+  }, [API_BASE, activeSection, selectedContratoReportesId]);
 
   // Efecto para filtrar recibos
   useEffect(() => {
@@ -306,10 +362,20 @@ const DashboardPropietario = () => {
     if (Array.isArray(fecha) && fecha.length >= 3) {
       return `${String(fecha[2]).padStart(2, '0')}/${String(fecha[1]).padStart(2, '0')}/${fecha[0]}`;
     }
+
+    if (typeof fecha === 'string') {
+      const trimmed = fecha.trim();
+
+      // Evitar corrimientos por timezone cuando viene como YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        const [yyyy, mm, dd] = trimmed.split('-');
+        return `${dd}/${mm}/${yyyy}`;
+      }
+    }
     
     // Si es una fecha válida
     if (fecha && !isNaN(Date.parse(fecha))) {
-      return new Date(fecha).toLocaleDateString('es-AR');
+      return new Date(fecha).toLocaleDateString('es-AR', { timeZone: 'UTC' });
     }
     
     return 'N/A';
@@ -2579,10 +2645,10 @@ const DashboardPropietario = () => {
                         {/* Fechas */}
                         <Box sx={{ mb: 2 }}>
                           <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                            📅 Emisión: {new Date(recibo.fechaEmision).toLocaleDateString('es-AR')}
+                            📅 Emisión: {recibo.fechaEmision}
                           </Typography>
                           <Typography variant="body2" color="textSecondary">
-                            ⏰ Vencimiento: {new Date(recibo.fechaVencimiento).toLocaleDateString('es-AR')}
+                            ⏰ Vencimiento: {recibo.fechaVencimiento}
                           </Typography>
                         </Box>
                         
@@ -2675,23 +2741,107 @@ const DashboardPropietario = () => {
         {activeSection === 'comunicaciones' && userRole === 'ROLE_PROPIETARIO_USER' && (
           <Box>
             <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: '#1a237e' }}>
-              Comunicaciones
+              Reportes
             </Typography>
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <MessageIcon sx={{ fontSize: 60, color: '#ccc', mb: 2 }} />
-              <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
-                Próximamente
-              </Typography>
-              <Typography variant="body1" color="textSecondary">
-                La sección de comunicaciones estará disponible próximamente. Aquí podrás:
-              </Typography>
-              <Box sx={{ mt: 2, textAlign: 'left', maxWidth: 400, mx: 'auto' }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>• Comunicarte con inquilinos</Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>• Recibir reportes de problemas</Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>• Gestionar solicitudes de mantenimiento</Typography>
-                <Typography variant="body2">• Ver notificaciones importantes</Typography>
-              </Box>
-            </Paper>
+            <Grid2 container spacing={2} sx={{display:"flex", flexDirection:"column"}}>
+              <Grid2 item xs={12} md={4}>
+                <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+                  <Typography sx={{ fontWeight: 900, mb: 1.25, color: '#1a237e' }}>
+                    Contrato
+                  </Typography>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Seleccionar contrato</InputLabel>
+                    <Select
+                      value={selectedContratoReportesId}
+                      label="Seleccionar contrato"
+                      onChange={(e) => setSelectedContratoReportesId(String(e.target.value))}
+                    >
+                      {contratosPropietario.map((c) => (
+                        <MenuItem key={c.id} value={String(c.id)}>
+                          {c.nombreContrato || `Contrato #${c.id}`}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <Typography variant="body2" sx={{ color: 'rgba(60,60,72,0.78)' }}>
+                    Seleccioná un contrato para ver los reportes enviados por el inquilino.
+                  </Typography>
+                </Paper>
+              </Grid2>
+
+              <Grid2 item xs={12} md={8}>
+                <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+                  <Typography sx={{ fontWeight: 900, mb: 1.25, color: '#1a237e' }}>
+                    Historial de reportes
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+
+                  {loadingNotasContrato ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                      <CircularProgress size={26} />
+                    </Box>
+                  ) : errorNotasContrato ? (
+                    <Alert severity="error">{errorNotasContrato}</Alert>
+                  ) : notasContrato.length === 0 ? (
+                    <Typography variant="body2" sx={{ color: 'rgba(60,60,72,0.72)' }}>
+                      No hay reportes para este contrato.
+                    </Typography>
+                  ) : (
+                    <Box sx={{ display: 'grid', gap: 1.25 }}>
+                      {notasContrato.slice(0, 10).map((n) => (
+                        <Paper
+                          key={n.id || `${n.motivo}-${n.fechaCreacion}`}
+                          variant="outlined"
+                          onClick={() => {
+                            setNotaSeleccionada(n);
+                            setModalNotaOpen(true);
+                          }}
+                          sx={{
+                            p: 1.25,
+                            borderRadius: 2,
+                            cursor: 'pointer',
+                            transition: 'box-shadow 0.2s, transform 0.2s',
+                            '&:hover': {
+                              boxShadow: 3,
+                              transform: 'translateY(-1px)',
+                            },
+                          }}
+                        >
+                          <Typography sx={{ fontWeight: 800, fontSize: 14 }}>
+                            {n.motivo || 'Sin título'}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ mt: 0.5, color: 'rgba(60,60,72,0.80)', whiteSpace: 'pre-line' }}
+                          >
+                            {n.contenido || ''}
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+                            {n.estado ? <Chip size="small" label={n.estado} /> : null}
+                            {n.prioridad ? <Chip size="small" variant="outlined" label={n.prioridad} /> : null}
+                            {n.tipo ? <Chip size="small" variant="outlined" label={n.tipo} /> : null}
+                          </Box>
+                        </Paper>
+                      ))}
+                    </Box>
+                  )}
+                </Paper>
+              </Grid2>
+            </Grid2>
+
+            <ModalNotas
+              open={modalNotaOpen}
+              onClose={() => {
+                setModalNotaOpen(false);
+                setNotaSeleccionada(null);
+              }}
+              nota={notaSeleccionada}
+              contrato={selectedContratoReportesId}
+              contratoInfo={contratosPropietario.find(c => String(c.id) === String(selectedContratoReportesId))}
+            />
           </Box>
         )}
 
@@ -2889,7 +3039,7 @@ const DashboardPropietario = () => {
                 fontWeight: activeSection === 'comunicaciones' ? 'bold' : 'normal',
                 textTransform: 'none'
               }}>
-                Mensajes
+                Reportes
               </Typography>
             </Button>
           </Box>
@@ -3103,10 +3253,10 @@ const DashboardPropietario = () => {
                     <strong>Período:</strong> {selectedRecibo.periodo}
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Fecha Emisión:</strong> {formatFecha(selectedRecibo.fechaEmision)}
+                    <strong>Fecha Emisión:</strong> {selectedRecibo.fechaEmision}
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Fecha Vencimiento:</strong> {formatFecha(selectedRecibo.fechaVencimiento)}
+                    <strong>Fecha Vencimiento:</strong> {selectedRecibo.fechaVencimiento}
                   </Typography>
                   <Typography variant="body2">
                     <strong>Estado:</strong> 

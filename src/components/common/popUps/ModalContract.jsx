@@ -17,6 +17,7 @@ import {
   Alert,
   CircularProgress,
   Slide,
+  Chip,
 } from '@mui/material';
 import axios from 'axios';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -216,10 +217,10 @@ const navigate = useNavigate();
         TransitionComponent={Transition}
         PaperProps={{
           sx: {
-            borderRadius: 4,
+            borderRadius: "20px 20px 0 0",
             backgroundColor: theme.palette.background.paper,
             width: '100vw',
-            maxWidth: '1400px',
+            maxWidth: {xs:'1400px',sm:'1500px',md:'2000px'},
             margin: 'auto',
             position:"absolute",
             bottom:"0"
@@ -309,7 +310,15 @@ const navigate = useNavigate();
     {actualizacionData && (
       <Typography variant="body2" sx={{ mb: 1 }}>
         <strong>Estado:</strong>{' '}
-        {actualizacionData.vencido ? '⚠️ Vencido' : '✅ Al día'}
+        {Array.isArray(selectedContract?.estados) && selectedContract.estados.length > 0 ? (
+          <Box sx={{ display: 'inline-flex', flexWrap: 'wrap', gap: 0.75, ml: 1, verticalAlign: 'middle' }}>
+            {selectedContract.estados.map((estado) => (
+              <Chip key={estado} label={estado} size="small" />
+            ))}
+          </Box>
+        ) : (
+          'No especificado'
+        )}
       </Typography>
     )}
 
@@ -720,7 +729,7 @@ const navigate = useNavigate();
         <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
           <Button
             variant="contained"
-            onClick={() => navigate(`/recibos/${selectedContract.id}`)}
+            onClick={() => navigate(`/recibos-page/${selectedContract.id}`)}
             startIcon={<ReceiptIcon />}
             sx={{
               mr: 'auto',

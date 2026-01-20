@@ -10,6 +10,7 @@ import {
   TableRow,
   Paper,
   CircularProgress,
+  Skeleton,
   Typography,
   Box,
   useTheme,
@@ -25,7 +26,8 @@ import {
   Tooltip,
   Fab,
   Button,
-  CardMedia
+  CardMedia,
+  Pagination
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
@@ -425,19 +427,20 @@ useEffect(() => {
       )}
 
     <Box sx={{ 
-      width: "100vw", 
+      width: { xs: '100%', sm: '100%', md: '84vw' }, 
       minHeight: "100vh",
-      pt: { xs: 3, sm: 4 },
+      pt: { xs: 3, sm: 6 },
       pb: { xs: 8, sm: 4 },
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
+      alignItems: { xs: 'center', md: 'flex-start' },
       bgcolor: 'background.default',
-      marginTop:{ xs: '0', sm: "0", md: "2rem" },
+      marginTop:{ xs: '0', sm: "0", md: "0" },
+      marginLeft: { md: '15rem' },
     }}>
       <Box 
         sx={{ 
-          width: { xs: "90%", sm: "80%" },
+          width: { xs: "90%", sm: "85%", md: "100%" },
           mt: { xs: '4rem', sm: 0 },
 
           display: 'flex',
@@ -448,7 +451,7 @@ useEffect(() => {
         <Box 
           sx={{ 
             display: 'flex', 
-            width: '100%',
+            width: {xs:'100%',sm:"100%", md:"80%"},
             alignItems: 'center',
             justifyContent: 'space-between',
             mb: { xs: 2, sm: 3 }
@@ -499,7 +502,7 @@ useEffect(() => {
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ 
             mb: 3,
-            width: { xs: '100%', sm: '100%' },
+            width: { xs: '100%', sm: '100%', md:"80%" },
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
             borderRadius: 6, '& fieldset': { borderRadius: 6 },
             '& .MuiOutlinedInput-root': {
@@ -519,17 +522,139 @@ useEffect(() => {
         />
 
         {isLoading ? (
-          <Box sx={{ 
-            textAlign: "center", 
-            padding: 4,
-            width: '100%',
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 2
-          }}>
-            <CircularProgress />
-            <Typography>Cargando propiedades...</Typography>
+          <Box sx={{ width: '100%' }}>
+            {isMobile ? (
+              <Box sx={{
+                width: "100%",
+                display: 'flex',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }}>
+                <Grid2
+                  container
+                  spacing={2}
+                  sx={{
+                    justifyContent: { xs: 'center', sm: 'flex-start' },
+                    alignItems: { xs: 'center', sm: 'flex-start' },
+                    ml: { xs: 0, sm: -2 }
+                  }}
+                >
+                  {Array.from({ length: itemsPerPage }).map((_, idx) => (
+                    <Grid2 item key={idx} sx={{ display: 'flex', justifyContent: 'center' }}>
+                      <Card
+                        sx={{
+                          mb: 2,
+                          width: { xs: '19rem', sm: '20rem' },
+                          height: { sm: "26rem" },
+                          borderRadius: 3,
+                          overflow: 'hidden',
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                          boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
+                          position: 'relative',
+                          display: 'flex',
+                          flexDirection: 'column',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            width: '8px',
+                            height: '100%',
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)',
+                          }}
+                        />
+
+                        <Box sx={{ width: '100%', height: 160, position: 'relative' }}>
+                          <Skeleton variant="rectangular" width="100%" height="100%" />
+                        </Box>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
+                          <Skeleton variant="circular" width={24} height={24} />
+                          <Skeleton variant="text" width="40%" />
+                          <Skeleton variant="rounded" width={64} height={24} sx={{ borderRadius: 999, ml: 2 }} />
+                        </Box>
+
+                        <Divider sx={{ my: 1.5 }} />
+
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
+                          {Array.from({ length: 4 }).map((__, lineIdx) => (
+                            <Skeleton key={lineIdx} variant="text" width={lineIdx === 0 ? '90%' : '75%'} />
+                          ))}
+                        </Box>
+                      </Card>
+                    </Grid2>
+                  ))}
+                </Grid2>
+              </Box>
+            ) : (
+              <TableContainer component={Box} sx={{
+                width: '100%',
+                overflowX: 'auto',
+                borderRadius: 2,
+                padding: "1rem 2rem",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center"
+              }}>
+                <Box sx={{
+                  width: { xs: "100%", sm: "100%", md: "80%" },
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                  gap: { xs: 2, md: 1 },
+                }}>
+                  {Array.from({ length: itemsPerPage }).map((_, idx) => (
+                    <Box key={idx} sx={{ width: { xs: "100%", sm: "100%", md: "100%" } }}>
+                      <Card
+                        sx={{
+                          mb: 2,
+                          width: { xs: "100%", sm: "100%", md: "100%" },
+                          height: '23rem',
+                          borderRadius: 3,
+                          overflow: 'hidden',
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                          boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
+                          position: 'relative',
+                          display: 'flex',
+                          flexDirection: 'column',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            width: '8px',
+                            height: '100%',
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)',
+                          }}
+                        />
+
+                        <Box sx={{ width: '100%', height: 160, position: 'relative' }}>
+                          <Skeleton variant="rectangular" width="100%" height="100%" />
+                        </Box>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
+                          <Skeleton variant="circular" width={22} height={22} />
+                          <Skeleton variant="text" width="45%" />
+                          <Skeleton variant="rounded" width={60} height={22} sx={{ borderRadius: 999, ml: 2 }} />
+                        </Box>
+
+                        <Divider sx={{ my: 1.5 }} />
+
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
+                          {Array.from({ length: 4 }).map((__, lineIdx) => (
+                            <Skeleton key={lineIdx} variant="text" width={lineIdx === 0 ? '90%' : '75%'} />
+                          ))}
+                        </Box>
+                      </Card>
+                    </Box>
+                  ))}
+                </Box>
+              </TableContainer>
+            )}
           </Box>
         ) : error ? (
           <Box sx={{ 
@@ -579,16 +704,18 @@ useEffect(() => {
                       spacing={2} 
                       sx={{ 
                         justifyContent: { xs: 'center', sm: 'flex-start' },
-                        ml: { xs: -1, sm: -2 }
+                        alignItems: { xs: 'center', sm: 'flex-start' },
+                        ml: { xs: 0, sm: -2 }
                       }}
                     >
                       {propiedadesPaginadas.map((propiedad, index) => (
-  <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`}>  
+  <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`} sx={{ display: 'flex', justifyContent: 'center' }}>  
     <Card
       data-tour={index === 0 ? 'propiedades-card' : undefined}
       sx={{
         mb: 2,
         width: { xs: '19rem', sm: '20rem' },
+        height: {sm:"26rem"},
         borderRadius: 3,
         overflow: 'hidden',
         bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
@@ -780,55 +907,27 @@ useEffect(() => {
                   </Box>
                 ) : (
                   <TableContainer component={Box} sx={{ 
-                    width: '120%',
+                    width: '100%',
                     overflowX: 'auto',
                     borderRadius: 2,
                     padding:"1rem 2rem",
                     display:"flex",
-                    flexDirection:"row",
-                    alignItems:"start",
-                    justifyContent:"flex-start",
-                    flexWrap:"wrap",
-                    gap:"1rem",
-                      
-                    backgroundColor:'background.default'
+                    justifyContent:"center",
+                    alignItems:"center"
                   }}>
                     <Box sx={{ 
-                    width: "100%", 
-                    display: 'flex', 
-                    justifyContent: 'flex-start',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingLeft:"2rem",
-
-                  }}>
-                    <Grid2 
-                      container 
-                      spacing={2} 
-                      sx={{
-                        width:"100%",
-                        display:"flex",
-                        justifyContent: { xs: 'center', sm: 'flex-start' },
-                        flewWrap:"wrap",
-                        ml: { xs: -1, sm: -2 },
-                        gap: '1rem 4rem',
-                        height: 'auto',
-                      }}
-                    >
+                      width: {xs:"100%",sm:"100%",md:"80%"},
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                      gap: { xs: 2, md: 1 },
+                    }}>
                       {propiedadesPaginadas.map((propiedad, index) => (
-                        <Grid2 item key={propiedad?.id || `fallback-${Math.random()}` } sx={{ width: '30%', display:"flex",
-                          alignItems:"center",
-                          justifyContent:"center",
-                          flexDirection:"column",
-                          maxWidth:"40rem"
-                          
-                        }}>
+                        <Box key={propiedad?.id || `fallback-${Math.random()}` } sx={{ width: {xs:"100%",sm:"100%", md:"100%"}}}>
                           <Card
                             data-tour={index === 0 ? 'propiedades-card' : undefined}
                             sx={{
                               mb: 2,
-                              width: '68%',
-                              minWidth: '20rem',
+                              width: {xs:"100%", sm:"100%", md:"100%"},
                               height: '23rem',
                               borderRadius: 3,
                               overflow: 'hidden',
@@ -945,7 +1044,7 @@ useEffect(() => {
                             {/* Header con icono y tipo */}
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
                               <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
-                              <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                              <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem',md:".8rem" } }}>
                                 {propiedad.tipoPropiedad || propiedad.tipo}
                               </Typography>
                               <Chip
@@ -991,10 +1090,9 @@ useEffect(() => {
                               </Typography>
                             </Box>
                           </Card>
-                        </Grid2>
+                        </Box>
                       ))}
-                    </Grid2>
-                  </Box>
+                    </Box>
                 </TableContainer>
                 )}
               </>
@@ -1009,11 +1107,14 @@ useEffect(() => {
                 justifyContent: 'center',
                 width: '100%'
               }}>
-                <Box sx={{ justifyContent: 'center', width: '100%', display: 'flex', gap: 1 }}>
-                  <Button variant="outlined" onClick={goPrevPage} disabled={page <= 1} startIcon={<NavigateBeforeIcon />}>Prev</Button>
-                  <Chip label={`${page} / ${totalPages || 1}`} sx={{ px: 1 }} />
-                  <Button variant="outlined" onClick={goNextPage} disabled={page >= (totalPages || 1)} endIcon={<NavigateNextIcon />}>Next</Button>
-                </Box>
+                <Pagination
+                  count={totalPages || 1}
+                  page={page}
+                  onChange={(_, p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  color="primary"
+                  siblingCount={0}
+                  boundaryCount={0}
+                />
               </Box>
             )}
           </>

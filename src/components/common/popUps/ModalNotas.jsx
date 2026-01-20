@@ -16,6 +16,14 @@ const estadoColor = {
   'CANCELADO': 'error',
 };
 
+const preposicion = (autor) => {
+  if (autor === 'INQUILINO' || autor === 'PROPIETARIO') {
+    return 'el'
+  }else{
+    return 'la'
+  }
+}
+
 function formatFecha(fechaStr) {
   if (!fechaStr) return '';
   try {
@@ -153,24 +161,26 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
           <Modal open={open} onClose={onClose} disableEnforceFocus>
             <Box
         sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
+          position: 'absolute',
+  
           width: '100vw',
           height: '100vh',
-          bgcolor: 'rgba(31,44,97,0.92)',
+          bgcolor: 'rgba(31, 44, 97, 0.22)',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'end',
           justifyContent: 'center',
         }}
       >
         <Box
           sx={(theme) => ({
+            position: 'relative',
+            height:"60%",
+            bottom: 0,
+            left: 0,
             bgcolor: theme.palette.mode === 'dark' ? 'rgb(31, 31, 31)' : 'rgb(253, 253, 253)',
-            borderRadius: 3,
+            borderRadius: "20px 20px 0 0",
             boxShadow: 24,
-            maxWidth: 540,
-            width: '96vw',
+            width: '100vw',
             p: 4,
             position: 'relative',
             display: 'flex',
@@ -195,9 +205,11 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
             </Typography>
           </Box>
           <Stack direction="row" spacing={1}>
+            
             <Chip size="small" label={nota.estado} color={estadoColor[nota.estado] || 'default'} />
             <Chip size="small" label={nota.prioridad} variant="outlined" />
             <Chip size="small" label={nota.tipo} variant="outlined" />
+
           </Stack>
           <Typography variant="body1"  sx={(theme) => ({
             color: theme.palette.mode === 'dark' ? 'rgb(188, 188, 188)' : '#1F2C61', whiteSpace: 'pre-line', fontSize: 16 })}>
@@ -209,6 +221,11 @@ const ModalNotas = ({ open, onClose, nota, contrato, contratoInfo }) => {
               Observaciones: {nota.observaciones}
             </Typography>
           )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">
+               Reporte emitido por {preposicion(nota.autor)} {nota.autor}
+              </Typography>
+            </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
               <Typography variant="caption" color="text.secondary">

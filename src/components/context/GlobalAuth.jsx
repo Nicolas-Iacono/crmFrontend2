@@ -97,7 +97,6 @@ useEffect(() => {
 
 
 
-console.log(usuarioFetch)
 useEffect(()=>{
 setLogo(usuarioFetch?.logo)
 }, [usuarioFetch])
@@ -114,7 +113,7 @@ useEffect(() => {
     const authorities = decodedToken.authorities.split(",");
 
     setUser({ jwt: token, username, authorities, logo });
-    setIsAdmin(authorities.includes("ROLE_ADMIN"));
+    setIsAdmin(authorities.includes("ROLE_ADMIN") || authorities.includes("ROLE_SUPER_ADMIN"));
     setIsLogged(true);
   }
 
@@ -127,11 +126,13 @@ const login = (jwt, username, logo) => {
   setUser({jwt, username, authorities, logo});
   setToken(jwt); // <-- asegura que el efecto de /usuario/me se dispare sin recargar
   setUsuarioFetch(null); // limpia datos de la sesión anterior para evitar parpadeos con datos viejos
-  localStorage.setItem('token', jwt);
+  if (authorities.includes("ROLE_ADMIN") || authorities.includes("ROLE_SUPER_ADMIN")) {
+    localStorage.setItem('token', jwt);
+  }
   localStorage.setItem('username', username);
   localStorage.setItem('authorities', authorities);
   if (logo) localStorage.setItem('logo', logo);
-  setIsAdmin(authorities.includes("ROLE_ADMIN"));
+  setIsAdmin(authorities.includes("ROLE_ADMIN") || authorities.includes("ROLE_SUPER_ADMIN"));
   setIsLogged(true);
   checkCalendarEvents(username); // Check events on login
   navigate('/');
@@ -172,7 +173,6 @@ const updateUserProfile = (userData) => {
       localStorage.setItem('username', usuarioFetch.username);
     }
   };
-console.log(usuarioFetch)
   return (
     <AuthUserContext.Provider value={{plan, user, token: user.jwt, login, logout, isAdmin, isLogged, isLoading, updateUserProfile, usuarioFetch, logo, hasCalendarEvents, setHasCalendarEvents, logoTimestamp}}> 
       {children}

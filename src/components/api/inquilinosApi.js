@@ -1,5 +1,6 @@
 import axios from 'axios';
 import http from './http';
+import { uppercaseNameFields } from '../../utils/normalizers';
 const URL_INQUILINOS = `${import.meta.env.VITE_API_URL}/inquilino`;
 
 
@@ -18,7 +19,8 @@ export const InquilinosApi =  {
   crearInquilino: async (inquilino) => {
     try {
       // POST /api/inquilino/create con JWT (inyectado por http interceptor)
-      const response = await http.post(`${URL_INQUILINOS}/create`, inquilino);
+      const payload = uppercaseNameFields(inquilino);
+      const response = await http.post(`${URL_INQUILINOS}/create`, payload);
       return response.data;
     } catch (error) {
       console.error('Error al crear inquilino:', error);
@@ -28,7 +30,8 @@ export const InquilinosApi =  {
 
   actualizarInquilino: async(inquilino) => {
     try {
-      const response = await http.put(`${URL_INQUILINOS}/update`, inquilino);
+      const payload = uppercaseNameFields(inquilino);
+      const response = await http.put(`${URL_INQUILINOS}/update`, payload);
       return response.data;
     } catch (error) {
       console.error('Error al actualizar inquilino:', error);

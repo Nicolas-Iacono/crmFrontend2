@@ -297,8 +297,47 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
     return { primerMes, deposito, comision, sellado, gastosExtras, total };
   };
 
+  const formatMontoDisplay = (raw) => {
+    if (raw == null || raw === '') return '';
+    const str = String(raw);
+    const [intPartRaw, fracPartRaw = ''] = str.split('.')
+      .reduce((acc, part, idx) => {
+        // keep only first decimal dot as separator
+        if (idx === 0) return [part, ''];
+        return [acc[0], acc[1] + part];
+      }, ['', '']);
+    const intDigits = intPartRaw.replace(/\D/g, '');
+    if (!intDigits) return '';
+    const intWithThousands = intDigits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const frac = fracPartRaw.replace(/\D/g, '');
+    return frac ? `${intWithThousands},${frac}` : intWithThousands;
+  };
+
+  const normalizeMontoInput = (input) => {
+    if (input == null) return '';
+    const s = String(input);
+    // Remove thousands separators and convert comma to dot for decimal
+    const noThousands = s.replace(/\./g, '');
+    const withDot = noThousands.replace(/,/g, '.');
+    // Keep only digits and a single dot (decimal)
+    const parts = withDot.split('.');
+    const intDigits = parts[0].replace(/\D/g, '');
+    const fracDigits = parts.slice(1).join('').replace(/\D/g, '');
+    return fracDigits ? `${intDigits}.${fracDigits}` : intDigits;
+  };
+
+  const handleMontoChange = (e) => {
+    const normalized = normalizeMontoInput(e.target.value);
+    setFormData(prev => ({ ...prev, monto: normalized }));
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth={false} sx={{ 
+      py: 4,
+      width: { xs: '95%', sm: '100%', md: '84vw' },
+      minHeight: '100vh',
+      marginLeft: { md: '15rem' }
+    }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginTop: 4 }}>
@@ -449,7 +488,7 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
             maxHeight: '90vh',
             overflow: 'auto',
             bgcolor: 'background.paper',
-            borderRadius: 2,
+            borderRadius: 6,
             boxShadow: 24,
             p: 0
           }}
@@ -462,12 +501,12 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
               p: 3,
               borderBottom: 1,
               borderColor: 'divider',
-              backgroundColor: theme.palette.primary.main,
+               background: 'linear-gradient(135deg,rgb(53, 74, 168) 0%,rgb(122, 15, 228) 100%)',
               color: 'white',
               borderRadius: '8px 8px 0 0'
             }}
           >
-            <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
+            <Typography variant="h6" component="h2" sx={{ fontWeight: 400 }}>
               Nuevo Presupuesto
             </Typography>
             <IconButton onClick={handleCloseModal} sx={{ color: 'white' }}>
@@ -488,6 +527,7 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
                     value={formData.titulo}
                     onChange={handleInputChange}
                     required
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
                     InputProps={{ startAdornment: <DescriptionIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
                   />
                 </Grid>
@@ -497,11 +537,12 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
                     fullWidth
                     label="Monto Base"
                     name="monto"
-                    type="number"
-                    value={formData.monto}
-                    onChange={handleInputChange}
+                    type="text"
+                    value={formatMontoDisplay(formData.monto)}
+                    onChange={handleMontoChange}
                     required
-                    inputProps={{ min: 0, step: 0.01 }}
+                    inputProps={{ inputMode: 'decimal' }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
                     InputProps={{ startAdornment: <MoneyIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
                   />
                 </Grid>
@@ -516,6 +557,7 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
                     onChange={handleInputChange}
                     required
                     inputProps={{ min: 1 }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
                     InputProps={{ startAdornment: <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
                   />
                 </Grid>
@@ -529,6 +571,7 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
                     onChange={handleInputChange}
                     required
                     placeholder="ej: 3.5"
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
                   />
                 </Grid>
 
@@ -541,6 +584,7 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
                     onChange={handleInputChange}
                     required
                     placeholder="ej: 1.2"
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
                   />
                 </Grid>
 
@@ -553,6 +597,7 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
                     value={formData.gastosExtras}
                     onChange={handleInputChange}
                     inputProps={{ min: 0, step: 0.01 }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
                   />
                 </Grid>
 
@@ -599,10 +644,10 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
               </Grid>
 
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-                <Button variant="outlined" onClick={handleCloseModal} disabled={loading}>
+                <Button variant="outlined" onClick={handleCloseModal} disabled={loading} sx={{ borderRadius: 4 }}>
                   Cancelar
                 </Button>
-                <Button type="submit" variant="contained" disabled={loading} startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}>
+                <Button type="submit" variant="contained" disabled={loading} sx={{ borderRadius: 4, background: 'linear-gradient(135deg,rgb(53, 74, 168) 0%,rgb(122, 15, 228) 100%)'}} startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}>
                   {loading ? 'Guardando...' : 'Guardar Presupuesto'}
                 </Button>
               </Box>

@@ -15,7 +15,8 @@ import {
   useTheme,
   useMediaQuery,
   Grid2,
-  Button
+  Button,
+  Skeleton
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import InquilinosApi from "../api/inquilinosApi";
@@ -72,15 +73,21 @@ const Home = () => {
   const [contratos, setContratos] = useState([]);
   const [numContrato, setNumContrato] = useState(0);
   const[isLoading,setIsLoading] = useState(false);
+  const [isLoadingCounts, setIsLoadingCounts] = useState(false);
   const[error,setError] = useState(null);
 
   useEffect(() => {
     const fetchUltimosContratos = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
         const response = await http.get(`${import.meta.env.VITE_API_URL}/contrato/latest`);
         setUltimosContratos(response.data);
       } catch (error) {
         console.error("Error al obtener los últimos contratos:", error);
+        setError(error?.response?.data?.message || error?.message || 'Error al cargar');
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchUltimosContratos();
@@ -98,6 +105,7 @@ const Home = () => {
       };
 
       try {
+        setIsLoadingCounts(true);
         await Promise.all(
           Object.keys(setters).map(async (tipo) => {
             const response = await http.get(`${import.meta.env.VITE_API_URL}/${tipo}/enum/${usuarioFetch.username}`);
@@ -106,6 +114,8 @@ const Home = () => {
         );
       } catch (error) {
         console.error("Error al obtener los contadores:", error);
+      } finally {
+        setIsLoadingCounts(false);
       }
     };
 
@@ -139,91 +149,65 @@ const Home = () => {
           }),
   
       minHeight: "100vh",
-      width: { xs: "95%", md: "100vw" },
-      padding: { xs: 1, md: 4 },
-      paddingTop: { xs: "64px", md: "80px" },
+            width: { xs: "95%", sm:"100%", md: "84vw" },
+      padding: { xs: 1, sm:0, md: 4 },
+      paddingTop: { xs: "64px",sm:"64px", md: "80px" },
+      marginLeft:{md: "15rem"},
       paddingBottom: { xs: "70px", md: "20px" },
       display: "flex",
       flexDirection: "column",
       alignItems: { xs: "center", md: "start" },
       paddingLeft: { xs: 1, md: 0 },
     })}>
-      <Typography 
-        variant="h4" 
-       
-          sx={(theme) => ({
-            ...(theme.palette.mode === "dark"
-              ? {
-                  color:"rgb(80, 8, 175)"
-                }
-              : {
-                  color:" #1a237e"
-                }),
-         
-          marginBottom: { xs: 3, md: 4 },
-          fontSize: { 
-            xs: "1.75rem",
-            sm: "2.125rem",
-            md: "3.125rem",
-             },
-          
-          width: "100%",
-        
-          textAlign: { xs: "left", md: "left" },
-          marginLeft: { xs: 0, md: 4 },
-          fontFamily: "Poppins, sans-serif",
-        })}
-      >
-        Panel de Control
-      </Typography>
+      
 
       <Grid2 
         container 
-        spacing={{ xs: 2.5, md: 3 }} 
+        spacing={{ xs: 2.5, md: 0.1 }} 
         sx={{ 
           marginBottom: { xs: 3, md: 4 },
           justifyContent: { xs: "center", md: "space-around" },
-          width: "100%",
-          height: {xs:"auto",md:"250px"},
+          width: {xs:"100%",sm:"80%",md:"92%"},
+          height: { xs: "auto", md: "auto" },
           px: { xs: 0, md: 0 },
-          flexDirection:{ xs: "column", md: "row" },
+          marginLeft:{xs:0,sm:"1rem",md:"1rem"},
+          flexDirection:{ xs: "column",sm:"row", md: "row" },
+          flexWrap: { xs: "nowrap",sm:"wrap", md: "wrap" }
         }}
       >
-        {/* Propietarios Card */}
-        <HomeCard
-          title="Propietarios"
-          count={numPropietario}
-          icon={PersonIcon}
-          route="/propietarios"
-        />
 
-        {/* Inquilinos Card */}
-        <HomeCard
-          title="Inquilinos"
-          count={numInquilino}
-          icon={PeopleAltIcon}
-          route="/inquilinos"
-          gradient="linear-gradient(135deg, #00796b 0%, #009688 100%)"
-        />
+            <HomeCard
+              title="Propietarios"
+              count={numPropietario}
+              icon={PersonIcon}
+              route="/propietarios"
+            />
 
+            <HomeCard
+              title="Inquilinos"
+              count={numInquilino}
+              icon={PeopleAltIcon}
+              route="/inquilinos"
+              gradient="linear-gradient(135deg, #00796b 0%, #009688 100%)"
+            />
 
-        {/* Propiedades Card */}
-        <HomeCard
-          title="Propiedades"
-          count={numPropiedad}
-          icon={MapsHomeWorkIcon}
-          route="/propiedades"
-          gradient="linear-gradient(135deg, #c62828 0%, #d32f2f 100%)"
-        />
+            <HomeCard
+              title="Propiedades"
+              count={numPropiedad}
+              icon={MapsHomeWorkIcon}
+              route="/propiedades"
+              gradient="linear-gradient(135deg, #c62828 0%, #d32f2f 100%)"
+            />
 
-        {/* Contratos Card */}
-        <HomeCard
-          title="Contratos"
-          count={numContrato}
-          icon={TextSnippetIcon}
-          route="/contratos"
-          gradient="linear-gradient(135deg, #f57c00 0%, #fb8c00 100%)"
-        />
+            <HomeCard
+              title="Contratos"
+              count={numContrato}
+              icon={TextSnippetIcon}
+              route="/contratos"
+              gradient="linear-gradient(135deg, #f57c00 0%, #fb8c00 100%)"
+            />
+        
+        
 
       </Grid2>
 
@@ -232,13 +216,18 @@ const Home = () => {
         spacing={{ xs: 2, md: 3 }} 
         sx={{
           justifyContent: "center",
-          width: "100%",
+          width: {xs:"100%",sm:"100%",md:"80%"},
           height:"100%",
-          px: { xs: 0, md: 0 }
+          px: { xs: 0, md: 0 },
+          display:"flex",
+          justifyContent:"center",
+          alignItems:"center"
         }}
       >
         {/* Tabla de Últimos Contratos */}
-        <Grid2 item="true" xs={12} md={8} sx={{ width:"100%"}}>
+        <Grid2 item="true" xs={12} md={8} sx={{ width:{xs:"100%",sm:"100%",md:"90%"}, 
+          
+         }}>
           <Paper 
             elevation={5} 
             sx={(theme) => ({ 
@@ -301,16 +290,14 @@ const Home = () => {
               </Button>
             </Box>
             {isLoading ? (
-              <Box sx={{ 
-                textAlign: "center", 
-                padding: 4,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 2
-              }}>
-                <CircularProgress />
-                <Typography>Cargando últimos contratos...</Typography>
+              <Box sx={{ p: 2 }}>
+                <Box sx={{ mt: 2 }}>
+                  {Array.from({ length: rowsPerPage }).map((_, idx) => (
+                    <Box key={idx} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.5 }}>
+                      <Skeleton variant="text" width="80%" />
+                    </Box>
+                  ))}
+                </Box>
               </Box>
             ) : error ? (
               <Box sx={{ padding: 3, color: "error.main" }}>

@@ -158,9 +158,9 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
     if (mapped.length === 0) {
       return [
         { ...codePresets.FREE2, id: 'free', name: 'Free',  price: formatArs(0), period: '/mes'},
-        { ...codePresets.FREE, id: 'basic', name: 'Pro',  price: formatArs(15000), period: '/mes'},
-        { ...codePresets.PROFESIONAL, id: 'professional', name: 'Pro +', price: formatArs(25000), period: '/mes' },
-        { ...codePresets.SUPERIOR, id: 'premium', name: 'Superior', price: formatArs(35000), period: '/mes' },
+        { ...codePresets.FREE, id: 'basic', name: 'Pro',  price: formatArs(30000), period: '/mes'},
+        { ...codePresets.PROFESIONAL, id: 'professional', name: 'Pro +', price: formatArs(35000), period: '/mes' },
+        { ...codePresets.SUPERIOR, id: 'premium', name: 'Superior', price: formatArs(45000), period: '/mes' },
       ];
     }
     return mapped;

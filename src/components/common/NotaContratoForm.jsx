@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Paper, Typography, TextField, Button, MenuItem, Grid, Collapse, IconButton } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -31,11 +31,22 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
   const [prioridad, setPrioridad] = useState('Media');
   const [tipo, setTipo] = useState('reparacion');
   const [observaciones, setObservaciones] = useState('');
+  const [imagenes, setImagenes] = useState([]);
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [openNotes, setOpenNotes] = useState(false); // State for collapse/expand
   const theme = useTheme();
+
+  const getAuthToken = () => {
+    return (
+      localStorage.getItem('token') ||
+      localStorage.getItem('propietario_token') ||
+      localStorage.getItem('inquilino_token')
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -50,15 +61,22 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
         prioridad,
         tipo,
         observaciones,
+        visibilidad: 'PUBLICA',
       };
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/notas/crear`, {
+
+      const formData = new FormData();
+      formData.append('data', new Blob([JSON.stringify(notaPayload)], { type: 'application/json' }));
+      (imagenes || []).forEach((file) => {
+        formData.append('imagenes', file);
+      });
+
+      const token = getAuthToken();
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/notas/crear-con-imagenes`, {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(notaPayload),
+        body: formData,
       });
       if (!response.ok) throw new Error('Error al guardar la nota');
       // Intentar obtener la nota creada desde el backend
@@ -76,6 +94,8 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
       setPrioridad('Media');
       setTipo('reparacion');
       setObservaciones('');
+      setImagenes([]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       // Notificar globalmente que se creó una nota para refrescar listas sin recargar
       try {
         window.dispatchEvent(new CustomEvent('nota-creada', { detail: createdNote || {
@@ -86,6 +106,7 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
           prioridad,
           tipo,
           observaciones,
+          visibilidad: 'PUBLICA',
           fechaCreacion: new Date().toISOString(),
         }}));
       } catch (_) {}
@@ -242,6 +263,28 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               minRows={2}
               maxRows={5}
             />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Button
+              component="label"
+              variant="outlined"
+              disabled={loading}
+              sx={{ borderRadius: '8px' }}
+            >
+              Seleccionar imágenes
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={(e) => setImagenes(Array.from(e.target.files || []))}
+              />
+            </Button>
+            <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
+              {imagenes?.length ? `${imagenes.length} imagen(es) seleccionada(s)` : 'Sin imágenes'}
+            </Typography>
           </Grid>
         </Grid>
         {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}

@@ -31,6 +31,8 @@ import {
   TablePagination,
   Checkbox,
   Switch,
+  Pagination,
+  Skeleton,
 } from '@mui/material';
 import GarantesApi from '../api/garanteApi';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
@@ -334,14 +336,17 @@ const GarantesPage = () => {
 
   return (
     <Box sx={{ 
-      width: "100vw", 
+      width: { xs: '100%', sm: '100%', md: '90vw' }, 
       minHeight: "100vh",
       pt: { xs: 3, sm: 4 },
       pb: { xs: 12, sm: 4 },
+      pl: { xs: 0, sm: 5 },
+      pr: { xs: 0, sm: 2 },
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
-      bgcolor: 'background.default'
+      alignItems: { xs: 'center', md: 'flex-start' },
+      bgcolor: 'background.default',
+      marginLeft: { md: '15rem' }
     }}>
       <Box 
         sx={{ 
@@ -404,7 +409,7 @@ const GarantesPage = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ 
             mb: 3,
-            width: { xs: '100%', sm: '80%' },
+            width: { xs: '100%', sm: '100%' },
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
            borderRadius: 6, '& fieldset': { borderRadius: 6 },
             '& .MuiOutlinedInput-root': {
@@ -424,17 +429,17 @@ const GarantesPage = () => {
         />
 
         {isLoading ? (
-          <Box sx={{ 
-            textAlign: "center", 
-            padding: 4,
-            width: '100%',
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 2
-          }}>
-            <CircularProgress />
-            <Typography>Cargando garantes...</Typography>
+          <Box sx={{ width: '100%' }}>
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <Paper key={idx} sx={{ mb: 1.2, p: 2, borderRadius: 3, boxShadow: 1 }}>
+                <Skeleton variant="text" width="70%" />
+                <Skeleton variant="text" width="45%" />
+                <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                  <Skeleton variant="rounded" width={72} height={28} />
+                  <Skeleton variant="rounded" width={72} height={28} />
+                </Box>
+              </Paper>
+            ))}
           </Box>
         ) : error ? (
           <Box sx={{ 
@@ -447,7 +452,7 @@ const GarantesPage = () => {
             <Typography>Error al cargar los garantes: {error}</Typography>
           </Box>
         ) : (
-          isMobile ? (
+          (
             <Box sx={{ width: '100%' }}>
               {garantesPaginados.map(garante => (
                 <Box key={garante.id} sx={{ mb: 2, position: 'relative' }}>
@@ -539,84 +544,18 @@ const GarantesPage = () => {
                 </Box>
               ))}
               {totalPaginas > 0 && (
-                <Box display="flex" justifyContent="center" mt={2} mb={3} sx={{ width: '100%', gap: 1 }}>
-                  <Button variant="outlined" onClick={goPrevPage} disabled={paginaActual <= 1} startIcon={<NavigateBeforeIcon />}>Prev</Button>
-                  <Chip label={`${paginaActual} / ${totalPaginas}`} sx={{ px: 1 }} />
-                  <Button variant="outlined" onClick={goNextPage} disabled={paginaActual >= totalPaginas} endIcon={<NavigateNextIcon />}>Next</Button>
+                <Box display="flex" justifyContent="center" mt={2} mb={3} sx={{ width: '100%' }}>
+                  <Pagination
+                    count={totalPaginas}
+                    page={paginaActual}
+                    onChange={(_, p) => setPaginaActual(p)}
+                    color="primary"
+                    siblingCount={0}
+                    boundaryCount={0}
+                  />
                 </Box>
               )}
             </Box>
-          ) : (
-            <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: 2, boxShadow: 1 }}>
-              <TableContainer>
-                <Table size="medium" sx={{ minWidth: 950 }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          indeterminate={selected.length > 0 && selected.length < filteredGarantes.length}
-                          checked={filteredGarantes.length > 0 && selected.length === filteredGarantes.length}
-                          onChange={handleSelectAll}
-                          inputProps={{ 'aria-label': 'select all' }}
-                        />
-                      </TableCell>
-                      <TableCell>Usuario</TableCell>
-                      <TableCell>DNI</TableCell>
-                      <TableCell sx={{ width: 180, minWidth: 180 }}>CUIT</TableCell>
-                      <TableCell>Email</TableCell>
-                      <TableCell>Teléfono</TableCell>
-                      <TableCell>Dirección</TableCell>
-                      <TableCell align="right" sx={{ width: 140, minWidth: 140 }}>Acciones</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredGarantes
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((garante) => {
-                        const checked = isSelected(garante.id);
-                        const nombreCompleto = `${garante.nombre || ''} ${garante.apellido || ''}`.trim();
-                        const direccion = (garante.direccionResidencial || `${garante.calle || ''} ${garante.numero || ''}`).trim();
-                        const status = statusMap[garante.id] ?? true;
-                        return (
-                          <TableRow hover key={garante.id} selected={checked} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
-                            <TableCell padding="checkbox">
-                              <Checkbox checked={checked} onChange={() => handleSelectOne(garante.id)} />
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>{nombreCompleto || '—'}</TableCell>
-                            <TableCell>{garante.dni || '—'}</TableCell>
-                            <TableCell>{garante.cuit || '—'}</TableCell>
-                            <TableCell>{garante.email || '—'}</TableCell>
-                            <TableCell>{garante.telefono || '—'}</TableCell>
-                            <TableCell>{direccion || '—'}</TableCell>
-                            
-                            <TableCell align="right">
-                              <IconButton size="small" onClick={() => openGaranteDocs(garante)} sx={{ mr: 0.5 }}>
-                                <DescriptionIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton size="small" onClick={() => handleEditOpen(garante)} sx={{ mr: 0.5 }}>
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton size="small" onClick={() => eliminarGarante(garante.id)} color="error">
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <TablePagination
-                component="div"
-                count={filteredGarantes.length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[10, 25, 50, 100]}
-                labelRowsPerPage="Mostrar"
-              />
-            </Paper>
           )
         )
       }

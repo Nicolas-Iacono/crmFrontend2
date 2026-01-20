@@ -156,27 +156,26 @@ const handleCancelSubscription = async () => {
   }
 };
 
-  const handleConfirmDelete = async () => {
-    if (!usuarioFetch?.username) return;
+const handleConfirmDelete = async () => {
+  if (!usuarioFetch?.nombreNegocio) return;  // 👈 ya no username
 
-    setIsDeleting(true);
-    try {
-      await usuarioApi.eliminarCuenta(usuarioFetch.username);
-      
-      showSuccess('Cuenta eliminada exitosamente');
+  setIsDeleting(true);
+  try {
+    await usuarioApi.eliminarCuenta(usuarioFetch.nombreNegocio); // 👈 le pasás el nombre_negocio
+    
+    showSuccess('Cuenta eliminada exitosamente');
 
-      // Clear all local data and logout
-      localStorage.clear();
-      logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      showError('No se pudo eliminar la cuenta. Inténtalo de nuevo.');
-    } finally {
-      setIsDeleting(false);
-      setDeleteDialogOpen(false);
-    }
-  };
+    localStorage.clear();
+    logout();
+    navigate('/login');
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    showError('No se pudo eliminar la cuenta. Inténtalo de nuevo.');
+  } finally {
+    setIsDeleting(false);
+    setDeleteDialogOpen(false);
+  }
+};
 
   const handleCancelDelete = () => {
     setDeleteDialogOpen(false);
@@ -313,14 +312,16 @@ END:VCARD`
   return (
     <>
     <Box sx={{ 
-      width:{xs:"100%", md:"100vw"},
+      width: { xs: '100%', md: '84vw' },
       bgcolor: theme.palette.background.default,
-      display:"flex", 
-      justifyContent:"start", 
-      alignItems:"flex-start", 
-      pt:"6",
-      height:"100vh",
-    flexDirection:"column"}}>
+      display: 'flex', 
+      justifyContent: 'start', 
+      alignItems: 'flex-start', 
+      pt: '6',
+      height: '100vh',
+      flexDirection: 'column',
+      marginLeft: { xs:"0",md: '15rem' },
+    }}>
       <Paper elevation={4} sx={{ 
         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
         borderRadius: "0 0 20px 20px",
@@ -406,11 +407,10 @@ END:VCARD`
         <Box px={3} pt={5} sx={{
     display: "flex",
     flexDirection: "column",
-    width: "100%",
+    width: { xs: '85%', md: '80%' },
     flex: 1, // importante: ocupa el resto del espacio disponible
     overflowY: "auto", // habilita el scroll
     paddingBottom: "100px", // espacio para el botón fijo
-    width:"80%",
     justifyContent:"space-between",
     alignItems:"flex-start"
   }}

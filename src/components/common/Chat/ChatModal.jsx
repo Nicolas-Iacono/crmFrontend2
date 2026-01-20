@@ -148,6 +148,23 @@ const safeMessageText = (msg) => {
   if (Array.isArray(msg.text)) return msg.text.join("\n");
   return JSON.stringify(msg.text);
 };
+const extractListItems = (text) => {
+  if (!text || typeof text !== 'string') return null;
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (lines.length < 2) return null;
+  const items = [];
+  for (const l of lines) {
+    const m = l.match(/^(?:\d+[\.)]|[-–*•])\s*(.+)$/);
+    if (m && m[1]) {
+      items.push(m[1].trim());
+    }
+  }
+  if (items.length >= 2) return items;
+  return null;
+};
   return (
     <Modal
       open={open}
@@ -241,18 +258,7 @@ const safeMessageText = (msg) => {
                     : (theme.palette.mode === 'dark' ? 'rgb(230, 220, 255)' : 'rgb(51, 32, 100)')
                 }}
               />
-              <Chip
-                label="Mixto"
-                size="small"
-                color={modo === 'mixto' ? 'primary' : 'default'}
-                variant={modo === 'mixto' ? 'filled' : 'outlined'}
-                onClick={() => setModo('mixto')}
-                sx={{
-                  color: modo === 'mixto'
-                    ? 'white'
-                    : (theme.palette.mode === 'dark' ? 'rgb(230, 220, 255)' : 'rgba(66, 6, 145, 1)')
-                }}
-              />
+              
               <Chip
                 label="Legales"
                 size="small"
@@ -367,18 +373,51 @@ const safeMessageText = (msg) => {
                     }}
                   >
                    
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        fontFamily: "Arial, sans-serif",
-                        color:
-                          theme.palette.mode === 'dark'
-                            ? (msg.sender === 'user' ? 'white' : 'rgb(230, 220, 255)')
-                            : (msg.sender === 'user' ? 'white' : 'rgb(51, 32, 100)'),
-                      }}
-                    >
-                     <Typography>{safeMessageText(msg)}</Typography>
-                    </Typography>
+                    {msg.sender === 'bot' && extractListItems(safeMessageText(msg)) ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {extractListItems(safeMessageText(msg)).map((item, idx) => (
+                          <Box
+                            key={idx}
+                            sx={{
+                              p: 1,
+                              borderRadius: 2,
+                              border: '1px solid',
+                              borderColor:
+                                theme.palette.mode === 'dark'
+                                  ? 'rgba(207, 181, 255, 0.3)'
+                                  : 'rgba(76, 28, 167, 0.3)',
+                              backgroundColor:
+                                theme.palette.mode === 'dark'
+                                  ? 'rgba(255,255,255,0.04)'
+                                  : 'rgba(255,255,255,0.6)'
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: 'Arial, sans-serif',
+                                color: theme.palette.mode === 'dark' ? 'rgb(230, 220, 255)' : 'rgb(51, 32, 100)'
+                              }}
+                            >
+                              {item}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          fontFamily: "Arial, sans-serif",
+                          color:
+                            theme.palette.mode === 'dark'
+                              ? (msg.sender === 'user' ? 'white' : 'rgb(230, 220, 255)')
+                              : (msg.sender === 'user' ? 'white' : 'rgb(51, 32, 100)'),
+                        }}
+                      >
+                        <Typography>{safeMessageText(msg)}</Typography>
+                      </Typography>
+                    )}
                   </Paper>
                 ))
               )}

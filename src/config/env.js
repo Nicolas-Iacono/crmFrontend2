@@ -36,7 +36,7 @@ export const config = {
   API_URL: getEnvVar('VITE_API_URL', 
     window.location.origin.includes('localhost') 
       ? 'http://localhost:8080/api' 
-      : 'http://localhost:8080/api'
+      : 'https://crminmobiliario-app-production.up.railway.app/api'
   ),
   
   NODE_ENV: getEnvVar('NODE_ENV', 'development'),

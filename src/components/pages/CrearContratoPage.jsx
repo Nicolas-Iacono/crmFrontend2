@@ -696,7 +696,26 @@ try {
   const [submitting, setSubmitting] = useState(false);
   // Loading state for broker PDF generation
   const [downloadingBroker, setDownloadingBroker] = useState(false);
+const clearContractsCache = async () => {
+  if (!("serviceWorker" in navigator)) return;
 
+  const registration = await navigator.serviceWorker.ready;
+  if (!registration.active && !navigator.serviceWorker.controller) return;
+
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = (event) => {
+      // event.data debería ser { ok: true } desde el SW
+      resolve(event.data);
+    };
+
+    // Usamos el controller actual (el SW que está manejando la página)
+    (navigator.serviceWorker.controller || registration.active).postMessage(
+      { type: "CLEAR_CONTRACTS_CACHE" },
+      [channel.port2]
+    );
+  });
+};
   // Submit handler
  // Submit handler
 const handleSubmit = async (e) => {
@@ -784,6 +803,13 @@ const handleSubmit = async (e) => {
     }
 
     await showSuccess("Contrato creado exitosamente ✅");
+
+     try {
+      await clearContractsCache();
+    } catch (err) {
+      console.warn("No se pudo limpiar el cache de contratos:", err);
+    }
+    
     navigate("/contratos");
 
   } catch (error) {
@@ -881,21 +907,23 @@ const handleSubmit = async (e) => {
   return (
     <Box sx={{ 
       pt: 7, 
-      width: "100%",
+      width: { xs: '100%', md: '84vw' },
       minHeight: '100vh',
       display: "flex",
       flexDirection: "column",
-      alignItems: "center",
+      alignItems: { xs: 'center', md: 'flex-start' },
       justifyContent: "flex-start",
       pb: { xs: 12, md: 3 },
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      overflowY: "auto",
-      overflowX: "hidden",
+      // Mantener comportamiento fijo/scroll sólo en mobile/tablet
+      position: { xs: 'fixed', md: 'static' },
+      top: { xs: 0, md: 'auto' },
+      left: { xs: 0, md: 'auto' },
+      right: { xs: 0, md: 'auto' },
+      bottom: { xs: 0, md: 'auto' },
+      overflowY: { xs: 'auto', md: 'visible' },
+      overflowX: 'hidden',
       mb: 7,
+      marginLeft: { md: '15rem' }
     }}>
       <CreateContractTour />
       <Box sx={{ 

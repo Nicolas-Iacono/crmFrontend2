@@ -1,5 +1,6 @@
 import axios from 'axios';
 import http from './http';
+import { uppercaseNameFields } from '../../utils/normalizers';
 const URL_GARANTES = `${import.meta.env.VITE_API_URL}/garante`;
 
 export const GarantesApi = {
@@ -15,11 +16,22 @@ export const GarantesApi = {
   },
   crearGarante: async (garante) => {
     try {
-      const response = await http.post(`${URL_GARANTES}/create`, garante);
+      const payload = uppercaseNameFields(garante);
+      const response = await http.post(`${URL_GARANTES}/create`, payload);
       return response.data;
     } catch (error) {
       console.error("Error al crear garante: ", error);
       throw new Error("Error al crear garante"); 
+    }
+  },
+  actualizarGarante: async (garante) => {
+    try {
+      const payload = uppercaseNameFields(garante);
+      const response = await http.put(`${URL_GARANTES}/update`, payload);
+      return response.data;
+    } catch (error) {
+      console.error('Error al actualizar garante:', error);
+      throw new Error('Error al actualizar garante');
     }
   },
   buscarGarantePorUsuario: (username) => http.get(`${URL_GARANTES}/${username}`),

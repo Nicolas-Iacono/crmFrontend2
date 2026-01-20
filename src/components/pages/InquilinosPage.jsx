@@ -25,7 +25,9 @@ import {
   DialogContent,
   DialogActions,
   TablePagination,
-  Checkbox
+  Pagination,
+  Checkbox,
+  Skeleton
 } from '@mui/material';
 import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
@@ -643,9 +645,17 @@ const InquilinosPage = () => {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <Box sx={{ textAlign: "center", padding: 4, width: '100%', display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-          <CircularProgress />
-          <Typography>Cargando inquilinos...</Typography>
+        <Box sx={{ width: '100%' }}>
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <Paper key={idx} sx={{ mb: 1.2, p: 2, borderRadius: 3, boxShadow: 1 }}>
+              <Skeleton variant="text" width="70%" />
+              <Skeleton variant="text" width="45%" />
+              <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                <Skeleton variant="rounded" width={72} height={28} />
+                <Skeleton variant="rounded" width={72} height={28} />
+              </Box>
+            </Paper>
+          ))}
         </Box>
       );
     }
@@ -670,12 +680,17 @@ const InquilinosPage = () => {
 
     return (
       <>
-        {isMobile ? renderMobileView() : renderDesktopView()}
-        {isMobile && totalPaginas > 0 && (
-          <Box display="flex" justifyContent="center" mt={2} mb={3} sx={{ gap: 1 }}>
-            <Button variant="outlined" onClick={goPrevPage} disabled={paginaActual <= 1} startIcon={<NavigateBeforeIcon />}>Prev</Button>
-            <Chip label={`${paginaActual} / ${totalPaginas}`} sx={{ px: 1 }} />
-            <Button variant="outlined" onClick={goNextPage} disabled={paginaActual >= totalPaginas} endIcon={<NavigateNextIcon />}>Next</Button>
+        {renderMobileView()}
+        {totalPaginas > 0 && (
+          <Box display="flex" justifyContent="center" mt={2} mb={3}>
+            <Pagination
+              count={totalPaginas}
+              page={paginaActual}
+              onChange={(_, p) => setPaginaActual(p)}
+              color="primary"
+              siblingCount={0}
+              boundaryCount={0}
+            />
           </Box>
         )}
       </>
@@ -683,11 +698,14 @@ const InquilinosPage = () => {
   };
 
   return (
-    <Box sx={{marginTop:{xs:"0", md:"2rem"}, width: "100%", minHeight: "100vh", pt: { xs: 3, sm: 4 }, pb: { xs: 8, sm: 4 }, display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: 'background.default' }}>
+    <Box sx={{ width: { xs: '100%', sm: '100%', md: '90vw' }, minHeight: '100vh',   pt: { xs: 3, sm: 4 },
+        pb: { xs: 12, sm: 4 },
+        pl: { xs: 0, sm: 5 },
+        pr: { xs: 0, sm: 2 }, display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' }, bgcolor: 'background.default', marginLeft: { md: '15rem' } }}>
       <TenantsTour />
       <Box sx={{ width: { xs: "90%", sm: "80%" }, mt: { xs: '4rem', sm: 0 }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', marginTop:{xs:"0rem",sm:"2rem"}, width: '100%', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 2, sm: 3 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5,}}>
             <IconButton 
               onClick={() => {
                 // Intentar ir hacia atrás, si falla navegar al dashboard

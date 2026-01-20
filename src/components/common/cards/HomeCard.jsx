@@ -15,9 +15,10 @@ const HomeCard = ({
 
   return (
     <Grid2 
-      xs={15} 
+      xs={12} 
       sm={6} 
-      md={3} 
+      md={6}
+      lg={3}
       sx={{
         display: "flex",
         justifyContent: "center",
@@ -30,17 +31,17 @@ const HomeCard = ({
         sx={{
           width: {  
             xs: '100%',  
-            sm: '90%',   
-            md: '13rem',   
-            lg: '15rem',  
-            xl: '20rem',
+            sm: '19rem',   
+            md: '11.5rem',   
+            lg: '11rem',  
+            xl: '15rem',
           },
           maxWidth: { 
             xs: '100%',  
             md: '20rem',   
           },
-          minHeight: { xs: "70px", sm: "auto" },
-          height: { xs: "40%", sm: "80%" },
+          minHeight: { xs: "70px", sm: "180px", md: "auto" },
+          height: { xs: "auto", sm: "auto" },
           borderRadius: 3,
           overflow: "hidden",
           transition: "all 0.3s ease",
@@ -83,7 +84,7 @@ const HomeCard = ({
         ) : (
           <>
             <Box sx={{ 
-              p: { xs: 2, sm: 3, md: 1 },
+              p: { xs: 2, sm: 2, md: 1 },
               height: "100%",
               display: "flex",
               flexDirection: { xs: "row", md: "row" },
@@ -92,14 +93,14 @@ const HomeCard = ({
               paddingTop: { xs: 0, md: 3 },
             }}>
               <Typography variant="h6" sx={{ 
-                fontSize: { xs: "0.9rem", sm: "2rem", md: "1.25rem" },
+                fontSize: { xs: "0.9rem", sm: "1.1rem", md: "1.25rem" },
                 fontWeight: { md: 500 },
                 fontFamily: "Poppins, sans-serif",
               }}>
                 {title}
               </Typography>
               <Typography variant="h4" sx={{ 
-                fontSize: { xs: "0.9rem", sm: "2rem", md: "1.25rem" },
+                fontSize: { xs: "1.1rem", sm: "1.3rem", md: "1.5rem" },
                 fontWeight: { md: 500 },
                 fontFamily: "Poppins, sans-serif",
               }}>
@@ -108,13 +109,13 @@ const HomeCard = ({
             </Box>
             <Box sx={{
               width: "100%",
-              height: "130px", 
+              height: { xs: '120px', sm: '120px', md: '130px' }, 
               display: "flex", 
               justifyContent: "flex-end",
               alignItems: "center", 
               marginLeft: "-2rem" 
             }}>
-              <Icon sx={{ fontSize: 50 }} />
+              <Icon sx={{ fontSize: { xs: 40, sm: 36, md: 50 } }} />
             </Box>
           </>
         )}

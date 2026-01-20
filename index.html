@@ -3,17 +3,17 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- 🔹 Ícono general -->
+    <!-- Ícono general -->
     <link rel="icon" type="image/png" href="/logoInmo512.png" />
 
-    <!-- 🔹 Íconos para iOS -->
+    <!-- Íconos para iOS -->
     <link rel="apple-touch-icon" sizes="192x192" href="/logoInmo192.png" />
     <link rel="apple-touch-icon" sizes="512x512" href="/logoInmo512.png" />
 
-    <!-- 🔹 Manifest -->
-    <link rel="manifest" href="/manifest.json"  />
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
 
-    <!-- 🔹 PWA meta -->
+    <!-- PWA meta -->
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f6f8">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1e1e22">
@@ -23,31 +23,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Tuinmo" />
 
-    <!-- 🔹 Viewport y fuentes -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Fuentes -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
 
     <title>Tuinmo</title>
 
-    <script>
-      (function(){
-        try {
-          // 1) Fijar tema antes del primer render para evitar parpadeos/auto-dark
-          var isDark = false;
-          try { isDark = JSON.parse(localStorage.getItem('darkMode') || 'false'); } catch(e) {}
-          var root = document.documentElement;
-          root.setAttribute('data-theme', isDark ? 'dark' : 'light');
-          root.style.colorScheme = isDark ? 'dark' : 'light';
-
-          // 2) Forzar una recarga inicial por pestaña para evitar render viejo
-          var KEY = 'tuinmo_first_reload_v1';
-          if (!sessionStorage.getItem(KEY)) {
-            sessionStorage.setItem(KEY, '1');
-            window.location.reload();
-          }
-        } catch(e) {}
-      })();
-    </script>
+  
 
     <style>
       body {
@@ -60,16 +41,6 @@
 
     <!-- TinyMCE -->
     <script src="https://cdn.tiny.cloud/1/yk10ygeb6q71ucxlc2kqvhzpliekkdjmjgw8bxrxbxmvbl6y/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-
-    <!-- Google Drive Auth -->
-    <script>
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        scope: "https://www.googleapis.com/auth/drive.file",
-        callback: (resp) => {},
-      });
-      tokenClient.requestAccessToken({ prompt: "" });
-    </script>
 
     <!-- React entrypoint -->
     <script type="module" src="/src/main.jsx"></script>

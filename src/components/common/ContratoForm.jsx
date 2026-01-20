@@ -31,6 +31,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { showAlert, showError, showInfo, showSuccess } from '../alertas/showAlert';
+import { useNavigate } from 'react-router-dom';
 const ContratoForm = () => {
   const [localUser, setLocalUser] = useState({
     name: '',
@@ -50,6 +51,7 @@ const ContratoForm = () => {
     }
   }, []);
   const {logout, user} = useAuth();
+  const navigate = useNavigate();
 
   const initialValues = {
     nombreContrato: '',
@@ -241,7 +243,18 @@ const ContratoForm = () => {
 
     try {
       await contratoApi.crearContrato(formattedValues);
-      showSuccess('Contrato creado exitosamente');
+      await Swal.fire({
+        title: 'Contrato creado',
+        text: '¿Querés ir a la lista de contratos?',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Ir a contratos',
+        cancelButtonText: 'Seguir aquí'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/contratos');
+        }
+      });
     } catch (error) {
       showError('Error al crear el contrato');
     } finally {
