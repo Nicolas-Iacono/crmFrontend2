@@ -55,7 +55,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const { usuarioFetch, authUser, hasCalendarEvents, logout, logoTimestamp, plan} = useAuth();
+  const { usuarioFetch, authUser, user, isLogged, hasCalendarEvents, logout, logoTimestamp, plan} = useAuth();
   const { isLinked, isLoading, googleProfile, handleLink, handleUnlink } = useGoogleLink();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isChatOpen, setChatOpen] = useState(false);
@@ -69,10 +69,11 @@ export const Header = ({ toggleTheme, darkMode }) => {
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [notificationDetailOpen, setNotificationDetailOpen] = useState(false);
-  
+  const [newAlertCount, setNewAlertCount] = useState(0);
   // Datos de notificaciones desde el backend
   const [notifications, setNotifications] = useState([]);
-  
+   const lastAlertIdsRef = useRef(new Set());
+  const initialAlertsLoadedRef = useRef(false);
   const lastScrollY = useRef(0);
   const hideTimer = useRef(null);
 
@@ -122,7 +123,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
 
     if (willOpen) {
       // Solo refrescás la lista, sin habilitar el toast
-      fetchVencimientoAlertas();
+        fetchVencimientoAlertas({ showToast: false });
     }
   };
 
@@ -131,7 +132,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
     setTimeout(() => {
       setNotificationsOpen(false);
       setIsClosing(false);
-    }, 300); // Tiempo igual a la duración de la animación
+    }, 600); // Tiempo igual a la duración de la animación
   };
 
   // Funciones para manejar el modal de detalles
@@ -144,7 +145,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
     setTimeout(() => {
       setNotificationsOpen(false);
       setIsClosing(false);
-    }, 300);
+    }, 600);
     // Marcar como leída (sin volver a fetch)
     markAsRead(notification.id);
   };
@@ -188,7 +189,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
   };
 
   // Función para obtener alertas de vencimiento desde el backend
-  const fetchVencimientoAlertas = async () => {
+ const fetchVencimientoAlertas = async ({ showToast = false } = {}) => {
     setLoadingNotifications(true);
     try {
       const token = localStorage.getItem('token');
@@ -204,19 +205,31 @@ export const Header = ({ toggleTheme, darkMode }) => {
         const result = await response.json();
         const alertas = result?.data ?? [];
         const mappedNotifications = mapAlertasToNotifications(alertas);
-        
+        const incomingIds = new Set(mappedNotifications.map((notification) => notification.id));
+        const newAlerts = mappedNotifications.filter(
+          (notification) => !lastAlertIdsRef.current.has(notification.id)
+        );
+
         setNotifications(mappedNotifications);
         setNotificationCount(alertas.length);
+
+        lastAlertIdsRef.current = incomingIds;
+
+        if (showToast && newAlerts.length > 0 && initialAlertsLoadedRef.current) {
+          setNewAlertCount(newAlerts.length);
+          setShouldShowToast(true);
+        }
+
+        if (!initialAlertsLoadedRef.current) {
+          initialAlertsLoadedRef.current = true;
+        }
       } else {
         console.error('Error al obtener alertas de vencimiento:', response.statusText);
-        // Si hay error, mostrar notificaciones vacías
-        setNotifications([]);
-        setNotificationCount(0);
+
       }
     } catch (error) {
       console.error('Error en fetchVencimientoAlertas:', error);
-      setNotifications([]);
-      setNotificationCount(0);
+     
     } finally {
       setLoadingNotifications(false);
     }
@@ -242,15 +255,26 @@ export const Header = ({ toggleTheme, darkMode }) => {
 
   // Cargar alertas de vencimiento al montar el componente
   useEffect(() => {
-    if (authUser) {
-      setShouldShowToast(true);      // quiero toast solo la PRIMER vez
-      fetchVencimientoAlertas();
+    if (isLogged) {
+      fetchVencimientoAlertas({ showToast: false });
     }
-  }, [authUser]);
+  }, [isLogged]);
+
+
+   useEffect(() => {
+    if (!isLogged)return;
+
+    const intervalId = setInterval(() => {
+      fetchVencimientoAlertas({ showToast: true });
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  },[isLogged]);
+
 
   // Mostrar notificación toast cuando hay alertas nuevas
   useEffect(() => {
-    if (notifications.length > 0 && !loadingNotifications && shouldShowToast) {
+  if (newAlertCount > 0 && !loadingNotifications && shouldShowToast && Swal) {
       // Mostrar toast con SweetAlert (ya se usa en el proyecto)
       Swal.fire({
         toast: true,
@@ -258,7 +282,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
          icon: "warning",
   iconColor: "#fac023",
         title: "Alertas de vencimiento",
-        text: `${notifications.length} contrato${notifications.length > 1 ? 's' : ''} por vencer`,
+        text: `${newAlertCount} contrato${newAlertCount > 1 ? 's' : ''} por vencer`,
         showConfirmButton: false,
         timer: 2500,
         timerProgressBar: true,
@@ -275,8 +299,9 @@ export const Header = ({ toggleTheme, darkMode }) => {
       });
       // Resetear la bandera después de mostrar el toast
       setShouldShowToast(false);
+      setNewAlertCount(0);
     }
-  }, [notifications.length, loadingNotifications, shouldShowToast]);
+  }, [newAlertCount, loadingNotifications, shouldShowToast]);
   useEffect(() => {
     const handleScroll = () => {
       if (!isMobile) return;
@@ -860,7 +885,7 @@ const authorities = localStorage.getItem('authorities');
                           </Box>
                 
                 <IconButton data-tour="open-drawer" onClick={handleDrawerToggle} sx={{ p: 0 }}>
-                  <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} />
+                   <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} />
                 </IconButton>
               </Box>
               <Drawer anchor="right" open={drawerOpen} onClose={handleDrawerToggle}>{drawerContent}</Drawer>

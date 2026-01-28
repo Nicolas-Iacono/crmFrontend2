@@ -4,7 +4,7 @@ import App from './App.jsx'
 import './index.css'
 import Swal from 'sweetalert2'
 import { initGoogleDriveAuth } from './googleDriverAuth.js';
-
+import { registerPush } from './utils/pushService';
 
 // ====================================================
 // 🚀 Render principal de la app
@@ -16,6 +16,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 )
 
 initGoogleDriveAuth();
+
+
+// Habilitar registro de push para pantallas de login externas
+window.registerPush = registerPush;
 
 // ====================================================
 // 🔔 Permiso de notificaciones (una sola vez)

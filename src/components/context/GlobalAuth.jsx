@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { showSuccess, showError, showInfo } from '../alertas/showAlert';
 import suscripcionesApi from '../api/suscripcionesMp';
-
+import { registerPush } from '../../utils/pushService';
 const AuthUserContext = createContext();
 
 export const GlobalAuth = ({children}) => {
@@ -27,6 +27,7 @@ const [usuarioFetch, setUsuarioFetch] = useState(null);
 const [hasCalendarEvents, setHasCalendarEvents] = useState(false); // Add state for calendar event notifications
 const [plan, setPlan] = useState(null);
 const [token, setToken] = useState(null);
+const pushRegisteredRef = useRef(false);
 useEffect(() => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -95,7 +96,13 @@ useEffect(() => {
   });
 }, [token]); // <-- fix dependency
 
+useEffect(() => {
+  if (!isLogged || !usuarioFetch?.id || pushRegisteredRef.current) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
+  registerPush(usuarioFetch.id);
+  pushRegisteredRef.current = true;
+}, [isLogged, usuarioFetch]);
 
 useEffect(()=>{
 setLogo(usuarioFetch?.logo)
@@ -142,6 +149,7 @@ const logout = () => {
   setUser({jwt:null, username:null, authorities:[], logo: null}); // Reset logo on logout
   setUsuarioFetch(null); // limpia cache de usuario
   setToken(null); // limpia token para detener efectos dependientes y evitar lecturas viejas
+  pushRegisteredRef.current = false;
   setPlan(null);
   setHasCalendarEvents(false);
   localStorage.removeItem('token');

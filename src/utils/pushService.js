@@ -24,15 +24,27 @@ export async function registerPush(userId) {
       });
   
       // 5️⃣ Enviar suscripción al backend
+       const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("⚠️ Token no encontrado para registrar push");
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/notifications/subscribe?userId=${userId}`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
             endpoint: subscription.endpoint,
-            p256dh: subscription.toJSON().keys.p256dh,
-            auth: subscription.toJSON().keys.auth,
+           expirationTime: subscription.expirationTime,
+            keys: {
+              p256dh: subscription.toJSON().keys.p256dh,
+              auth: subscription.toJSON().keys.auth,
+            },
           }),
         }
       );
