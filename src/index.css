@@ -1,7 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-
-
 @media (prefers-color-scheme: dark) {
   html[data-theme="light"],
   html[data-theme="light"] body {
@@ -15,3 +13,285 @@
     filter: none !important;
   }
 }
+
+
+/* Base del toast */
+.swal2-popup.compact-toast.swal2-toast {
+  width: 10rem;
+  padding: 14px 16px;
+  border-radius: 16px;
+  height: 5rem;
+  background: rgba(20, 22, 28, 0.78);
+  color: #fff;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 10px 5px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Saca márgenes raros del layout toast */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon {
+  margin: 2px 0 0 0 !important;
+  flex: 0 0 auto;
+}
+
+/* Icono: círculo + estilo "glass" */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: none;
+  margin: 2px 0 0 0 !important;
+  flex: 0 0 auto;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.swal2-popup.compact-toast.swal2-toast .swal2-icon{
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+/* Icono de warning específico */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon.swal2-warning{
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  margin: 2px 12px 0 0 !important;
+
+  border: none !important;
+  border-radius: 999px !important;
+
+  background: rgba(255, 193, 7, 0.18) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.478) !important;
+
+  color: #fac023 !important;
+}
+
+/* Forzar el contenido del icono */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon.swal2-warning .swal2-icon-content{
+  display: block !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  color: #fac023 !important;
+}
+
+.swal2-popup.compact-toast.swal2-toast .swal2-icon.swal2-error {
+  background: rgba(255, 82, 82, 0.16);
+  color: #ff5252;
+  box-shadow: inset 0 0 0 1px rgba(255, 82, 82, 0.25);
+}
+
+.swal2-popup.compact-toast.swal2-toast .swal2-icon.swal2-success {
+  background: rgba(46, 204, 113, 0.16);
+  color: #2ecc71;
+  box-shadow: inset 0 0 0 1px rgba(46, 204, 113, 0.25);
+}
+
+.swal2-popup.compact-toast.swal2-toast .swal2-icon.swal2-info {
+  background: rgba(52, 152, 219, 0.16);
+  color: #55b6ff;
+  box-shadow: inset 0 0 0 1px rgba(85, 182, 255, 0.25);
+}
+
+/* Título */
+.compact-toast-title {
+  font-size: 16px !important;
+  font-weight: 750 !important;
+  line-height: 1.15 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+}
+
+/* Texto */
+.compact-toast-content {
+  margin: 6px 0 0 0 !important;
+  padding: 0 !important;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  text-align: left !important;
+     font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Alineación del bloque texto al lado del icono */
+.swal2-popup.compact-toast.swal2-toast .swal2-title,
+.swal2-popup.compact-toast.swal2-toast .swal2-html-container {
+  margin-left: 0 !important;
+}
+
+/* Progress bar más sutil */
+.compact-toast-progress {
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+.swal2-popup.compact-toast.swal2-toast .swal2-timer-progress-bar {
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* En mobile que no rompa */
+@media (max-width: 420px) {
+  .swal2-popup.compact-toast.swal2-toast {
+    width: calc(100vw - 24px);
+  }
+}
+
+
+/* ✅ Forzar layout del toast a flex (SweetAlert a veces lo pone en grid) */
+.swal2-popup.compact-toast.swal2-toast {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+/* ✅ Icono SIEMPRE visible y con tamaño fijo */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+
+  margin: 2px 0 0 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+/* ✅ Estilo "glass" del warning */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon.swal2-warning {
+  border: none !important;
+  border-radius: 999px !important;
+
+  background: rgba(255, 193, 7, 0.18) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.48) !important;
+
+  color: #fac023 !important;
+}
+
+/* ✅ El ! centrado */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon.swal2-warning .swal2-icon-content {
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  line-height: 28px !important;
+  color: #fac023 !important;
+}
+
+/* ✅ Que el texto quede al lado del icono (sin “saltos” del grid) */
+.swal2-popup.compact-toast.swal2-toast .swal2-title,
+.swal2-popup.compact-toast.swal2-toast .swal2-html-container {
+  margin: 0 !important;
+  text-align: left !important;
+}
+.swal2-popup.compact-toast.swal2-toast .swal2-html-container {
+  margin-top: 6px !important;
+}
+
+/* Contenedor del contenido (título + texto) en columna */
+.swal2-popup.compact-toast.swal2-toast {
+  display: flex !important;
+  align-items: flex-start !important;
+}
+
+/* Wrapper virtual: forzamos columna para textos */
+.swal2-popup.compact-toast.swal2-toast .swal2-title,
+.swal2-popup.compact-toast.swal2-toast .swal2-html-container {
+  display: block !important;
+  width: 100% !important;
+}
+
+/* Creamos una columna SOLO para el texto */
+.swal2-popup.compact-toast.swal2-toast .swal2-title {
+  order: 1;
+  margin-bottom: 4px !important;
+}
+
+.swal2-popup.compact-toast.swal2-toast .swal2-html-container {
+  order: 2;
+}
+
+/* El icono siempre primero */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon {
+  order: 0;
+}
+
+/* Espaciado correcto entre icono y texto */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon + .swal2-title {
+  margin-left: 0 !important;
+}
+
+/* Empaquetamos título + texto como columna */
+.swal2-popup.compact-toast.swal2-toast {
+  gap: 12px !important;
+}
+/* Layout: icono a la izquierda, textos en columna (title arriba, content abajo) */
+.swal2-popup.compact-toast.swal2-toast {
+  display: grid !important;
+  grid-template-columns: 36px 1fr;
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "icon title"
+    "icon content"
+    "progress progress";
+  column-gap: 12px;
+  row-gap: 4px;
+
+  align-items: start !important;
+}
+
+/* Asignar “áreas” */
+.swal2-popup.compact-toast.swal2-toast .swal2-icon {
+  grid-area: icon;
+  margin: 2px 0 0 0 !important;
+}
+
+.swal2-popup.compact-toast.swal2-toast .swal2-title {
+  grid-area: title;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+.swal2-popup.compact-toast.swal2-toast .swal2-html-container {
+  grid-area: content;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+/* Progress bar abajo ocupando todo */
+.swal2-popup.compact-toast.swal2-toast .swal2-timer-progress-bar-container {
+  grid-area: progress;
+  margin-top: 8px;
+}
+
+.swal2-popup.compact-toast.swal2-toast {
+  width: 290px !important;
+  min-width: 290px !important;
+  max-width: 290px !important;
+}
+
+

@@ -307,20 +307,18 @@ const navigate = useNavigate();
       </Typography>
     )}
 
-    {actualizacionData && (
-      <Typography variant="body2" sx={{ mb: 1 }}>
-        <strong>Estado:</strong>{' '}
-        {Array.isArray(selectedContract?.estados) && selectedContract.estados.length > 0 ? (
-          <Box sx={{ display: 'inline-flex', flexWrap: 'wrap', gap: 0.75, ml: 1, verticalAlign: 'middle' }}>
-            {selectedContract.estados.map((estado) => (
-              <Chip key={estado} label={estado} size="small" />
-            ))}
-          </Box>
-        ) : (
-          'No especificado'
-        )}
-      </Typography>
-    )}
+ <Typography variant="body2" sx={{ mb: 1 }}>
+  <strong>Estado:</strong>{' '}
+  {selectedContract?.activo? (
+    <Box sx={{ display: 'inline-flex', flexWrap: 'wrap', gap: 0.75, ml: 1, verticalAlign: 'middle' }}>
+      <Chip label="ACTIVO" size="small" />
+    </Box>
+  ) : (
+    <Box sx={{ display: 'inline-flex', flexWrap: 'wrap', gap: 0.75, ml: 1, verticalAlign: 'middle' }}>
+      <Chip label="VENCIDO" size="small" />
+    </Box>
+  )}
+</Typography>
 
     {actualizacionData && actualizacionData.mensaje && (
       <Typography variant="body2" color="text.secondary">

@@ -75,7 +75,6 @@ const Home = () => {
   const[isLoading,setIsLoading] = useState(false);
   const [isLoadingCounts, setIsLoadingCounts] = useState(false);
   const[error,setError] = useState(null);
-
   useEffect(() => {
     const fetchUltimosContratos = async () => {
       try {

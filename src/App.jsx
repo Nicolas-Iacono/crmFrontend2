@@ -12,6 +12,7 @@ import NuevaPropiedad from "./components/pages/pagesForm/NuevaPropiedad.jsx";
 import NuevoInquilino from "./components/pages/pagesForm/NuevoInquilino.jsx";
 import NuevoPropietario from "./components/pages/pagesForm/NuevoPropietario.jsx";
 import NuevoContrato from "./components/pages/pagesForm/NuevoContrato.jsx";
+import NuevoContratoForm from "./components/pages/pagesForm/NuevoContratoForm.jsx";
 import NuevoGarante from "./components/pages/pagesForm/NuevoGarante.jsx";
 import { EditorTextContextProvider } from "./components/context/EditorGlobal.jsx";
 import Registro from "./components/pages/user/registro/Registro.jsx";
@@ -162,6 +163,7 @@ function AppRoutes() {
         <Route path="nuevo-propietario" element={<NuevoPropietario />} />
         <Route path="contratos" element={<ContratosPage />} />
         <Route path="contratos/crear" element={<CrearContratoPage />} />
+        <Route path="nuevo-contrato-form" element={<NuevoContratoForm />} />
         <Route path="recibo" element={<ReciboForm />} />
         <Route path="recibos/:id" element={<ReciboForm />} />
         <Route path="recibos-page/:id" element={<RecibosPage />} />

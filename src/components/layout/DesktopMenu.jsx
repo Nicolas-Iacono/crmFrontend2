@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Menu, MenuItem, Box, Badge, List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
+import { Button, Menu, MenuItem, Box, Badge, List, ListItemButton, ListItemIcon, ListItemText, IconButton, Tooltip } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { keyframes } from '@mui/system';
 import { useAuth } from '../context/GlobalAuth';
@@ -13,6 +13,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import PaidIcon from '@mui/icons-material/Paid';
 import CalculateIcon from '@mui/icons-material/Calculate'
 import ReceiptIcon from '@mui/icons-material/Receipt';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 const sections = [
   {
@@ -69,6 +70,7 @@ const DesktopMenu = ({ orientation = 'horizontal' }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState({});
+  const [notificationCount, setNotificationCount] = useState(3); // Ejemplo: 3 notificaciones pendientes
 
   const handleClick = (event, sectionName) => {
     setAnchorEl({ ...anchorEl, [sectionName]: event.currentTarget });
@@ -81,6 +83,12 @@ const DesktopMenu = ({ orientation = 'horizontal' }) => {
   const handleNavigate = (url, sectionName) => {
     navigate(url);
     handleClose(sectionName);
+  };
+
+  const handleNotificationsClick = () => {
+    // Aquí puedes agregar la lógica para abrir un panel de notificaciones
+    // o navegar a una página de notificaciones
+    console.log('Abrir notificaciones');
   };
 
   // Animación barrido de derecha a izquierda
@@ -110,59 +118,63 @@ const DesktopMenu = ({ orientation = 'horizontal' }) => {
 
     if (orientation === 'vertical') {
       return (
-        <List sx={{ py: 0, px: 0 }}>
-          {sections.map((section) => {
-            const active = isActiveSection(section);
-            const Icon = section.icon;
-            const defaultUrl = section.url || (section.subItems?.find(si => si.name?.toLowerCase().includes('lista'))?.url || section.subItems?.[0]?.url || '/');
-            return (
-              <ListItemButton
-                key={section.name}
-                onClick={() => navigate(defaultUrl)}
-                sx={{
-                  position: 'relative',
-                  overflow: 'visible',
-                  backgroundColor: active ? 'white' : 'transparent',
-                  color: active ? '#7443e7ff' : 'white',
-                  borderTopRightRadius: 28,
-                  borderBottomRightRadius: 28,
-                  my: 0.5,
-                  py: 1.2,
-                  pr: 1.5,
-                  pl: 1.25,
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'white',
-                    transform: active ? 'scaleX(1)' : 'scaleX(0)',
-                    transformOrigin: 'right',
-                    transition: active ? 'none' : 'transform 0.25s ease',
-                    animation: active ? `${sweepRTL} 420ms ease forwards` : 'none',
-                    zIndex: -1,
-                    pointerEvents: 'none',
+        <Box sx={{ position: 'relative', py: 0, px: 0 }}>
+          
+          
+          <List sx={{ py: 0, px: 0 }}>
+            {sections.map((section) => {
+              const active = isActiveSection(section);
+              const Icon = section.icon;
+              const defaultUrl = section.url || (section.subItems?.find(si => si.name?.toLowerCase().includes('lista'))?.url || section.subItems?.[0]?.url || '/');
+              return (
+                <ListItemButton
+                  key={section.name}
+                  onClick={() => navigate(defaultUrl)}
+                  sx={{
+                    position: 'relative',
+                    overflow: 'visible',
+                    backgroundColor: active ? 'white' : 'transparent',
+                    color: active ? '#7443e7ff' : 'white',
                     borderTopRightRadius: 28,
                     borderBottomRightRadius: 28,
-                  },
-                 
-                  '&:hover': {
-                    backgroundColor: active ? 'white' : 'rgba(255,255,255,0.12)'
-                  }
-                }}
-              >
-                {Icon && (
-                  <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
-                    <Icon />
-                  </ListItemIcon>
-                )}
-                <ListItemText primary={section.name} />
-                {section.name === 'Calendario' && (
-                  <Badge color="error" variant="dot" invisible={!hasCalendarEvents} />
-                )}
-              </ListItemButton>
-            );
-          })}
-        </List>
+                    my: 0.5,
+                    py: 1.2,
+                    pr: 1.5,
+                    pl: 1.25,
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'white',
+                      transform: active ? 'scaleX(1)' : 'scaleX(0)',
+                      transformOrigin: 'right',
+                      transition: active ? 'none' : 'transform 0.25s ease',
+                      animation: active ? `${sweepRTL} 420ms ease forwards` : 'none',
+                      zIndex: -1,
+                      pointerEvents: 'none',
+                      borderTopRightRadius: 28,
+                      borderBottomRightRadius: 28,
+                    },
+                   
+                    '&:hover': {
+                      backgroundColor: active ? 'white' : 'rgba(255,255,255,0.12)'
+                    }
+                  }}
+                >
+                  {Icon && (
+                    <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
+                      <Icon />
+                    </ListItemIcon>
+                  )}
+                  <ListItemText primary={section.name} />
+                  {section.name === 'Calendario' && (
+                    <Badge color="error" variant="dot" invisible={!hasCalendarEvents} />
+                  )}
+                </ListItemButton>
+              );
+            })}
+          </List>
+        </Box>
       );
     }
 

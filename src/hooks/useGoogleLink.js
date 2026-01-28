@@ -4,7 +4,19 @@ import Swal from 'sweetalert2';
 import { useAuth } from '../components/context/GlobalAuth';
 import { showSuccess, showError, showWarning } from '../components/alertas/showAlert';
 const useGoogleLink = () => {
-      const { token } = useAuth();
+  const auth = useAuth();
+  const token = auth?.token;
+  
+  // Si el contexto no está disponible, retornar valores por defecto
+  if (!auth) {
+    return {
+      isLinked: false,
+      isLoading: false,
+      googleProfile: null,
+      handleLink: () => {},
+      handleUnlink: () => {}
+    };
+  }
   const [googleProfile, setGoogleProfile] = useState(null);
   const [isLinked, setIsLinked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

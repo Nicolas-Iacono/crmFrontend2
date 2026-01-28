@@ -12,7 +12,7 @@ const GenerarWord = ({contrato}) => {
 
   const fetchContratoById = async (id) => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/contrato/buscar/${id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/contrato/buscar/${id}`);
       return response.data; // Devuelve los datos del contrato
     } catch (error) {
       console.error('Error al buscar contrato:', error);
