@@ -34,6 +34,12 @@ export const SchemaValidation  = {
         disponibilidad: Yup.boolean(),
         id_propietario: Yup.number().nullable(),
         inventario: Yup.string().max(65535, 'El inventario no puede exceder los 65535 caracteres').required('El inventario es obligatorio'),
+        precio: Yup.number().min(0, 'El precio no puede ser negativo').nullable(),
+        cantidadAmbientes: Yup.number().min(0, 'La cantidad de ambientes no puede ser negativa').nullable(),
+        pileta: Yup.boolean(),
+        cochera: Yup.boolean(),
+        jardin: Yup.boolean(),
+        patio: Yup.boolean(),
 
       })
   },

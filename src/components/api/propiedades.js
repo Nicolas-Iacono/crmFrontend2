@@ -1,4 +1,3 @@
-import axios from 'axios';
 import http from './http';
 const URL_PROPIEDADES = `${import.meta.env.VITE_API_URL}/propiedad`;
 
@@ -38,6 +37,24 @@ export const PropiedadesApi =  {
     console.error('Response data:', error.response?.data);
     console.error('Status:', error.response?.status);
     throw new Error("Error al crear propiedad", error);
+    }
+  },
+  actualizarPropiedad: async (propiedadId, propiedad) => {
+    try {
+      const response = await http.put(`${URL_PROPIEDADES}/${propiedadId}`, propiedad);
+      return response.data;
+    } catch (error) {
+      console.error('Error al actualizar propiedad:', error);
+      throw new Error('Error al actualizar propiedad', error);
+    }
+  },
+  buscarPropiedadPorId: async (propiedadId) => {
+    try {
+      const response = await http.get(`${URL_PROPIEDADES}/${propiedadId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener propiedad:', error);
+      throw new Error('Error al obtener propiedad', error);
     }
   },
     buscarPropiedadPorUsuario: (username) => http.get(`${URL_PROPIEDADES}/${username}`),

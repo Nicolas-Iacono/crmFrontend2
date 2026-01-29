@@ -15,21 +15,17 @@ import {
   useMediaQuery,
   Card,
   CardContent,
-  Grid,
-  Divider,
   IconButton,
   Collapse,
   TextField,
   InputAdornment,
   Fab,
   Tooltip,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Chip,
+  Skeleton,
+  Pagination,
+  TablePagination,
 } from '@mui/material';
-import { useAuth } from '../context/GlobalAuth';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -38,22 +34,18 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Swal from 'sweetalert2';
-import axios from 'axios';
-import http from '../api/http';
-import { showSuccess, showError, showWarning } from '../alertas/showAlert';
+import { showSuccess, showError } from '../alertas/showAlert';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
+import ProspectosApi from '../api/prospectos';
 
 const ProspectosPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { usuarioFetch } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [prospectos, setProspectos] = useState([]);
@@ -73,8 +65,7 @@ const ProspectosPage = () => {
       `${p.nombre} ${p.apellido}`.toLowerCase().includes(t) ||
       (p.email ?? '').toLowerCase().includes(t) ||
       (p.telefono ?? '').toLowerCase().includes(t) ||
-      (p.dni ?? '').toLowerCase().includes(t) ||
-      (p.origen ?? '').toLowerCase().includes(t)
+      (p.zonaPreferencia ?? '').toLowerCase().includes(t)
     );
   });
 
@@ -97,23 +88,20 @@ const ProspectosPage = () => {
   const fetchProspectos = async () => {
     try {
       setIsLoading(true);
-      // Obtener el userId del usuario actual desde el contexto de autenticación
-      const userId = usuarioFetch?.id;
-      
-      if (!userId) {
-        console.error('No se encontró el userId del usuario');
-        setError(new Error('Usuario no identificado'));
-        return;
+      const result = await ProspectosApi.listarMisProspectos();
+      if (result.error) {
+        throw new Error(result.error);
       }
-      
-      const result = await http.get(`${import.meta.env.VITE_API_URL}/prospectos/me`);
       const arr = Array.isArray(result.data)
         ? result.data
         : (result.data?.data && Array.isArray(result.data.data)) ? result.data.data : [];
 
       const prospectosNorm = arr.map(p => ({
         id: p.id,
-        nombreUsuario: p.nombreUsuario ?? '',
+        nombre: p.nombre ?? '',
+        apellido: p.apellido ?? '',
+        telefono: p.telefono ?? '',
+        email: p.email ?? '',
         rangoPrecioMin: p.rangoPrecioMin ?? 0,
         rangoPrecioMax: p.rangoPrecioMax ?? 0,
         cantidadPersonas: p.cantidadPersonas ?? 0,
@@ -123,8 +111,6 @@ const ProspectosPage = () => {
         patio: p.patio ?? false,
         jardin: p.jardin ?? false,
         pileta: p.pileta ?? false,
-        // Campos adicionales para compatibilidad con la UI existente
-       
       }));
 
       setProspectos(prospectosNorm);
@@ -155,7 +141,7 @@ const ProspectosPage = () => {
   const handleEdit = (prospectoId = selectedProspectoId) => {
     const prospecto = prospectos.find(prop => prop.id === prospectoId);
     if (prospecto) {
-      navigate(`/editar-prospecto/${prospectoId}`);
+      navigate(`/editar-prospecto/${prospectoId}`, { state: { prospecto } });
     }
     if (selectedProspectoId) {
       handleMenuClose();
@@ -175,7 +161,7 @@ const ProspectosPage = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await http.delete(`${import.meta.env.VITE_API_URL}/prospectos/${prospectoId}`);
+          await ProspectosApi.eliminarProspecto(prospectoId);
           setProspectos(prospectos.filter(p => p.id !== prospectoId));
           showSuccess('Prospecto eliminado exitosamente');
         } catch (error) {
@@ -199,23 +185,6 @@ const ProspectosPage = () => {
 
   const goPrevPage = () => setPaginaActual((p) => Math.max(1, p - 1));
   const goNextPage = () => setPaginaActual((p) => Math.min(totalPaginas || 1, p + 1));
-
-  const getEstadoColor = (estado) => {
-    switch (estado?.toUpperCase()) {
-      case 'NUEVO':
-        return 'success';
-      case 'CONTACTADO':
-        return 'info';
-      case 'INTERESADO':
-        return 'warning';
-      case 'NO INTERESADO':
-        return 'error';
-      case 'CONVERTIDO':
-        return 'primary';
-      default:
-        return 'default';
-    }
-  };
 
   const renderMobileView = (prospectosFiltrados) => (
     <>
@@ -260,9 +229,9 @@ const ProspectosPage = () => {
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip 
-                        label={prospecto.estado || 'NUEVO'} 
-                        color={getEstadoColor(prospecto.estado)}
+                      <Chip
+                        label={prospecto.zonaPreferencia || 'Sin zona'}
+                        color="primary"
                         size="small"
                       />
                       <IconButton size="small" onClick={(e) => handleMenuClick(e, prospecto.id)}>
@@ -288,16 +257,18 @@ const ProspectosPage = () => {
                         </Typography>
                       </Box>
                     )}
-                    {prospecto.origen && (
+                    {prospecto.zonaPreferencia && (
                       <Typography variant="body2" color="text.secondary">
-                        <strong>Origen:</strong> {prospecto.origen}
+                        <strong>Zona:</strong> {prospecto.zonaPreferencia}
                       </Typography>
                     )}
                   </Box>
 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="caption" color="text.secondary">
-                      {new Date(prospecto.fechaContacto).toLocaleDateString()}
+                      {prospecto.rangoPrecioMin || prospecto.rangoPrecioMax
+                        ? `Presupuesto: ${prospecto.rangoPrecioMin || 0} - ${prospecto.rangoPrecioMax || '∞'}`
+                        : 'Sin presupuesto'}
                     </Typography>
                     <IconButton 
                       size="small" 
@@ -310,21 +281,18 @@ const ProspectosPage = () => {
 
                   <Collapse in={expandedCards[prospecto.id]} timeout="auto" unmountOnExit>
                     <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-                      {prospecto.notas && (
-                        <Typography variant="body2" sx={{ mb: 1 }}>
-                          <strong>Notas:</strong> {prospecto.notas}
-                        </Typography>
-                      )}
-                      {prospecto.interesEn && (
-                        <Typography variant="body2" sx={{ mb: 1 }}>
-                          <strong>Interesado en:</strong> {prospecto.interesEn}
-                        </Typography>
-                      )}
-                      {prospecto.presupuesto && (
-                        <Typography variant="body2">
-                          <strong>Presupuesto:</strong> ${prospecto.presupuesto}
-                        </Typography>
-                      )}
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        <strong>Personas:</strong> {prospecto.cantidadPersonas || '—'}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        <strong>Ambientes:</strong> {prospecto.cantidadAmbientes || '—'}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Amenities:</strong>{' '}
+                        {[prospecto.cochera && 'Cochera', prospecto.patio && 'Patio', prospecto.jardin && 'Jardín', prospecto.pileta && 'Pileta']
+                          .filter(Boolean)
+                          .join(', ') || 'Sin preferencias'}
+                      </Typography>
                     </Box>
                   </Collapse>
                 </CardContent>
@@ -357,9 +325,9 @@ const ProspectosPage = () => {
               <TableCell>Nombre</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Teléfono</TableCell>
-              <TableCell>Origen</TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell>Fecha Contacto</TableCell>
+              <TableCell>Zona</TableCell>
+              <TableCell>Presupuesto</TableCell>
+              <TableCell>Ambientes</TableCell>
               <TableCell align="right" sx={{ width: 140, minWidth: 140 }}>Acciones</TableCell>
             </TableRow>
           </TableHead>
@@ -375,17 +343,13 @@ const ProspectosPage = () => {
                     </TableCell>
                     <TableCell sx={{ width: "10rem" }}>{p.email || '—'}</TableCell>
                     <TableCell sx={{ width: "8rem" }}>{p.telefono || '—'}</TableCell>
-                    <TableCell sx={{ width: "8rem" }}>{p.origen || '—'}</TableCell>
-                    <TableCell sx={{ width: "6rem" }}>
-                      <Chip 
-                        label={p.estado || 'NUEVO'} 
-                        color={getEstadoColor(p.estado)}
-                        size="small"
-                      />
+                    <TableCell sx={{ width: "8rem" }}>{p.zonaPreferencia || '—'}</TableCell>
+                    <TableCell sx={{ width: "10rem" }}>
+                      {p.rangoPrecioMin || p.rangoPrecioMax
+                        ? `${p.rangoPrecioMin || 0} - ${p.rangoPrecioMax || '∞'}`
+                        : '—'}
                     </TableCell>
-                    <TableCell sx={{ width: "8rem" }}>
-                      {new Date(p.fechaContacto).toLocaleDateString()}
-                    </TableCell>
+                    <TableCell sx={{ width: "6rem" }}>{p.cantidadAmbientes || '—'}</TableCell>
                     <TableCell align="right">
                       <IconButton size="small" onClick={() => handleEdit(p.id)} sx={{ mr: 0.5 }}>
                         <EditIcon fontSize="small" />
@@ -491,7 +455,7 @@ const ProspectosPage = () => {
           </Box>
 
           <TextField
-            placeholder="Buscar por nombre, apellido, email..."
+          placeholder="Buscar por nombre, apellido, email o zona..."
             variant="outlined"
             fullWidth
             value={searchTerm}
@@ -640,7 +604,7 @@ const ProspectosPage = () => {
         </Box>
         
         <TextField
-          placeholder="Buscar por nombre, apellido, email, origen..."
+          placeholder="Buscar por nombre, apellido, email, zona..."
           variant="outlined"
           fullWidth
           value={searchTerm}
@@ -690,7 +654,7 @@ const ProspectosPage = () => {
             <Typography>Error al cargar los prospectos: {error}</Typography>
           </Box>
         ) : (
-          renderMobileView(prospectosPaginados)
+          isMobile ? renderMobileView(prospectosPaginados) : renderDesktopView(filteredProspectos)
         )}
         <Menu
           id="simple-menu"

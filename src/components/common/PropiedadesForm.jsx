@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import axios from 'axios';
-import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Box, Grid2, Typography, InputAdornment } from '@mui/material';
+import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Box, Grid2, Typography, InputAdornment, Switch, FormControlLabel, Divider } from '@mui/material';
 import { PropiedadesApi } from '../api/propiedades';
 import { SchemaValidation } from "../validation/SchemaValidation";
-import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
-import PropietarioApi from '../api/propietarios';
 import http from '../api/http';
 import SearchIcon from '@mui/icons-material/Search';
 import { useTheme } from '@mui/material/styles';
-import { showAlert, showError, showInfo, showSuccess } from '../alertas/showAlert';
+import { showError, showSuccess } from '../alertas/showAlert';
 const PropiedadesForm = () => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -63,6 +60,12 @@ const PropiedadesForm = () => {
     partido: '',
     provincia: '',
     disponibilidad: false,
+    precio: '',
+    cantidadAmbientes: '',
+    pileta: false,
+    cochera: false,
+    jardin: false,
+    patio: false,
     tipo: "",
     inventario: "",
     id_propietario: ''
@@ -84,7 +87,9 @@ const PropiedadesForm = () => {
             const dataToSend = {
         ...values,
         id_propietario: values.id_propietario || null,
-        nombreUsuario: user.name || localStorage.getItem("username") || ""
+        nombreUsuario: user.name || localStorage.getItem("username") || "",
+        precio: values.precio !== '' ? Number(values.precio) : null,
+        cantidadAmbientes: values.cantidadAmbientes !== '' ? Number(values.cantidadAmbientes) : null
       };
       
       await PropiedadesApi.crearPropiedad(dataToSend);
@@ -309,7 +314,7 @@ const PropiedadesForm = () => {
                       )}
                     </Field>
                   </Box>
-                                    <Box sx={{ marginTop: ".5rem", width: "100%", padding: "1rem 0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "1rem", borderRadius: "1rem", border: showOwnerSelection ? "1px solid rgb(31, 36, 90)" : "none", boxShadow: showOwnerSelection ? "0px 0px 10px 1px rgba(130, 130, 130, 0.85)" : "none" }}>
+                  <Box sx={{ marginTop: ".5rem", width: "100%", padding: "1rem 0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "1rem", borderRadius: "1rem", border: showOwnerSelection ? "1px solid rgb(31, 36, 90)" : "none", boxShadow: showOwnerSelection ? "0px 0px 10px 1px rgba(130, 130, 130, 0.85)" : "none" }}>
                     {showOwnerSelection ? (
                       <>
                         <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600, mb: 1, fontSize: { xs: '0.9rem', sm: '1rem' }, padding: "1rem " }}>
@@ -392,6 +397,115 @@ const PropiedadesForm = () => {
                     )}
                   </Box>
                   </Grid2>
+
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Detalles de la propiedad
+                </Typography>
+
+                <Grid2 container spacing={2}>
+                  <Grid2 xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Precio"
+                      name="precio"
+                      type="number"
+                      value={values.precio}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      inputProps={{ min: 0, step: 1000 }}
+                    />
+                  </Grid2>
+                  <Grid2 xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Cantidad de ambientes"
+                      name="cantidadAmbientes"
+                      type="number"
+                      value={values.cantidadAmbientes}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      inputProps={{ min: 0 }}
+                    />
+                  </Grid2>
+                </Grid2>
+
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                    Disponibilidad
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={values.disponibilidad}
+                        onChange={handleChange}
+                        name="disponibilidad"
+                        color="primary"
+                      />
+                    }
+                    label={values.disponibilidad ? 'Disponible' : 'No disponible'}
+                  />
+                </Box>
+
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                    Amenities
+                  </Typography>
+                  <Grid2 container spacing={1}>
+                    <Grid2 xs={12} sm={6}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={values.cochera}
+                            onChange={handleChange}
+                            name="cochera"
+                            color="primary"
+                          />
+                        }
+                        label="Cochera"
+                      />
+                    </Grid2>
+                    <Grid2 xs={12} sm={6}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={values.patio}
+                            onChange={handleChange}
+                            name="patio"
+                            color="primary"
+                          />
+                        }
+                        label="Patio"
+                      />
+                    </Grid2>
+                    <Grid2 xs={12} sm={6}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={values.jardin}
+                            onChange={handleChange}
+                            name="jardin"
+                            color="primary"
+                          />
+                        }
+                        label="Jardín"
+                      />
+                    </Grid2>
+                    <Grid2 xs={12} sm={6}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={values.pileta}
+                            onChange={handleChange}
+                            name="pileta"
+                            color="primary"
+                          />
+                        }
+                        label="Pileta"
+                      />
+                    </Grid2>
+                  </Grid2>
+                </Box>
                 
                 {/* Campo Inventario con recuento de palabras */}
                 <Box sx={{ marginTop: '.5rem' }}>
