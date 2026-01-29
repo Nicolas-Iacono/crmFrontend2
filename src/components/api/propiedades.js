@@ -72,7 +72,16 @@ export const PropiedadesApi =  {
       console.error('Error al asignar propietario:', error);
       throw new Error("Error al asignar propietario", error);
     }
-  }
+  },
+  listarProspectosCompatibles: async (propiedadId) => {
+    try {
+      const response = await http.get(`${URL_PROPIEDADES}/${propiedadId}/prospectos-compatibles`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener prospectos compatibles:', error);
+      throw error;
+    }
+  },
 
 }
 
