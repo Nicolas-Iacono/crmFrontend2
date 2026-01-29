@@ -5,6 +5,7 @@ import InquilinosPage from "./components/pages/InquilinosPage";
 import PropietariosPage from "./components/pages/PropietariosPage.jsx";
 import GarantesPage from "./components/pages/GarantesPage";
 import ContratosPage from "./components/pages/ContratosPage";
+import ProspectosPage from "./components/pages/ProspectosPage";
 import TablaCol from "./components/common/tablas/TablaCol.jsx";
 import { Layout } from "./components/layout/Layout";
 import "./App.css";
@@ -14,6 +15,7 @@ import NuevoPropietario from "./components/pages/pagesForm/NuevoPropietario.jsx"
 import NuevoContrato from "./components/pages/pagesForm/NuevoContrato.jsx";
 import NuevoContratoForm from "./components/pages/pagesForm/NuevoContratoForm.jsx";
 import NuevoGarante from "./components/pages/pagesForm/NuevoGarante.jsx";
+import NuevoProspecto from "./components/pages/pagesForm/NuevoProspecto.jsx";
 import { EditorTextContextProvider } from "./components/context/EditorGlobal.jsx";
 import Registro from "./components/pages/user/registro/Registro.jsx";
 import Login from './components/pages/user/login/Login'
@@ -52,7 +54,7 @@ import { useEffect } from "react";
 // =====================
 // 🔔 Control de versión Tuinmo
 // =====================
-const CURRENT_VERSION = "3.8.1"; // 👈 versión local instalada
+const CURRENT_VERSION = "3.8.1"; // versión local instalada
 const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=com.beweb.tuinmo";
 
@@ -161,6 +163,8 @@ function AppRoutes() {
         <Route path="nuevo-inquilino" element={<NuevoInquilino />} />
         <Route path="propietarios" element={<PropietariosPage />} />
         <Route path="nuevo-propietario" element={<NuevoPropietario />} />
+        <Route path="prospectos" element={<ProspectosPage />} />
+        <Route path="nuevo-prospecto" element={<NuevoProspecto />} />
         <Route path="contratos" element={<ContratosPage />} />
         <Route path="contratos/crear" element={<CrearContratoPage />} />
         <Route path="nuevo-contrato-form" element={<NuevoContratoForm />} />

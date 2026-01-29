@@ -533,9 +533,9 @@ const authorities = localStorage.getItem('authorities');
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigate('/contacto')}>
+          <ListItemButton onClick={() => handleNavigate('/prospectos')}>
             <ListItemIcon><ContactMailIcon /></ListItemIcon>
-            <ListItemText primary="Contacto" />
+            <ListItemText primary="Prospectos" />
           </ListItemButton>
         </ListItem>
         {isMobile && (
