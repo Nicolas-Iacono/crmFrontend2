@@ -16,6 +16,7 @@ import NuevoContrato from "./components/pages/pagesForm/NuevoContrato.jsx";
 import NuevoContratoForm from "./components/pages/pagesForm/NuevoContratoForm.jsx";
 import NuevoGarante from "./components/pages/pagesForm/NuevoGarante.jsx";
 import NuevoProspecto from "./components/pages/pagesForm/NuevoProspecto.jsx";
+import EditarProspecto from "./components/pages/pagesForm/EditarProspecto.jsx";
 import { EditorTextContextProvider } from "./components/context/EditorGlobal.jsx";
 import Registro from "./components/pages/user/registro/Registro.jsx";
 import Login from './components/pages/user/login/Login'
@@ -41,6 +42,7 @@ import CalculadoraDeAlquileres from "./components/pages/CalculadoraDeAlquileres"
 import MercadoPagoTest from "./components/pages/MercadoPagoTest.jsx";
 import CalendarioPage from "./components/pages/CalendarioPage";
 import AsignarPropietario from "./components/pages/pagesForm/AsignarPropietario";
+import EditarPropiedad from "./components/pages/pagesForm/EditarPropiedad.jsx";
 import PresupuestoPage from "./components/pages/PresupuestoPage";
 import ContabilidadPage from "./components/pages/ContabilidadPage";
 import PlantillasPage from "./components/pages/mobile/PlantillasPage.jsx";
@@ -158,6 +160,7 @@ function AppRoutes() {
         <Route path="users-controls" element={<UsersControl />} />
         <Route path="propiedades" element={<PropiedadesPage />} />
         <Route path="nueva-propiedad" element={<NuevaPropiedad />} />
+        <Route path="propiedades/editar/:id" element={<EditarPropiedad />} />
         <Route path="propiedades/asignar-propietario/:id" element={<AsignarPropietario />} />
         <Route path="inquilinos" element={<InquilinosPage />} />
         <Route path="nuevo-inquilino" element={<NuevoInquilino />} />
@@ -165,6 +168,7 @@ function AppRoutes() {
         <Route path="nuevo-propietario" element={<NuevoPropietario />} />
         <Route path="prospectos" element={<ProspectosPage />} />
         <Route path="nuevo-prospecto" element={<NuevoProspecto />} />
+        <Route path="editar-prospecto/:id" element={<EditarProspecto />} />
         <Route path="contratos" element={<ContratosPage />} />
         <Route path="contratos/crear" element={<CrearContratoPage />} />
         <Route path="nuevo-contrato-form" element={<NuevoContratoForm />} />

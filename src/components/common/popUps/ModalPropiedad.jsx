@@ -120,6 +120,12 @@ const ModalPropiedad = ({ open, onClose, propiedad = {} }) => {
     partido,
     provincia,
     disponibilidad,
+    precio,
+    cantidadAmbientes,
+    cochera,
+    patio,
+    jardin,
+    pileta,
   } = propiedad;
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth key={open ? 'open' : 'closed'}
@@ -226,6 +232,25 @@ const ModalPropiedad = ({ open, onClose, propiedad = {} }) => {
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>Inventario</Typography>
             <Typography sx={{textAlign:"justify"}}>{propiedad.inventario? propiedad.inventario : "sin inventario"}</Typography>
           </Grid2>
+
+          <Grid2 item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>Precio</Typography>
+            <Typography>{precio ? `$${precio}` : 'Sin precio'}</Typography>
+          </Grid2>
+
+          <Grid2 item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>Ambientes</Typography>
+            <Typography>{cantidadAmbientes ?? '—'}</Typography>
+          </Grid2>
+
+          <Grid2 item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>Amenities</Typography>
+            <Typography>
+              {[cochera && 'Cochera', patio && 'Patio', jardin && 'Jardín', pileta && 'Pileta']
+                .filter(Boolean)
+                .join(', ') || 'Sin amenities'}
+            </Typography>
+          </Grid2>
     
           <Grid2 item xs={12} sm={6}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>Disponibilidad</Typography>
@@ -239,6 +264,14 @@ const ModalPropiedad = ({ open, onClose, propiedad = {} }) => {
    
         </Grid2>
       </DialogContent>
+      <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+        <Button variant="outlined" onClick={onClose}>
+          Cerrar
+        </Button>
+        <Button variant="contained" onClick={() => navigate(`/propiedades/editar/${propiedad.id}`)}>
+          Editar propiedad
+        </Button>
+      </DialogActions>
   
     </Dialog>
   );
