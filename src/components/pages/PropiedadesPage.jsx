@@ -27,7 +27,13 @@ import {
   Fab,
   Button,
   CardMedia,
-  Pagination
+  Pagination,
+  Collapse,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Avatar
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
@@ -48,6 +54,7 @@ import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import "../styles/garantesPage.css";
 import PropertiesTour from '../common/tour/PropertiesTour';
 import http from '../api/http';
+import { PropiedadesApi } from '../api/propiedades';
 import { showSuccess, showError, showWarning } from '../alertas/showAlert';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -108,6 +115,10 @@ const PropiedadesPage = () => {
   const [propiedades, setPropiedades] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
+  const [prospectosCompatibles, setProspectosCompatibles] = useState({});
+  const [prospectosLoading, setProspectosLoading] = useState({});
+  const [prospectosError, setProspectosError] = useState({});
+  const [propiedadProspectosActiva, setPropiedadProspectosActiva] = useState(null);
   const [user, setUser] = useState({
     name: '',
     authorities: '',
@@ -237,6 +248,33 @@ const PropiedadesPage = () => {
   const totalPages = useMemo(() => {
     return Math.ceil(propiedadesFiltradas.length / itemsPerPage);
   }, [propiedadesFiltradas, itemsPerPage]);
+
+  const handleBuscarProspectos = async (event, propiedadId) => {
+    event.stopPropagation();
+    setPropiedadProspectosActiva(propiedadId);
+    setProspectosLoading((prev) => ({ ...prev, [propiedadId]: true }));
+    setProspectosError((prev) => ({ ...prev, [propiedadId]: null }));
+    try {
+      const response = await PropiedadesApi.listarProspectosCompatibles(propiedadId);
+      const data = Array.isArray(response?.data) ? response.data : response?.data?.data;
+      setProspectosCompatibles((prev) => ({
+        ...prev,
+        [propiedadId]: Array.isArray(data) ? data : []
+      }));
+    } catch (err) {
+      setProspectosError((prev) => ({
+        ...prev,
+        [propiedadId]: err?.message || 'Error al cargar prospectos compatibles.'
+      }));
+    } finally {
+      setProspectosLoading((prev) => ({ ...prev, [propiedadId]: false }));
+    }
+  };
+
+  const handleOcultarProspectos = (event, propiedadId) => {
+    event.stopPropagation();
+    setPropiedadProspectosActiva((prev) => (prev === propiedadId ? null : prev));
+  };
 
   // Manejar el cambio de página
   const goPrevPage = () => {
@@ -708,201 +746,278 @@ useEffect(() => {
                         ml: { xs: 0, sm: -2 }
                       }}
                     >
-                      {propiedadesPaginadas.map((propiedad, index) => (
-  <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`} sx={{ display: 'flex', justifyContent: 'center' }}>  
-    <Card
-      data-tour={index === 0 ? 'propiedades-card' : undefined}
-      sx={{
-        mb: 2,
-        width: { xs: '19rem', sm: '20rem' },
-        height: {sm:"26rem"},
-        borderRadius: 3,
-        overflow: 'hidden',
-        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-        boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
-        },
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        cursor: 'pointer',
-      }}
-      onClick={() => {
-        setSelectedPropiedad(propiedad);
-        setModalOpen(true);
-      }}
-    >
-      {/* Barra de estado */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          width: '8px',
-          height: '100%',
-          bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
-        }}
-      />
-      {/* Imagen principal */}
-      <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        {/* Botón eliminar propiedad */}
-        <Tooltip title="Eliminar propiedad">
-          <span>
-            <IconButton
-              data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
-              size="small"
-              sx={{
-                position: 'absolute',
-                top: 8,
-                left: 8,
-                bgcolor: 'rgba(255,255,255,0.7)',
-                boxShadow: 1,
-                zIndex: 2,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                eliminarPropiedad(propiedad.id);
-              }}
-            >
-              <DeleteForeverIcon color="error" fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
+                      {propiedadesPaginadas.map((propiedad, index) => {
+                        const isCompact = propiedadProspectosActiva === propiedad?.id;
+                        const prospectos = prospectosCompatibles[propiedad?.id] || [];
+                        const isLoadingProspectos = prospectosLoading[propiedad?.id];
+                        const errorProspectos = prospectosError[propiedad?.id];
+                        return (
+                          <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`} sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ width: { xs: '19rem', sm: '20rem' } }}>
+                              <Card
+                                data-tour={index === 0 ? 'propiedades-card' : undefined}
+                                sx={{
+                                  mb: 1,
+                                  width: { xs: '19rem', sm: '20rem' },
+                                  height: isCompact ? { sm: '14.5rem' } : { sm: '26rem' },
+                                  borderRadius: 3,
+                                  overflow: 'hidden',
+                                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                                  boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
+                                  transition: 'transform 0.2s, box-shadow 0.2s, height 0.3s ease',
+                                  '&:hover': {
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
+                                  },
+                                  position: 'relative',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  cursor: 'pointer',
+                                }}
+                                onClick={() => {
+                                  setSelectedPropiedad(propiedad);
+                                  setModalOpen(true);
+                                }}
+                              >
+                                {/* Barra de estado */}
+                                <Box
+                                  sx={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    width: '8px',
+                                    height: '100%',
+                                    bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
+                                  }}
+                                />
+                                {/* Imagen principal */}
+                                <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                  {/* Botón eliminar propiedad */}
+                                  <Tooltip title="Eliminar propiedad">
+                                    <span>
+                                      <IconButton
+                                        data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
+                                        size="small"
+                                        sx={{
+                                          position: 'absolute',
+                                          top: 8,
+                                          left: 8,
+                                          bgcolor: 'rgba(255,255,255,0.7)',
+                                          boxShadow: 1,
+                                          zIndex: 2,
+                                          '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          eliminarPropiedad(propiedad.id);
+                                        }}
+                                      >
+                                        <DeleteForeverIcon color="error" fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
 
-        {/* Botón agregar imagen */}
-        <Tooltip title="Agregar imagen">
-          <span>
-            <IconButton
-              size="small"
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                bgcolor: 'rgba(255,255,255,0.7)',
-                boxShadow: 1,
-                zIndex: 2,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddImageClick(propiedad.id);
-              }}
-              disabled={uploadingId === propiedad.id}
-            >
-              <AddPhotoAlternateIcon color="primary" fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
+                                  {/* Botón agregar imagen */}
+                                  <Tooltip title="Agregar imagen">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        sx={{
+                                          position: 'absolute',
+                                          top: 8,
+                                          right: 8,
+                                          bgcolor: 'rgba(255,255,255,0.7)',
+                                          boxShadow: 1,
+                                          zIndex: 2,
+                                          '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAddImageClick(propiedad.id);
+                                        }}
+                                        disabled={uploadingId === propiedad.id}
+                                      >
+                                        <AddPhotoAlternateIcon color="primary" fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
 
-        {/* Botón compartir propiedad */}
-        <Tooltip title="Compartir propiedad">
-          <span>
-            <IconButton
-              size="small"
-              sx={{
-                position: 'absolute',
-                bottom: 8,
-                right: 8,
-                bgcolor: 'rgba(255,255,255,0.7)',
-                boxShadow: 1,
-                zIndex: 2,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSharePropiedad(propiedad);
-              }}
-            >
-              <ShareIcon color="success" fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        {/* Input file oculto global */}
-        {uploadingId === propiedad.id && (
-          <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-            <CircularProgress size={32} />
-          </Box>
-        )}
-        {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
-          <img
-            src={propiedad.imagenes[0].imageUrl}
-            alt={propiedad.direccion}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <Box sx={{ 
-            width: '100%', 
-            height: '100%', 
-            display: 'flex', 
-            flexDirection: 'column',
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            bgcolor: '#e5e7eb',
-            color: '#6b7280'
-          }}>
-            <HomeIcon sx={{ fontSize: 48, mb: 1, color: '#9ca3af' }} />
-            <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
-              Sin imagen
-            </Typography>
-          </Box>
-        )}
-      </Box>
-      {/* Header con icono y tipo */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
-        <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
-        <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-          {propiedad.tipoPropiedad || propiedad.tipo}
-        </Typography>
-        <Chip
-          icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
-          label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
-          color={propiedad.disponibilidad ? 'success' : 'warning'}
-          size="small"
-          sx={{ fontWeight: 500, ml: 2 }}
-        />
-      </Box>
-      <Divider sx={{ my: 1.5 }} />
-      {/* Info organizada con iconos */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <HomeIcon fontSize="small" />
-          {propiedad.direccion}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <LocationOnIcon fontSize="small" />
-          {propiedad.localidad}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <MapIcon fontSize="small" />
-          {propiedad.partido}, {propiedad.provincia}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <PersonIcon fontSize="small" />
-          {propiedad.usuarioDtoSalida
-            ? `${propiedad.usuarioDtoSalida.username}`
-            : 'No asignado'}
-        </Typography>
-       
-      </Box>
-    </Card>
-  </Grid2>
-))}
+                                  {/* Botón compartir propiedad */}
+                                  <Tooltip title="Compartir propiedad">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        sx={{
+                                          position: 'absolute',
+                                          bottom: 8,
+                                          right: 8,
+                                          bgcolor: 'rgba(255,255,255,0.7)',
+                                          boxShadow: 1,
+                                          zIndex: 2,
+                                          '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSharePropiedad(propiedad);
+                                        }}
+                                      >
+                                        <ShareIcon color="success" fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                  {/* Input file oculto global */}
+                                  {uploadingId === propiedad.id && (
+                                    <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+                                      <CircularProgress size={32} />
+                                    </Box>
+                                  )}
+                                  {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
+                                    <img
+                                      src={propiedad.imagenes[0].imageUrl}
+                                      alt={propiedad.direccion}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                  ) : (
+                                    <Box sx={{
+                                      width: '100%',
+                                      height: '100%',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      bgcolor: '#e5e7eb',
+                                      color: '#6b7280'
+                                    }}>
+                                      <HomeIcon sx={{ fontSize: 48, mb: 1, color: '#9ca3af' }} />
+                                      <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
+                                        Sin imagen
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                                {/* Dirección visible en estado compacto */}
+                                <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                  >
+                                    <HomeIcon fontSize="small" />
+                                    {propiedad.direccion}
+                                  </Typography>
+                                </Box>
+                                <Collapse in={!isCompact} timeout="auto" unmountOnExit>
+                                  {/* Header con icono y tipo */}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, ml: 2 }}>
+                                    <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
+                                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                                      {propiedad.tipoPropiedad || propiedad.tipo}
+                                    </Typography>
+                                    <Chip
+                                      icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
+                                      label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
+                                      color={propiedad.disponibilidad ? 'success' : 'warning'}
+                                      size="small"
+                                      sx={{ fontWeight: 500, ml: 2 }}
+                                    />
+                                  </Box>
+                                  <Divider sx={{ my: 1.5 }} />
+                                  {/* Info organizada con iconos */}
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
+                                    <Typography
+                                      variant="body2"
+                                      sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                    >
+                                      <LocationOnIcon fontSize="small" />
+                                      {propiedad.localidad}
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                    >
+                                      <MapIcon fontSize="small" />
+                                      {propiedad.partido}, {propiedad.provincia}
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                    >
+                                      <PersonIcon fontSize="small" />
+                                      {propiedad.usuarioDtoSalida
+                                        ? `${propiedad.usuarioDtoSalida.username}`
+                                        : 'No asignado'}
+                                    </Typography>
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      onClick={(e) => handleBuscarProspectos(e, propiedad.id)}
+                                      sx={{ alignSelf: 'flex-start', mt: 1 }}
+                                    >
+                                      Buscar prospectos compatibles
+                                    </Button>
+                                  </Box>
+                                </Collapse>
+                              </Card>
+                              <Collapse in={isCompact} timeout="auto" unmountOnExit>
+                                <Box sx={{
+                                  mt: 1,
+                                  p: 2,
+                                  borderRadius: 2,
+                                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'white',
+                                  boxShadow: theme.palette.mode === 'dark' ? '0 4px 16px rgba(0,0,0,0.2)' : '0 6px 12px rgba(0,0,0,0.08)'
+                                }}>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                      Prospectos compatibles
+                                    </Typography>
+                                    <Button size="small" onClick={(e) => handleOcultarProspectos(e, propiedad.id)}>
+                                      Ocultar
+                                    </Button>
+                                  </Box>
+                                  {isLoadingProspectos ? (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                                      <CircularProgress size={24} />
+                                    </Box>
+                                  ) : errorProspectos ? (
+                                    <Typography variant="body2" color="error">
+                                      {errorProspectos}
+                                    </Typography>
+                                  ) : prospectos.length > 0 ? (
+                                    <List dense>
+                                      {prospectos.map((prospecto) => {
+                                        const nombreCompleto = `${prospecto?.nombre || ''} ${prospecto?.apellido || ''}`.trim() || 'Sin nombre';
+                                        const detalles = [
+                                          prospecto?.email,
+                                          prospecto?.telefono,
+                                          prospecto?.zonaPreferencia
+                                            ? `Zona: ${prospecto.zonaPreferencia}`
+                                            : null
+                                        ].filter(Boolean).join(' · ');
+                                        return (
+                                          <ListItem key={prospecto?.id || nombreCompleto} alignItems="flex-start" sx={{ px: 0 }}>
+                                            <ListItemAvatar>
+                                              <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                                <PersonIcon fontSize="small" />
+                                              </Avatar>
+                                            </ListItemAvatar>
+                                            <ListItemText
+                                              primary={nombreCompleto}
+                                              secondary={detalles || 'Sin datos de contacto'}
+                                            />
+                                          </ListItem>
+                                        );
+                                      })}
+                                    </List>
+                                  ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                      No hay prospectos compatibles.
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </Collapse>
+                            </Box>
+                          </Grid2>
+                        );
+                      })}
                     </Grid2>
                   </Box>
                 ) : (
@@ -921,177 +1036,253 @@ useEffect(() => {
                       gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
                       gap: { xs: 2, md: 1 },
                     }}>
-                      {propiedadesPaginadas.map((propiedad, index) => (
-                        <Box key={propiedad?.id || `fallback-${Math.random()}` } sx={{ width: {xs:"100%",sm:"100%", md:"100%"}}}>
-                          <Card
-                            data-tour={index === 0 ? 'propiedades-card' : undefined}
-                            sx={{
-                              mb: 2,
-                              width: {xs:"100%", sm:"100%", md:"100%"},
-                              height: '23rem',
-                              borderRadius: 3,
-                              overflow: 'hidden',
-                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-                              boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-                              transition: 'transform 0.2s, box-shadow 0.2s',
-                              '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
-                              },
-                              position: 'relative',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              cursor: 'pointer',
-                            }}
-                            onClick={() => {
-                              setSelectedPropiedad(propiedad);
-                              setModalOpen(true);
-                            }}
-                          >
-                            {/* Barra de estado */}
-                            <Box
+                      {propiedadesPaginadas.map((propiedad, index) => {
+                        const isCompact = propiedadProspectosActiva === propiedad?.id;
+                        const prospectos = prospectosCompatibles[propiedad?.id] || [];
+                        const isLoadingProspectos = prospectosLoading[propiedad?.id];
+                        const errorProspectos = prospectosError[propiedad?.id];
+                        return (
+                          <Box key={propiedad?.id || `fallback-${Math.random()}` } sx={{ width: {xs:"100%",sm:"100%", md:"100%"}}}>
+                            <Card
+                              data-tour={index === 0 ? 'propiedades-card' : undefined}
                               sx={{
-                                position: 'absolute',
-                                left: 0,
-                                top: 0,
-                                width: '8px',
-                                height: '100%',
-                                bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
+                                mb: 1,
+                                width: {xs:"100%", sm:"100%", md:"100%"},
+                                height: isCompact ? '14.5rem' : '23rem',
+                                borderRadius: 3,
+                                overflow: 'hidden',
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                                boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
+                                transition: 'transform 0.2s, box-shadow 0.2s, height 0.3s ease',
+                                '&:hover': {
+                                  transform: 'translateY(-4px)',
+                                  boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
+                                },
+                                position: 'relative',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                cursor: 'pointer',
                               }}
-                            />
-                            {/* Imagen principal */}
-                            <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                              {/* Botón eliminar propiedad */}
-                              <Tooltip title="Eliminar propiedad">
-                                <span>
-                                  <IconButton
-                                    data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
-                                    size="small"
-                                    sx={{
-                                      position: 'absolute',
-                                      top: 8,
-                                      left: 8,
-                                      bgcolor: 'rgba(255,255,255,0.7)',
-                                      boxShadow: 1,
-                                      zIndex: 2,
-                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      eliminarPropiedad(propiedad.id);
-                                    }}
-                                  >
-                                    <DeleteForeverIcon color="error" fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-
-                              {/* Botón agregar imagen */}
-                              <Tooltip title="Agregar imagen">
-                                <span>
-                                  <IconButton
-                                    data-tour={index === 0 ? 'propiedades-card-addimg' : undefined}
-                                    size="small"
-                                    sx={{
-                                      position: 'absolute',
-                                      top: 8,
-                                      right: 8,
-                                      bgcolor: 'rgba(255,255,255,0.7)',
-                                      boxShadow: 1,
-                                      zIndex: 2,
-                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleAddImageClick(propiedad.id);
-                                    }}
-                                    disabled={uploadingId === propiedad.id}
-                                  >
-                                    <AddPhotoAlternateIcon color="primary" fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                              {/* Input file oculto global */}
-                              {uploadingId === propiedad.id && (
-                                <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-                                  <CircularProgress size={32} />
-                                </Box>
-                              )}
-                              {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
-                                <img
-                                  src={propiedad.imagenes[0].imageUrl}
-                                  alt={propiedad.direccion}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              ) : (
-                                <Box sx={{ 
-                                  width: '100%', 
-                                  height: '100%', 
-                                  display: 'flex', 
-                                  flexDirection: 'column',
-                                  alignItems: 'center', 
-                                  justifyContent: 'center', 
-                                  bgcolor: '#e5e7eb',
-                                  color: '#6b7280'
-                                }}>
-                                  <HomeIcon sx={{ fontSize: 48, mb: 1, color: '#9ca3af' }} />
-                                  <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
-                                    Sin imagen
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Box>
-                            {/* Header con icono y tipo */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
-                              <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
-                              <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem',md:".8rem" } }}>
-                                {propiedad.tipoPropiedad || propiedad.tipo}
-                              </Typography>
-                              <Chip
-                                icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
-                                label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
-                                color={propiedad.disponibilidad ? 'success' : 'warning'}
-                                size="small"
-                                sx={{ fontWeight: 500, ml: 2 }}
+                              onClick={() => {
+                                setSelectedPropiedad(propiedad);
+                                setModalOpen(true);
+                              }}
+                            >
+                              {/* Barra de estado */}
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  top: 0,
+                                  width: '8px',
+                                  height: '100%',
+                                  bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
+                                }}
                               />
-                            </Box>
-                            <Divider sx={{ my: 1.5 }} />
-                            {/* Info organizada con iconos */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
-                              <Typography
-                                variant="body2"
-                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-                              >
-                                <HomeIcon fontSize="small" />
-                                {propiedad.direccion}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-                              >
-                                <LocationOnIcon fontSize="small" />
-                                {propiedad.localidad}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-                              >
-                                <MapIcon fontSize="small" />
-                                {propiedad.partido}, {propiedad.provincia}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-                              >
-                                <PersonIcon fontSize="small" />
-                                {propiedad.usuarioDtoSalida
-                                  ? `${propiedad.usuarioDtoSalida.username}`
-                                  : 'No asignado'}
-                              </Typography>
-                            </Box>
-                          </Card>
-                        </Box>
-                      ))}
+                              {/* Imagen principal */}
+                              <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                {/* Botón eliminar propiedad */}
+                                <Tooltip title="Eliminar propiedad">
+                                  <span>
+                                    <IconButton
+                                      data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        left: 8,
+                                        bgcolor: 'rgba(255,255,255,0.7)',
+                                        boxShadow: 1,
+                                        zIndex: 2,
+                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        eliminarPropiedad(propiedad.id);
+                                      }}
+                                    >
+                                      <DeleteForeverIcon color="error" fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+
+                                {/* Botón agregar imagen */}
+                                <Tooltip title="Agregar imagen">
+                                  <span>
+                                    <IconButton
+                                      data-tour={index === 0 ? 'propiedades-card-addimg' : undefined}
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        right: 8,
+                                        bgcolor: 'rgba(255,255,255,0.7)',
+                                        boxShadow: 1,
+                                        zIndex: 2,
+                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddImageClick(propiedad.id);
+                                      }}
+                                      disabled={uploadingId === propiedad.id}
+                                    >
+                                      <AddPhotoAlternateIcon color="primary" fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                                {/* Input file oculto global */}
+                                {uploadingId === propiedad.id && (
+                                  <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+                                    <CircularProgress size={32} />
+                                  </Box>
+                                )}
+                                {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
+                                  <img
+                                    src={propiedad.imagenes[0].imageUrl}
+                                    alt={propiedad.direccion}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  />
+                                ) : (
+                                  <Box sx={{ 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    display: 'flex', 
+                                    flexDirection: 'column',
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    bgcolor: '#e5e7eb',
+                                    color: '#6b7280'
+                                  }}>
+                                    <HomeIcon sx={{ fontSize: 48, mb: 1, color: '#9ca3af' }} />
+                                    <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
+                                      Sin imagen
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                              {/* Dirección visible en estado compacto */}
+                              <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+                                <Typography
+                                  variant="body2"
+                                  sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                >
+                                  <HomeIcon fontSize="small" />
+                                  {propiedad.direccion}
+                                </Typography>
+                              </Box>
+                              <Collapse in={!isCompact} timeout="auto" unmountOnExit>
+                                {/* Header con icono y tipo */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, ml: 2 }}>
+                                  <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
+                                  <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem',md:".8rem" } }}>
+                                    {propiedad.tipoPropiedad || propiedad.tipo}
+                                  </Typography>
+                                  <Chip
+                                    icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
+                                    label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
+                                    color={propiedad.disponibilidad ? 'success' : 'warning'}
+                                    size="small"
+                                    sx={{ fontWeight: 500, ml: 2 }}
+                                  />
+                                </Box>
+                                <Divider sx={{ my: 1.5 }} />
+                                {/* Info organizada con iconos */}
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                  >
+                                    <LocationOnIcon fontSize="small" />
+                                    {propiedad.localidad}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                  >
+                                    <MapIcon fontSize="small" />
+                                    {propiedad.partido}, {propiedad.provincia}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                  >
+                                    <PersonIcon fontSize="small" />
+                                    {propiedad.usuarioDtoSalida
+                                      ? `${propiedad.usuarioDtoSalida.username}`
+                                      : 'No asignado'}
+                                  </Typography>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={(e) => handleBuscarProspectos(e, propiedad.id)}
+                                    sx={{ alignSelf: 'flex-start', mt: 1 }}
+                                  >
+                                    Buscar prospectos compatibles
+                                  </Button>
+                                </Box>
+                              </Collapse>
+                            </Card>
+                            <Collapse in={isCompact} timeout="auto" unmountOnExit>
+                              <Box sx={{
+                                mt: 1,
+                                p: 2,
+                                borderRadius: 2,
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'white',
+                                boxShadow: theme.palette.mode === 'dark' ? '0 4px 16px rgba(0,0,0,0.2)' : '0 6px 12px rgba(0,0,0,0.08)'
+                              }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                    Prospectos compatibles
+                                  </Typography>
+                                  <Button size="small" onClick={(e) => handleOcultarProspectos(e, propiedad.id)}>
+                                    Ocultar
+                                  </Button>
+                                </Box>
+                                {isLoadingProspectos ? (
+                                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                                    <CircularProgress size={24} />
+                                  </Box>
+                                ) : errorProspectos ? (
+                                  <Typography variant="body2" color="error">
+                                    {errorProspectos}
+                                  </Typography>
+                                ) : prospectos.length > 0 ? (
+                                  <List dense>
+                                    {prospectos.map((prospecto) => {
+                                      const nombreCompleto = `${prospecto?.nombre || ''} ${prospecto?.apellido || ''}`.trim() || 'Sin nombre';
+                                      const detalles = [
+                                        prospecto?.email,
+                                        prospecto?.telefono,
+                                        prospecto?.zonaPreferencia
+                                          ? `Zona: ${prospecto.zonaPreferencia}`
+                                          : null
+                                      ].filter(Boolean).join(' · ');
+                                      return (
+                                        <ListItem key={prospecto?.id || nombreCompleto} alignItems="flex-start" sx={{ px: 0 }}>
+                                          <ListItemAvatar>
+                                            <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                              <PersonIcon fontSize="small" />
+                                            </Avatar>
+                                          </ListItemAvatar>
+                                          <ListItemText
+                                            primary={nombreCompleto}
+                                            secondary={detalles || 'Sin datos de contacto'}
+                                          />
+                                        </ListItem>
+                                      );
+                                    })}
+                                  </List>
+                                ) : (
+                                  <Typography variant="body2" color="text.secondary">
+                                    No hay prospectos compatibles.
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Collapse>
+                          </Box>
+                        );
+                      })}
                     </Box>
                 </TableContainer>
                 )}
