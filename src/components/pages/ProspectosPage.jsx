@@ -228,12 +228,8 @@ const ProspectosPage = () => {
                         {`${prospecto.nombre} ${prospecto.apellido}`.trim() || 'Sin nombre'}
                       </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label={prospecto.zonaPreferencia || 'Sin zona'}
-                        color="primary"
-                        size="small"
-                      />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      
                       <IconButton size="small" onClick={(e) => handleMenuClick(e, prospecto.id)}>
                         <MoreVertIcon />
                       </IconButton>
@@ -259,7 +255,24 @@ const ProspectosPage = () => {
                     )}
                     {prospecto.zonaPreferencia && (
                       <Typography variant="body2" color="text.secondary">
-                        <strong>Zona:</strong> {prospecto.zonaPreferencia}
+                        <strong>Zona:</strong>{' '}
+                        {prospecto.zonaPreferencia && Array.isArray(prospecto.zonaPreferencia) && prospecto.zonaPreferencia.length > 0 ? (
+                        prospecto.zonaPreferencia.map((zona, index) => (
+                          <Chip
+                            key={index}
+                            label={zona}
+                            color="primary"
+                            size="small"
+                            sx={{ margin: '2px' }}
+                          />
+                        ))
+                      ) : (
+                        <Chip
+                          label={prospecto.zonaPreferencia || 'Sin zona'}
+                          color="primary"
+                          size="small"
+                        />
+                      )}
                       </Typography>
                     )}
                   </Box>
@@ -343,7 +356,23 @@ const ProspectosPage = () => {
                     </TableCell>
                     <TableCell sx={{ width: "10rem" }}>{p.email || '—'}</TableCell>
                     <TableCell sx={{ width: "8rem" }}>{p.telefono || '—'}</TableCell>
-                    <TableCell sx={{ width: "8rem" }}>{p.zonaPreferencia || '—'}</TableCell>
+                    <TableCell sx={{ width: "12rem" }}>
+                      {p.zonaPreferencia && Array.isArray(p.zonaPreferencia) && p.zonaPreferencia.length > 0 ? (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '2px' }}>
+                          {p.zonaPreferencia.map((zona, index) => (
+                            <Chip
+                              key={index}
+                              label={zona}
+                              color="primary"
+                              size="small"
+                              sx={{ margin: '1px', height: '20px' }}
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        p.zonaPreferencia || '—'
+                      )}
+                    </TableCell>
                     <TableCell sx={{ width: "10rem" }}>
                       {p.rangoPrecioMin || p.rangoPrecioMax
                         ? `${p.rangoPrecioMin || 0} - ${p.rangoPrecioMax || '∞'}`

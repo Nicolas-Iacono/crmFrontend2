@@ -55,6 +55,7 @@
     "react-iframe": "^1.8.5",
     "react-joyride": "^2.9.3",
     "react-leaflet": "^4.2.1",
+    "react-number-format": "^5.4.4",
     "react-qr-code": "^2.0.18",
     "react-router-dom": "^6.26.2",
     "react-swipeable": "^7.0.2",

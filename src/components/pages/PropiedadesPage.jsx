@@ -27,10 +27,18 @@ import {
   Fab,
   Button,
   CardMedia,
-  Pagination
+  Pagination,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import EditIcon from '@mui/icons-material/Edit';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
@@ -41,10 +49,12 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import ShareIcon from '@mui/icons-material/Share';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
+import { NumericFormat } from 'react-number-format';
 import "../styles/garantesPage.css";
 import PropertiesTour from '../common/tour/PropertiesTour';
 import http from '../api/http';
@@ -108,6 +118,14 @@ const PropiedadesPage = () => {
   const [propiedades, setPropiedades] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
+  
+  // Estados para filtros
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroBarrio, setFiltroBarrio] = useState('');
+  const [filtroPrecioMin, setFiltroPrecioMin] = useState('');
+  const [filtroPrecioMax, setFiltroPrecioMax] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  
   const [user, setUser] = useState({
     name: '',
     authorities: '',
@@ -200,14 +218,14 @@ const PropiedadesPage = () => {
     }
 
     // Primero, filtra por término de búsqueda para reducir el número de iteraciones
-    const filteredBySearch = propiedades.filter(propiedad => {
+    let filtered = propiedades.filter(propiedad => {
       // Asegurarse de que la propiedad no sea nula
       if (!propiedad) return false;
 
       if (!searchTerm) return true;
 
       const searchTermLower = searchTerm.toLowerCase();
-      const { direccion = '', tipoPropiedad = '', localidad = '' } = propiedad;
+      const { direccion = '', tipo = '', localidad = '' } = propiedad;
       
       // Usar `propietarioSalidaDto` que es el que se usa en el modal
       const propietarioNombre = propiedad.propietarioSalidaDto
@@ -216,15 +234,59 @@ const PropiedadesPage = () => {
 
       return (
         direccion.toLowerCase().includes(searchTermLower) ||
-        tipoPropiedad.toLowerCase().includes(searchTermLower) ||
+        tipo.toLowerCase().includes(searchTermLower) ||
         localidad.toLowerCase().includes(searchTermLower) ||
         propietarioNombre.toLowerCase().includes(searchTermLower)
       );
     });
 
-    return filteredBySearch;
+    // Aplicar filtros adicionales
+    filtered = filtered.filter(propiedad => {
+      // Filtro por estado (libre/alquilado)
+      if (filtroEstado) {
+        const estado = propiedad.disponibilidad ? 'libre' : 'alquilado';
+        if (estado !== filtroEstado) return false;
+      }
 
-  }, [propiedades, searchTerm, user.name, user.authorities]);
+      // Filtro por barrio (localidad)
+      if (filtroBarrio) {
+        if (!propiedad.localidad || !propiedad.localidad.toLowerCase().includes(filtroBarrio.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Filtro por precio mínimo
+      if (filtroPrecioMin && propiedad.precio) {
+        if (propiedad.precio < parseFloat(filtroPrecioMin)) return false;
+      }
+
+      // Filtro por precio máximo
+      if (filtroPrecioMax && propiedad.precio) {
+        if (propiedad.precio > parseFloat(filtroPrecioMax)) return false;
+      }
+
+      return true;
+    });
+
+    return filtered;
+
+  }, [propiedades, searchTerm, filtroEstado, filtroBarrio, filtroPrecioMin, filtroPrecioMax]);
+
+  // Función para limpiar todos los filtros
+  const limpiarFiltros = () => {
+    setFiltroEstado('');
+    setFiltroBarrio('');
+    setFiltroPrecioMin('');
+    setFiltroPrecioMax('');
+    setPage(1); // Resetear a la primera página
+  };
+
+  // Obtener lista única de barrios para el filtro
+  const barriosUnicos = useMemo(() => {
+    if (!propiedades || !Array.isArray(propiedades)) return [];
+    const barrios = [...new Set(propiedades.map(p => p.localidad).filter(Boolean))];
+    return barrios.sort();
+  }, [propiedades]);
 
   // Calcular propiedades paginadas
   const propiedadesPaginadas = useMemo(() => {
@@ -237,6 +299,11 @@ const PropiedadesPage = () => {
   const totalPages = useMemo(() => {
     return Math.ceil(propiedadesFiltradas.length / itemsPerPage);
   }, [propiedadesFiltradas, itemsPerPage]);
+
+  // Resetear página cuando cambian los filtros
+  useEffect(() => {
+    setPage(1);
+  }, [filtroEstado, filtroBarrio, filtroPrecioMin, filtroPrecioMax]);
 
   // Manejar el cambio de página
   const goPrevPage = () => {
@@ -501,7 +568,7 @@ useEffect(() => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ 
-            mb: 3,
+            mb: 2,
             width: { xs: '100%', sm: '100%', md:"80%" },
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
             borderRadius: 6, '& fieldset': { borderRadius: 6 },
@@ -520,6 +587,143 @@ useEffect(() => {
             ),
           }}
         />
+
+        {/* Filtros avanzados */}
+        <Accordion 
+          expanded={showFilters} 
+          onChange={() => setShowFilters(!showFilters)}
+          sx={{ 
+            mb: 3, 
+            borderRadius:4,
+            width: { xs: '100%', sm: '100%', md:"80%" },
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+            '&:before': { display: 'none' }
+          }}
+        >
+          <AccordionSummary 
+            expandIcon={<ExpandMoreIcon />}
+            sx={{ 
+              borderRadius: 2,
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              Filtros avanzados
+            </Typography>
+            {(filtroEstado || filtroBarrio || filtroPrecioMin || filtroPrecioMax) && (
+              <Chip 
+                label="Activos" 
+                color="primary" 
+                size="small" 
+                sx={{ ml: 2 }}
+              />
+            )}
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid2 container spacing={2}>
+              <Grid2 item xs={12} sm={6} md={3}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Estado</InputLabel>
+                  <Select
+                    value={filtroEstado}
+                    label="Estado"
+                    onChange={(e) => setFiltroEstado(e.target.value)}
+                    sx={{borderRadius:"25px", width:{xs:"7rem", sm:"10rem"} }}
+                  >
+                    <MenuItem value="">Todos</MenuItem>
+                    <MenuItem value="libre">Libre</MenuItem>
+                    <MenuItem value="alquilado">Alquilado</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid2>
+              
+              <Grid2 item xs={12} sm={6} md={3}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Barrio</InputLabel>
+                  <Select
+                    value={filtroBarrio}
+                    label="Barrio"
+                    onChange={(e) => setFiltroBarrio(e.target.value)}
+                      sx={{borderRadius:"25px", width:{xs:"7rem", sm:"10rem"} }}
+                  >
+                    <MenuItem value="">Todos</MenuItem>
+                    {barriosUnicos.map((barrio) => (
+                      <MenuItem key={barrio} value={barrio}>
+                        {barrio}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid2>
+                 <Grid2 sx={{display:"flex",  gap:"1rem"}}>
+                    <Grid2 item xs={12} sm={6} md={3}>
+                      <NumericFormat
+                        size="small"
+                        label="Precio mínimo"
+                        type="text"
+                        value={filtroPrecioMin}
+                        onValueChange={(values) => {
+                          setFiltroPrecioMin(values.value);
+                        }}
+                        customInput={TextField}
+                        thousandSeparator="."
+                        decimalSeparator=","
+                        prefix="$"
+                        sx={{
+                          width: { xs: "9rem", sm: "13rem" },
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 4,
+                          },
+                        }}
+                      />
+                    </Grid2>
+              <Grid2 item xs={12} sm={6} md={3}>
+                <NumericFormat
+                  size="small"
+                  label="Precio máximo"
+                  type="text"
+                  value={filtroPrecioMax}
+                  onValueChange={(values) => {
+                    setFiltroPrecioMax(values.value);
+                  }}
+                  customInput={TextField}
+                  thousandSeparator="."
+                  decimalSeparator=","
+                  prefix="$"
+                  sx={{
+                    width: { xs: "9rem", sm: "13rem" },
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 4,
+                    },
+                  }}
+                />
+              </Grid2>
+                </Grid2>
+              
+              <Grid2 item xs={12} sx={{display:"flex", flexDirection:"column", gap:".5rem"}}>
+                <Button 
+                  variant="contained" 
+                  onClick={limpiarFiltros}
+                  sx={{ 
+                    mr: 2,
+                    borderRadius: "25px", 
+                    width: {xs: "10rem", sm: "13rem"},
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(27, 25, 95, 0.9)',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(175, 26, 26, 0.8)',
+                    }
+                  }}
+                >
+                  Limpiar filtros
+                </Button>
+                <Typography variant="body2" color="text.secondary" component="span" sx={{marginLeft:".4rem"}}>
+                  {propiedadesFiltradas.length} propiedades encontradas
+                </Typography>
+              </Grid2>
+            </Grid2>
+          </AccordionDetails>
+        </Accordion>
 
         {isLoading ? (
           <Box sx={{ width: '100%' }}>
@@ -773,6 +977,30 @@ useEffect(() => {
           </span>
         </Tooltip>
 
+        {/* Botón editar propiedad */}
+        <Tooltip title="Editar propiedad">
+          <span>
+            <IconButton
+              size="small"
+              sx={{
+                position: 'absolute',
+                top: 8,
+                left: 48,
+                bgcolor: 'rgba(255,255,255,0.7)',
+                boxShadow: 1,
+                zIndex: 2,
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/propiedades/editar/${propiedad.id}`);
+              }}
+            >
+              <EditIcon color="primary" fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+
         {/* Botón agregar imagen */}
         <Tooltip title="Agregar imagen">
           <span>
@@ -982,6 +1210,30 @@ useEffect(() => {
                                     }}
                                   >
                                     <DeleteForeverIcon color="error" fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+
+                              {/* Botón editar propiedad */}
+                              <Tooltip title="Editar propiedad">
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    sx={{
+                                      position: 'absolute',
+                                      top: 8,
+                                      left: 48,
+                                      bgcolor: 'rgba(255,255,255,0.7)',
+                                      boxShadow: 1,
+                                      zIndex: 2,
+                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/propiedades/editar/${propiedad.id}`);
+                                    }}
+                                  >
+                                    <EditIcon color="primary" fontSize="small" />
                                   </IconButton>
                                 </span>
                               </Tooltip>

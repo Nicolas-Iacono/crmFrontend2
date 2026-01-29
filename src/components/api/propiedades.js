@@ -50,7 +50,7 @@ export const PropiedadesApi =  {
   },
   buscarPropiedadPorId: async (propiedadId) => {
     try {
-      const response = await http.get(`${URL_PROPIEDADES}/${propiedadId}`);
+      const response = await http.get(`${URL_PROPIEDADES}/buscar/${propiedadId}`);
       return response.data;
     } catch (error) {
       console.error('Error al obtener propiedad:', error);

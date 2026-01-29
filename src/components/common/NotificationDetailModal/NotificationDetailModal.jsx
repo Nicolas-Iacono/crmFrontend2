@@ -58,7 +58,7 @@ const NotificationDetailModal = ({ open, onClose, notification }) => {
     if (result.isConfirmed) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/finalizar/${notification.contratoId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/contrato/finalizar/${notification.contratoId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

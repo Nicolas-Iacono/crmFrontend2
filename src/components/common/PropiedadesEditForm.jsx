@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Box, Grid2, Typography, InputAdornment, Switch, FormControlLabel, Divider } from '@mui/material';
+import { NumericFormat } from 'react-number-format';
 import { SchemaValidation } from '../validation/SchemaValidation';
 import { PropiedadesApi } from '../api/propiedades';
 import http from '../api/http';
@@ -9,6 +10,15 @@ import { useTheme } from '@mui/material/styles';
 import { showError, showSuccess } from '../alertas/showAlert';
 
 const PropiedadesEditForm = ({ propiedad, onCancel, onSuccess }) => {
+  // Si no hay propiedad, mostrar mensaje de carga
+  if (!propiedad) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <Typography>Cargando datos de la propiedad...</Typography>
+      </Box>
+    );
+  }
+  
   const theme = useTheme();
   const [propietarios, setPropietarios] = useState({ data: [] });
   const [searchTermPropietario, setSearchTermPropietario] = useState('');
@@ -48,8 +58,8 @@ const PropiedadesEditForm = ({ propiedad, onCancel, onSuccess }) => {
     partido: propiedad?.partido || '',
     provincia: propiedad?.provincia || '',
     disponibilidad: Boolean(propiedad?.disponibilidad),
-    precio: propiedad?.precio ?? '',
-    cantidadAmbientes: propiedad?.cantidadAmbientes ?? '',
+    precio: propiedad?.precio?.toString() || '',
+    cantidadAmbientes: propiedad?.cantidadAmbientes?.toString() || '',
     pileta: Boolean(propiedad?.pileta),
     cochera: Boolean(propiedad?.cochera),
     jardin: Boolean(propiedad?.jardin),
@@ -303,13 +313,18 @@ const PropiedadesEditForm = ({ propiedad, onCancel, onSuccess }) => {
 
               <Grid2 container spacing={2}>
                 <Grid2 xs={12} sm={6}>
-                  <TextField
+                  <NumericFormat
                     fullWidth
                     label="Precio"
                     name="precio"
-                    type="number"
+                    customInput={TextField}
+                    thousandSeparator="."
+                    decimalSeparator=","
+                    prefix="$"
                     value={values.precio}
-                    onChange={handleChange}
+                    onValueChange={(values) => {
+                      handleChange({ target: { name: 'precio', value: values.value } });
+                    }}
                     onBlur={handleBlur}
                     inputProps={{ min: 0, step: 1000 }}
                   />

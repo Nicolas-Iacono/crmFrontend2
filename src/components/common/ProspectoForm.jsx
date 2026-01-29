@@ -17,6 +17,8 @@ import {
   CircularProgress,
   Switch,
   FormControlLabel,
+  Chip,
+  Autocomplete,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -32,6 +34,7 @@ import GrassIcon from '@mui/icons-material/Grass';
 import PoolIcon from '@mui/icons-material/Pool';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import AddIcon from '@mui/icons-material/Add';
 import { showWarning } from '../alertas/showAlert';
 
 const zonas = [
@@ -56,11 +59,17 @@ const ProspectoForm = ({
   submitLabel,
   theme,
 }) => {
-  const [formData, setFormData] = useState(initialValues);
+  const [formData, setFormData] = useState({
+    ...initialValues,
+    zonaPreferencia: initialValues.zonaPreferencia || [],
+  });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    setFormData(initialValues);
+    setFormData({
+      ...initialValues,
+      zonaPreferencia: initialValues.zonaPreferencia || [],
+    });
   }, [initialValues]);
 
   const handleChange = (e) => {
@@ -76,6 +85,27 @@ const ProspectoForm = ({
         [name]: '',
       }));
     }
+  };
+
+  const handleZonaChange = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      zonaPreferencia: newValue,
+    }));
+    
+    if (errors.zonaPreferencia) {
+      setErrors((prev) => ({
+        ...prev,
+        zonaPreferencia: '',
+      }));
+    }
+  };
+
+  const handleDeleteZona = (zonaToDelete) => {
+    setFormData((prev) => ({
+      ...prev,
+      zonaPreferencia: prev.zonaPreferencia.filter((zona) => zona !== zonaToDelete),
+    }));
   };
 
   const validateForm = () => {
@@ -118,7 +148,7 @@ const ProspectoForm = ({
       rangoPrecioMin: formData.rangoPrecioMin ? parseFloat(formData.rangoPrecioMin) : null,
       rangoPrecioMax: formData.rangoPrecioMax ? parseFloat(formData.rangoPrecioMax) : null,
       cantidadPersonas: formData.cantidadPersonas ? parseInt(formData.cantidadPersonas, 10) : null,
-      zonaPreferencia: formData.zonaPreferencia.trim() || null,
+      zonaPreferencia: formData.zonaPreferencia && formData.zonaPreferencia.length > 0 ? formData.zonaPreferencia : [],
       cantidadAmbientes: formData.cantidadAmbientes ? parseInt(formData.cantidadAmbientes, 10) : null,
       cochera: Boolean(formData.cochera),
       patio: Boolean(formData.patio),
@@ -135,7 +165,7 @@ const ProspectoForm = ({
       sx={{
         minHeight: '100vh',
         bgcolor: 'background.default',
-        pt: { xs: 2, sm: 3 },
+        pt: { xs: 5, sm: 3 },
         pb: { xs: 8, sm: 4 },
         px: { xs: 2, sm: 3 },
       }}
@@ -276,21 +306,39 @@ const ProspectoForm = ({
               </Grid>
 
               <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel>Zona de Preferencia</InputLabel>
-                  <Select
-                    name="zonaPreferencia"
-                    value={formData.zonaPreferencia}
-                    onChange={handleChange}
-                    label="Zona de Preferencia"
-                  >
-                    {zonas.map((zona) => (
-                      <MenuItem key={zona} value={zona}>
-                        {zona}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+                  Zonas de Preferencia
+                </Typography>
+                <Autocomplete
+                  multiple
+                  freeSolo
+                  options={zonas}
+                  value={formData.zonaPreferencia}
+                  onChange={handleZonaChange}
+                  renderTags={(tagValue, getTagProps) =>
+                    tagValue.map((option, index) => (
+                      <Chip
+                        label={option}
+                        {...getTagProps({ index })}
+                        onDelete={() => handleDeleteZona(option)}
+                        color="primary"
+                        size="small"
+                        sx={{ margin: '4px' }}
+                      />
+                    ))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      label="Selecciona o escribe zonas"
+                      placeholder="Ej: CENTRO, NORTE, SUR..."
+                      helperText={errors.zonaPreferencia || "Puedes seleccionar de la lista o escribir zonas personalizadas"}
+                      error={!!errors.zonaPreferencia}
+                    />
+                  )}
+                  sx={{ mt: 1 }}
+                />
               </Grid>
 
               <Grid item xs={12} sm={6}>

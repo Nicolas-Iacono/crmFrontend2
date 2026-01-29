@@ -39,7 +39,7 @@ const NuevoProspecto = () => {
         rangoPrecioMin: '',
         rangoPrecioMax: '',
         cantidadPersonas: '',
-        zonaPreferencia: '',
+        zonaPreferencia: [],
         cantidadAmbientes: '',
         cochera: false,
         patio: false,
