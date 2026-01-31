@@ -35,6 +35,9 @@ const ir = (url) =>{
       const response = await usuarioApi.login(values)
       if (response && response.jwt && response.username) {
         login(response.jwt, response.username)
+        if (response.refreshToken) {
+          localStorage.setItem('refreshToken', response.refreshToken);
+        }
         
         Swal.fire({
           toast: true,
