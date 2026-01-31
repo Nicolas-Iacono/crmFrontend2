@@ -88,7 +88,6 @@ const DesktopMenu = ({ orientation = 'horizontal' }) => {
   const handleNotificationsClick = () => {
     // Aquí puedes agregar la lógica para abrir un panel de notificaciones
     // o navegar a una página de notificaciones
-    console.log('Abrir notificaciones');
   };
 
   // Animación barrido de derecha a izquierda

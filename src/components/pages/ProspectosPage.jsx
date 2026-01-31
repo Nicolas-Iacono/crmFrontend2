@@ -25,6 +25,10 @@ import {
   Skeleton,
   Pagination,
   TablePagination,
+  Avatar,
+  Grid2,
+  Modal,
+  CardMedia,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -40,6 +44,16 @@ import EditIcon from '@mui/icons-material/Edit';
 import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import HomeIcon from '@mui/icons-material/Home';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import PlaceIcon from '@mui/icons-material/Place';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import CloseIcon from '@mui/icons-material/Close';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import BusinessIcon from '@mui/icons-material/Business';
 import ProspectosApi from '../api/prospectos';
 
 const ProspectosPage = () => {
@@ -57,6 +71,35 @@ const ProspectosPage = () => {
     name: '',
     authorities: '',
   });
+
+  // Desktop table: selection and pagination state
+  const [selected, setSelected] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Estado para propiedades compatibles
+  const [propiedadesCompatibles, setPropiedadesCompatibles] = useState({});
+  const [propiedadesLoading, setPropiedadesLoading] = useState({});
+  const [propiedadesError, setPropiedadesError] = useState({});
+  const [expandedPropiedades, setExpandedPropiedades] = useState({});
+
+  // Estado para modal de propiedad
+  const [modalPropiedadOpen, setModalPropiedadOpen] = useState(false);
+  const [selectedPropiedad, setSelectedPropiedad] = useState(null);
+
+  // Estado para visor de imágenes
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const filteredProspectos = prospectos.filter(p => {
     if (!searchTerm) return true;
@@ -95,7 +138,6 @@ const ProspectosPage = () => {
       const arr = Array.isArray(result.data)
         ? result.data
         : (result.data?.data && Array.isArray(result.data.data)) ? result.data.data : [];
-
       const prospectosNorm = arr.map(p => ({
         id: p.id,
         nombre: p.nombre ?? '',
@@ -111,6 +153,9 @@ const ProspectosPage = () => {
         patio: p.patio ?? false,
         jardin: p.jardin ?? false,
         pileta: p.pileta ?? false,
+        ownerTel: p.telefonoUsuario,
+        ownerName:p.nombreNegocio,
+        ownerLogo:p.logo
       }));
 
       setProspectos(prospectosNorm);
@@ -121,7 +166,6 @@ const ProspectosPage = () => {
       setIsLoading(false);
     }
   };
-
   useEffect(() => {
     if (user && user.name) {
       fetchProspectos();
@@ -129,6 +173,7 @@ const ProspectosPage = () => {
   }, [user.name]);
 
   const handleMenuClick = (event, prospectoId) => {
+    console.log('handleMenuClick called with prospectoId:', prospectoId);
     setAnchorEl(event.currentTarget);
     setSelectedProspectoId(prospectoId);
   };
@@ -139,9 +184,14 @@ const ProspectosPage = () => {
   };
 
   const handleEdit = (prospectoId = selectedProspectoId) => {
+    console.log('handleEdit called with prospectoId:', prospectoId);
     const prospecto = prospectos.find(prop => prop.id === prospectoId);
+    console.log('Found prospecto:', prospecto);
     if (prospecto) {
+      console.log('Navigating to:', `/editar-prospecto/${prospectoId}`);
       navigate(`/editar-prospecto/${prospectoId}`, { state: { prospecto } });
+    } else {
+      console.error('Prospecto not found with ID:', prospectoId);
     }
     if (selectedProspectoId) {
       handleMenuClose();
@@ -185,6 +235,95 @@ const ProspectosPage = () => {
 
   const goPrevPage = () => setPaginaActual((p) => Math.max(1, p - 1));
   const goNextPage = () => setPaginaActual((p) => Math.min(totalPaginas || 1, p + 1));
+
+  // Funciones para propiedades compatibles
+  const fetchPropiedadesCompatibles = async (prospectoId) => {
+    setPropiedadesLoading(prev => ({ ...prev, [prospectoId]: true }));
+    setPropiedadesError(prev => ({ ...prev, [prospectoId]: null }));
+    
+    try {
+      const result = await ProspectosApi.listarPropiedadesCompatibles(prospectoId);
+      const data = Array.isArray(result?.data) ? result.data : result?.data?.data || [];
+      setPropiedadesCompatibles(prev => ({
+        ...prev,
+        [prospectoId]: Array.isArray(data) ? data : []
+      }));
+    } catch (error) {
+      console.error('Error fetching propiedades compatibles:', error);
+      setPropiedadesError(prev => ({
+        ...prev,
+        [prospectoId]: 'Error al cargar propiedades compatibles'
+      }));
+    } finally {
+      setPropiedadesLoading(prev => ({ ...prev, [prospectoId]: false }));
+    }
+  };
+
+  const togglePropiedadesCompatibles = (prospectoId) => {
+    setExpandedPropiedades(prev => ({
+      ...prev,
+      [prospectoId]: !prev[prospectoId]
+    }));
+    
+    // Si se está expandiendo y no hay datos cargados, fetchear
+    if (!expandedPropiedades[prospectoId] && !propiedadesCompatibles[prospectoId]) {
+      fetchPropiedadesCompatibles(prospectoId);
+    }
+  };
+
+  // Funciones para modal de propiedad
+  const openPropiedadModal = (propiedad) => {
+    setSelectedPropiedad(propiedad);
+    setModalPropiedadOpen(true);
+  };
+
+  const closePropiedadModal = () => {
+    setModalPropiedadOpen(false);
+    setSelectedPropiedad(null);
+  };
+
+  // Función para WhatsApp
+  const handleWhatsAppPropiedad = (prospecto, propiedad) => {
+    const phoneNumber = prospecto?.telefono?.replace(/\D/g, '');
+    if (phoneNumber) {
+      const message = encodeURIComponent(
+        `Hola ${prospecto?.nombre || ''}, te contacto desde la inmobiliaria con una propiedad que coincide con tu búsqueda:\n\n` +
+        `🏠 ${propiedad?.direccion || 'Sin dirección'}\n` +
+        `📍 ${propiedad?.localidad || ''}, ${propiedad?.partido || ''}\n` +
+        `💰 $${propiedad?.precio?.toLocaleString() || 'N/A'}\n` +
+        `🏠 ${propiedad?.cantidadAmbientes || 'N/A'} ambientes\n\n` +
+        `¿Te interesa conocer más detalles?`
+      );
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+      window.open(whatsappUrl, '_blank');
+    } else {
+      showError('El prospecto no tiene un número de teléfono válido.');
+    }
+  };
+
+  // Funciones para visor de imágenes
+  const openImageViewer = (imageUrl, index) => {
+    setSelectedImage(imageUrl);
+    setSelectedImageIndex(index);
+    setImageViewerOpen(true);
+  };
+
+  const closeImageViewer = () => {
+    setImageViewerOpen(false);
+    setSelectedImage(null);
+    setSelectedImageIndex(0);
+  };
+
+  const navigateImage = (direction) => {
+    if (!selectedPropiedad?.imagenes) return;
+    
+    const newIndex = direction === 'next' 
+      ? (selectedImageIndex + 1) % selectedPropiedad.imagenes.length
+      : (selectedImageIndex - 1 + selectedPropiedad.imagenes.length) % selectedPropiedad.imagenes.length;
+    
+    setSelectedImageIndex(newIndex);
+    setSelectedImage(selectedPropiedad.imagenes[newIndex].imageUrl);
+  };
 
   const renderMobileView = (prospectosFiltrados) => (
     <>
@@ -308,91 +447,511 @@ const ProspectosPage = () => {
                       </Typography>
                     </Box>
                   </Collapse>
+
+                  {/* Carrusel de Propiedades Compatibles */}
+                  <Box sx={{ mt: 2, borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, pt: 2 }}>
+                    <Box 
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        mb: 1
+                      }}
+                      onClick={() => togglePropiedadesCompatibles(prospecto.id)}
+                    >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <HomeIcon sx={{ fontSize: 16 }} />
+                        Propiedades Compatibles
+                      </Typography>
+                      <ExpandMoreIcon 
+                        sx={{ 
+                          transform: expandedPropiedades[prospecto.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s ease'
+                        }} 
+                      />
+                    </Box>
+
+                    <Collapse in={expandedPropiedades[prospecto.id]} timeout="auto" unmountOnExit>
+                      {propiedadesLoading[prospecto.id] ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                          <CircularProgress size={24} />
+                        </Box>
+                      ) : propiedadesError[prospecto.id] ? (
+                        <Typography variant="body2" color="error" sx={{ textAlign: 'center', py: 2 }}>
+                          {propiedadesError[prospecto.id]}
+                        </Typography>
+                      ) : propiedadesCompatibles[prospecto.id]?.length > 0 ? (
+                        <Box sx={{ position: 'relative' }}>
+                          {/* Carrusel */}
+                          <Box sx={{ 
+                            display: 'flex', 
+                            gap: 2, 
+                            overflowX: 'auto', 
+                            pb: 1,
+                            scrollBehavior: 'smooth',
+                            '&::-webkit-scrollbar': {
+                              height: '4px',
+                            },
+                            '&::-webkit-scrollbar-track': {
+                              bgcolor: 'background.default',
+                              borderRadius: '2px',
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                              bgcolor: 'primary.main',
+                              borderRadius: '2px',
+                            },
+                          }}>
+                            {propiedadesCompatibles[prospecto.id].map((propiedad) => (
+                              <Box 
+                                key={propiedad.id} 
+                                sx={{ 
+                                  minWidth: 280,
+                                  flexShrink: 0
+                                }}
+                              >
+                                <Card 
+                                  sx={{ 
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                      transform: 'translateY(-2px)',
+                                      boxShadow: theme.palette.mode === 'dark' 
+                                        ? '0 8px 25px rgba(0,0,0,0.3)' 
+                                        : '0 8px 20px rgba(0,0,0,0.12)',
+                                    }
+                                  }}
+                                  onClick={() => openPropiedadModal(propiedad)}
+                                >
+                                  {propiedad.imagenes?.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
+                                    <CardMedia
+                                      component="img"
+                                      height="120"
+                                      image={propiedad.imagenes[0].imageUrl}
+                                      alt={propiedad.direccion}
+                                      sx={{ objectFit: 'cover' }}
+                                    />
+                                  ) : (
+                                    <Box 
+                                      sx={{ 
+                                        height: 120, 
+                                        bgcolor: 'grey.200', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center' 
+                                      }}
+                                    >
+                                      <HomeIcon sx={{ fontSize: 40, color: 'grey.400' }} />
+                                    </Box>
+                                  )}
+                                  <CardContent sx={{ p: 1.5 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.875rem' }}>
+                                      {propiedad.direccion || 'Sin dirección'}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.5 }}>
+                                      {propiedad.localidad || ''}, {propiedad.partido || ''}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                                        ${propiedad.precio?.toLocaleString() || 'N/A'}
+                                      </Typography>
+                                      <Typography variant="body2" color="text.secondary">
+                                        {propiedad.cantidadAmbientes || 'N/A'} amb
+                                      </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+                                      <Tooltip title="Ver detalles">
+                                        <IconButton 
+                                          size="small" 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openPropiedadModal(propiedad);
+                                          }}
+                                        >
+                                          <EditIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                      <Tooltip title="Enviar por WhatsApp">
+                                        <IconButton 
+                                          size="small" 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleWhatsAppPropiedad(prospecto, propiedad);
+                                          }}
+                                          sx={{ color: '#25D366' }}
+                                        >
+                                          <WhatsAppIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Box>
+                                  </CardContent>
+                                </Card>
+                              </Box>
+                            ))}
+                          </Box>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                          No hay propiedades compatibles
+                        </Typography>
+                      )}
+                    </Collapse>
+                  </Box>
                 </CardContent>
               </Card>
             ))}
           </Box>
         )}
       </Box>
-      {totalPaginas > 0 && (
-        <Box display="flex" justifyContent="center" mt={2} mb={3} sx={{ width: '100%' }}>
-          <Pagination
-            count={totalPaginas}
-            page={paginaActual}
-            onChange={(_, p) => setPaginaActual(p)}
-            color="primary"
-            siblingCount={0}
-            boundaryCount={0}
-          />
-        </Box>
-      )}
     </>
   );
 
   const renderDesktopView = (prospectosFiltrados) => (
-    <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: 2, boxShadow: 1 }}>
-      <TableContainer>
-        <Table size="medium" sx={{width: '100vw', minWidth: 1000 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Teléfono</TableCell>
-              <TableCell>Zona</TableCell>
-              <TableCell>Presupuesto</TableCell>
-              <TableCell>Ambientes</TableCell>
-              <TableCell align="right" sx={{ width: 140, minWidth: 140 }}>Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {prospectosFiltrados
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((p) => {
-                const nombreCompleto = `${p.nombre || ''} ${p.apellido || ''}`.trim();
-                return (
-                  <TableRow hover key={p.id} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
-                    <TableCell sx={{ fontWeight: 500, width: "12rem" }}>
-                      {nombreCompleto || '—'}
-                    </TableCell>
-                    <TableCell sx={{ width: "10rem" }}>{p.email || '—'}</TableCell>
-                    <TableCell sx={{ width: "8rem" }}>{p.telefono || '—'}</TableCell>
-                    <TableCell sx={{ width: "12rem" }}>
-                      {p.zonaPreferencia && Array.isArray(p.zonaPreferencia) && p.zonaPreferencia.length > 0 ? (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '2px' }}>
-                          {p.zonaPreferencia.map((zona, index) => (
-                            <Chip
-                              key={index}
-                              label={zona}
-                              color="primary"
-                              size="small"
-                              sx={{ margin: '1px', height: '20px' }}
-                            />
+    <Box sx={{ width: '100%' }}>
+      {prospectosFiltrados
+        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+        .map((prospecto) => {
+          const nombreCompleto = `${prospecto.nombre || ''} ${prospecto.apellido || ''}`.trim();
+          const zonas = Array.isArray(prospecto.zonaPreferencia) 
+            ? prospecto.zonaPreferencia.join(', ') 
+            : prospecto.zonaPreferencia || '—';
+          const presupuesto = prospecto.rangoPrecioMin || prospecto.rangoPrecioMax
+            ? `$${prospecto.rangoPrecioMin || 0} - $${prospecto.rangoPrecioMax || '∞'}`
+            : '—';
+          
+          return (
+            <Card 
+              key={prospecto.id} 
+              sx={{ 
+                mb: 2, 
+                borderRadius: 3, 
+                boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
+                },
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white'
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  {/* Información principal */}
+                  <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
+                    {/* Avatar */}
+                    <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
+                      <PersonIcon sx={{ fontSize: 28 }} />
+                    </Avatar>
+                    
+                    {/* Nombre y contacto básico */}
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        {nombreCompleto || 'Sin nombre'}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        {prospecto.email && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography variant="body2" color="text.secondary">
+                              {prospecto.email}
+                            </Typography>
+                          </Box>
+                        )}
+                        {prospecto.telefono && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography variant="body2" color="text.secondary">
+                              {prospecto.telefono}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* Acciones */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleEdit(prospecto.id)} 
+                      sx={{ 
+                        bgcolor: 'primary.main', 
+                        color: 'white',
+                        '&:hover': { bgcolor: 'primary.dark' }
+                      }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => confirmDeleteProspecto(prospecto.id)} 
+                      color="error"
+                      sx={{ 
+                        bgcolor: 'error.main', 
+                        color: 'white',
+                        '&:hover': { bgcolor: 'error.dark' }
+                      }}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </Box>
+
+                {/* Información detallada en grid */}
+                <Box sx={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                  gap: 2,
+                  mb: 2
+                }}>
+                  {/* Zona preferida */}
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      <PlaceIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+                      Zona preferida
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {zonas}
+                    </Typography>
+                  </Box>
+
+                  {/* Presupuesto */}
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      <AttachMoneyIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+                      Presupuesto
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {presupuesto}
+                    </Typography>
+                  </Box>
+
+                  {/* Ambientes */}
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      <HomeIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+                      Ambientes
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {prospecto.cantidadAmbientes || '—'}
+                    </Typography>
+                  </Box>
+
+                  {/* Tipo de propiedad */}
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      <ApartmentIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+                      Tipo
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {prospecto.tipoPropiedad || '—'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Amenities */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Amenities:
+                  </Typography>
+                  {[
+                    prospecto.cochera && 'Cochera', 
+                    prospecto.patio && 'Patio', 
+                    prospecto.jardin && 'Jardín', 
+                    prospecto.pileta && 'Pileta'
+                  ]
+                    .filter(Boolean)
+                    .map((amenity, index) => (
+                      <Chip 
+                        key={index} 
+                        label={amenity} 
+                        size="small" 
+                        variant="outlined"
+                        sx={{ fontSize: '0.75rem' }}
+                      />
+                    )) || (
+                    <Typography variant="body2" color="text.secondary">
+                      Sin preferencias
+                    </Typography>
+                  )}
+                </Box>
+
+                {/* Información del propietario (si existe) */}
+                {(prospecto.ownerName || prospecto.ownerTel) && (
+                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      Información de contacto adicional:
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                      {prospecto.ownerName && (
+                        <Typography variant="body2">
+                          <strong>Nombre:</strong> {prospecto.ownerName}
+                        </Typography>
+                      )}
+                      {prospecto.ownerTel && (
+                        <Typography variant="body2">
+                          <strong>Tel:</strong> {prospecto.ownerTel}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                )}
+
+                {/* Carrusel de Propiedades Compatibles */}
+                <Box sx={{ mt: 2, borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, pt: 2 }}>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      mb: 1
+                    }}
+                    onClick={() => togglePropiedadesCompatibles(prospecto.id)}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <HomeIcon sx={{ fontSize: 16 }} />
+                      Propiedades Compatibles
+                    </Typography>
+                    <ExpandMoreIcon 
+                      sx={{ 
+                        transform: expandedPropiedades[prospecto.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s ease'
+                      }} 
+                    />
+                  </Box>
+
+                  <Collapse in={expandedPropiedades[prospecto.id]} timeout="auto" unmountOnExit>
+                    {propiedadesLoading[prospecto.id] ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                        <CircularProgress size={24} />
+                      </Box>
+                    ) : propiedadesError[prospecto.id] ? (
+                      <Typography variant="body2" color="error" sx={{ textAlign: 'center', py: 2 }}>
+                        {propiedadesError[prospecto.id]}
+                      </Typography>
+                    ) : propiedadesCompatibles[prospecto.id]?.length > 0 ? (
+                      <Box sx={{ position: 'relative' }}>
+                        {/* Carrusel */}
+                        <Box sx={{ 
+                          display: 'flex', 
+                          gap: 2, 
+                          overflowX: 'auto', 
+                          pb: 1,
+                          scrollBehavior: 'smooth',
+                          '&::-webkit-scrollbar': {
+                            height: '4px',
+                          },
+                          '&::-webkit-scrollbar-track': {
+                            bgcolor: 'background.default',
+                            borderRadius: '2px',
+                          },
+                          '&::-webkit-scrollbar-thumb': {
+                            bgcolor: 'primary.main',
+                            borderRadius: '2px',
+                          },
+                        }}>
+                          {propiedadesCompatibles[prospecto.id].map((propiedad) => (
+                            <Box 
+                              key={propiedad.id} 
+                              sx={{ 
+                                minWidth: 280,
+                                flexShrink: 0
+                              }}
+                            >
+                              <Card 
+                                sx={{ 
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  '&:hover': {
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: theme.palette.mode === 'dark' 
+                                      ? '0 8px 25px rgba(0,0,0,0.3)' 
+                                      : '0 8px 20px rgba(0,0,0,0.12)',
+                                  }
+                                }}
+                                onClick={() => openPropiedadModal(propiedad)}
+                              >
+                                {propiedad.imagenes?.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
+                                  <CardMedia
+                                    component="img"
+                                    height="120"
+                                    image={propiedad.imagenes[0].imageUrl}
+                                    alt={propiedad.direccion}
+                                    sx={{ objectFit: 'cover' }}
+                                  />
+                                ) : (
+                                  <Box 
+                                    sx={{ 
+                                      height: 120, 
+                                      bgcolor: 'grey.200', 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      justifyContent: 'center' 
+                                    }}
+                                  >
+                                    <HomeIcon sx={{ fontSize: 40, color: 'grey.400' }} />
+                                  </Box>
+                                )}
+                                <CardContent sx={{ p: 1.5 }}>
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.875rem' }}>
+                                    {propiedad.direccion || 'Sin dirección'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.5 }}>
+                                    {propiedad.localidad || ''}, {propiedad.partido || ''}
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                                      ${propiedad.precio?.toLocaleString() || 'N/A'}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      {propiedad.cantidadAmbientes || 'N/A'} amb
+                                    </Typography>
+                                  </Box>
+                                  <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+                                    <Tooltip title="Ver detalles">
+                                      <IconButton 
+                                        size="small" 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openPropiedadModal(propiedad);
+                                        }}
+                                      >
+                                        <EditIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Enviar por WhatsApp">
+                                      <IconButton 
+                                        size="small" 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleWhatsAppPropiedad(prospecto, propiedad);
+                                        }}
+                                        sx={{ color: '#25D366' }}
+                                      >
+                                        <WhatsAppIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </Box>
+                                </CardContent>
+                              </Card>
+                            </Box>
                           ))}
                         </Box>
-                      ) : (
-                        p.zonaPreferencia || '—'
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ width: "10rem" }}>
-                      {p.rangoPrecioMin || p.rangoPrecioMax
-                        ? `${p.rangoPrecioMin || 0} - ${p.rangoPrecioMax || '∞'}`
-                        : '—'}
-                    </TableCell>
-                    <TableCell sx={{ width: "6rem" }}>{p.cantidadAmbientes || '—'}</TableCell>
-                    <TableCell align="right">
-                      <IconButton size="small" onClick={() => handleEdit(p.id)} sx={{ mr: 0.5 }}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => confirmDeleteProspecto(p.id)} color="error">
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                        No hay propiedades compatibles
+                      </Typography>
+                    )}
+                  </Collapse>
+                </Box>
+              </CardContent>
+            </Card>
+          );
+        })}
+      
+      {/* Paginación */}
       <TablePagination
         component="div"
         count={prospectosFiltrados.length}
@@ -400,25 +959,17 @@ const ProspectosPage = () => {
         onPageChange={handleChangePage}
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={handleChangeRowsPerPage}
-        rowsPerPageOptions={[10, 25, 50, 100]}
-        labelRowsPerPage="Mostrar"
+        rowsPerPageOptions={[5, 10, 25]}
+        labelRowsPerPage="Filas por página:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+        sx={{
+          '.MuiTablePagination-toolbar': {
+            justifyContent: 'center'
+          }
+        }}
       />
-    </Paper>
+    </Box>
   );
-
-  // Desktop table: selection and pagination state
-  const [selected, setSelected] = useState([]);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
 
   if (isLoading) {
     return (
@@ -694,6 +1245,478 @@ const ProspectosPage = () => {
         >
           <MenuItem onClick={handleEdit}>Editar</MenuItem>
           <MenuItem onClick={handleDelete}>Eliminar</MenuItem>
+        </Menu>
+
+        {/* Modal de Propiedad */}
+        <Modal
+          open={modalPropiedadOpen}
+          onClose={closePropiedadModal}
+          aria-labelledby="propiedad-modal-title"
+          aria-describedby="propiedad-modal-description"
+        >
+          <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: { xs: '90%', sm: '600px', md: '700px' },
+            maxHeight: '90vh',
+            overflow: 'auto',
+            bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'white',
+            borderRadius: 3,
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 20px 60px rgba(0,0,0,0.5)' 
+              : '0 20px 40px rgba(0,0,0,0.15)',
+            outline: 'none',
+          }}>
+            {selectedPropiedad && (
+              <>
+                {/* Header del modal */}
+                <Box sx={{
+                  p: 3,
+                  borderBottom: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}15, ${theme.palette.primary.dark}05)`,
+                }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography id="propiedad-modal-title" variant="h5" sx={{ fontWeight: 700 }}>
+                      Detalles de la Propiedad
+                    </Typography>
+                    <IconButton onClick={closePropiedadModal} sx={{ color: 'text.secondary' }}>
+                      <CloseIcon />
+                    </IconButton>
+                  </Box>
+                </Box>
+
+                {/* Contenido del modal */}
+                <Box sx={{ p: 3 }}>
+                  {/* Galería de imágenes */}
+                  {selectedPropiedad.imagenes?.length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                        Galería de Imágenes
+                      </Typography>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        gap: 1, 
+                        overflowX: 'auto', 
+                        pb: 1,
+                        '&::-webkit-scrollbar': {
+                          height: '6px',
+                        },
+                        '&::-webkit-scrollbar-track': {
+                          bgcolor: 'background.default',
+                          borderRadius: '3px',
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                          bgcolor: 'primary.main',
+                          borderRadius: '3px',
+                        },
+                      }}>
+                        {selectedPropiedad.imagenes.map((imagen, index) => (
+                          <Box 
+                            key={imagen.idImage || index} 
+                            sx={{ 
+                              minWidth: 200, 
+                              height: 150, 
+                              flexShrink: 0,
+                              borderRadius: 2,
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              '&:hover': {
+                                opacity: 0.8
+                              }
+                            }}
+                            onClick={() => openImageViewer(imagen.imageUrl, index)}
+                          >
+                            <img
+                              src={imagen.imageUrl}
+                              alt={`Imagen ${index + 1}`}
+                              style={{ 
+                                width: '100%', 
+                                height: '100%', 
+                                objectFit: 'cover' 
+                              }}
+                            />
+                          </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Información principal */}
+                  <Grid2 container spacing={2}>
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Dirección
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedPropiedad.direccion || 'Sin dirección'}
+                        </Typography>
+                      </Box>
+                    </Grid2>
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Ubicación Completa
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedPropiedad.localidad || ''}, {selectedPropiedad.partido || ''}, {selectedPropiedad.provincia || ''}
+                        </Typography>
+                      </Box>
+                    </Grid2>
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Tipo de Propiedad
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedPropiedad.tipo || 'Sin especificar'}
+                        </Typography>
+                      </Box>
+                    </Grid2>
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Precio
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '1.1rem' }}>
+                          ${selectedPropiedad.precio?.toLocaleString('es-AR') || 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid2>
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Ambientes
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedPropiedad.cantidadAmbientes || 'N/A'} ambientes
+                        </Typography>
+                      </Box>
+                    </Grid2>
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Disponibilidad
+                        </Typography>
+                        <Chip 
+                          label={selectedPropiedad.disponibilidad ? 'Disponible' : 'No disponible'} 
+                          color={selectedPropiedad.disponibilidad ? 'success' : 'error'}
+                          size="small"
+                        />
+                      </Box>
+                    </Grid2>
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Tipo de Propiedad
+                        </Typography>
+                        <Chip 
+                          label={selectedPropiedad.propia ? 'Propia' : 'Alquiler'} 
+                          color={selectedPropiedad.propia ? 'primary' : 'info'}
+                          size="small"
+                        />
+                      </Box>
+                    </Grid2>
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Visibilidad
+                        </Typography>
+                        <Chip 
+                          label={selectedPropiedad.visibleAOtros ? 'Visible para otros' : 'Solo para mi'} 
+                          color={selectedPropiedad.visibleAOtros ? 'success' : 'warning'}
+                          size="small"
+                        />
+                      </Box>
+                    </Grid2>
+                    <Grid2 item xs={12}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          Amenities y Características
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {selectedPropiedad.cochera && (
+                            <Chip label="Cochera" size="small" color="success" variant="filled" />
+                          )}
+                          {selectedPropiedad.patio && (
+                            <Chip label="Patio" size="small" color="success" variant="filled" />
+                          )}
+                          {selectedPropiedad.jardin && (
+                            <Chip label="Jardín" size="small" color="success" variant="filled" />
+                          )}
+                          {selectedPropiedad.pileta && (
+                            <Chip label="Pileta" size="small" color="success" variant="filled" />
+                          )}
+                          {!selectedPropiedad.cochera && !selectedPropiedad.patio && !selectedPropiedad.jardin && !selectedPropiedad.pileta && (
+                            <Typography variant="body2" color="text.secondary">
+                              Sin amenities específicos
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    </Grid2>
+                    {selectedPropiedad.inventario && (
+                      <Grid2 item xs={12}>
+                        <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            Descripción Completa
+                          </Typography>
+                          <Typography variant="body1" sx={{ 
+                            fontWeight: 500, 
+                            whiteSpace: 'pre-line',
+                            lineHeight: 1.6,
+                            fontSize: '0.9rem'
+                          }}>
+                            {selectedPropiedad.inventario}
+                          </Typography>
+                        </Box>
+                      </Grid2>
+                    )}
+                  </Grid2>
+
+             
+                  {/* Información de la Inmobiliaria */}
+                  {selectedPropiedad.usuarioDtoSalida && (
+                    <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <BusinessIcon color="primary" />
+                        Información de la Inmobiliaria
+                      </Typography>
+                      <Grid2 container spacing={2}>
+                        <Grid2 item xs={12} sm={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Nombre de Negocio
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            {selectedPropiedad.usuarioDtoSalida.nombreNegocio}
+                          </Typography>
+                        </Grid2>
+                        <Grid2 item xs={12} sm={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Teléfono
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            {selectedPropiedad.usuarioDtoSalida.telefono}
+                          </Typography>
+                        </Grid2>
+                        <Grid2 item xs={12} sm={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Email
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            {selectedPropiedad.usuarioDtoSalida.email}
+                          </Typography>
+                        </Grid2>
+                        <Grid2 item xs={12} sm={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Matrícula
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            {selectedPropiedad.usuarioDtoSalida.matricula}
+                          </Typography>
+                        </Grid2>
+                        <Grid2 item xs={12}>
+                          <Typography variant="body2" color="text.secondary">
+                            Razón Social
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            {selectedPropiedad.usuarioDtoSalida.razonSocial}
+                          </Typography>
+                        </Grid2>
+                      </Grid2>
+                    </Box>
+                  )}
+                </Box>
+              </>
+            )}
+          </Box>
+        </Modal>
+
+        {/* Modal Visor de Imágenes */}
+        <Modal
+          open={imageViewerOpen}
+          onClose={closeImageViewer}
+          aria-labelledby="image-viewer-title"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Box sx={{
+            position: 'relative',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            bgcolor: 'transparent',
+            outline: 'none',
+          }}>
+            {/* Botón cerrar */}
+            <IconButton
+              onClick={closeImageViewer}
+              sx={{
+                position: 'absolute',
+                top: -40,
+                right: 0,
+                bgcolor: 'rgba(0, 0, 0, 0.7)',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'rgba(0, 0, 0, 0.9)',
+                },
+                zIndex: 1,
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+
+            {/* Contenedor principal */}
+            <Box sx={{
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}>
+              {/* Imagen principal */}
+              <Box
+                component="img"
+                src={selectedImage}
+                alt={`Imagen ${selectedImageIndex + 1}`}
+                sx={{
+                  maxWidth: '100%',
+                  maxHeight: '70vh',
+                  objectFit: 'contain',
+                  borderRadius: 2,
+                  boxShadow: theme.palette.mode === 'dark' 
+                    ? '0 20px 60px rgba(0,0,0,0.8)' 
+                    : '0 20px 40px rgba(0,0,0,0.3)',
+                }}
+              />
+
+              {/* Controles de navegación */}
+              {selectedPropiedad?.imagenes && selectedPropiedad.imagenes.length > 1 && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 2, 
+                  mt: 2 
+                }}>
+                  {/* Botón anterior */}
+                  <IconButton
+                    onClick={() => navigateImage('prev')}
+                    disabled={selectedPropiedad.imagenes.length <= 1}
+                    sx={{
+                      bgcolor: 'rgba(0, 0, 0, 0.7)',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: 'rgba(0, 0, 0, 0.9)',
+                      },
+                      '&:disabled': {
+                        bgcolor: 'rgba(0, 0, 0, 0.3)',
+                        color: 'rgba(255, 255, 255, 0.5)',
+                      },
+                    }}
+                  >
+                    <NavigateBeforeIcon />
+                  </IconButton>
+
+                  {/* Indicador de imágenes */}
+                  <Typography variant="body2" sx={{ color: 'white', minWidth: '60px', textAlign: 'center' }}>
+                    {selectedImageIndex + 1} / {selectedPropiedad.imagenes.length}
+                  </Typography>
+
+                  {/* Botón siguiente */}
+                  <IconButton
+                    onClick={() => navigateImage('next')}
+                    disabled={selectedPropiedad.imagenes.length <= 1}
+                    sx={{
+                      bgcolor: 'rgba(0, 0, 0, 0.7)',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: 'rgba(0, 0, 0, 0.9)',
+                      },
+                      '&:disabled': {
+                        bgcolor: 'rgba(0, 0, 0, 0.3)',
+                        color: 'rgba(255, 255, 255, 0.5)',
+                      },
+                    }}
+                  >
+                    <NavigateNextIcon />
+                  </IconButton>
+                </Box>
+              )}
+
+              {/* Miniaturas */}
+              {selectedPropiedad?.imagenes && selectedPropiedad.imagenes.length > 1 && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1, 
+                  mt: 2, 
+                  maxWidth: '80vw',
+                  overflowX: 'auto',
+                  '&::-webkit-scrollbar': {
+                    height: '4px',
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '2px',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    bgcolor: 'rgba(255, 255, 255, 0.5)',
+                    borderRadius: '2px',
+                  },
+                }}>
+                  {selectedPropiedad.imagenes.map((imagen, index) => (
+                    <Box
+                      key={imagen.idImage || index}
+                      onClick={() => {
+                        setSelectedImageIndex(index);
+                        setSelectedImage(imagen.imageUrl);
+                      }}
+                      sx={{
+                        minWidth: 60,
+                        height: 40,
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        border: selectedImageIndex === index 
+                          ? '2px solid white' 
+                          : '1px solid rgba(255, 255, 255, 0.3)',
+                        opacity: selectedImageIndex === index ? 1 : 0.7,
+                        '&:hover': {
+                          opacity: 1,
+                          border: '1px solid white',
+                        },
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <img
+                        src={imagen.imageUrl}
+                        alt={`Miniatura ${index + 1}`}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          </Box>
+        </Modal>
+
+        {/* Menú contextual para mobile */}
+        <Menu
+          id="simple-menu"
+          anchorEl={anchorEl}
+          keepMounted
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={() => handleEdit(selectedProspectoId)}>Editar</MenuItem>
+          <MenuItem onClick={() => handleDelete(selectedProspectoId)}>Eliminar</MenuItem>
         </Menu>
       </Box>
     </Box>

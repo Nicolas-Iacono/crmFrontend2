@@ -50,6 +50,22 @@ export const ProspectosApi = {
       throw new Error('Error al listar prospectos compatibles', error);
     }
   },
+  listarPropiedadesCompatibles: async (prospectoId) => {
+    try {
+      // Obtener el token del localStorage
+      const token = localStorage.getItem('token');
+      const headers = token ? { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } : { 'Content-Type': 'application/json' };
+      
+      const response = await http.get(`${URL_PROSPECTOS}/${prospectoId}/propiedades-compatibles`, { headers });
+      return response.data;
+    } catch (error) {
+      console.error('Error al listar propiedades compatibles:', error);
+      throw new Error('Error al listar propiedades compatibles', error);
+    }
+  },
 };
 
 export default ProspectosApi;

@@ -34,22 +34,37 @@ import {
   MenuItem,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  Collapse,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Avatar,
+  Modal,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import HomeIcon from '@mui/icons-material/Home';
-import PersonIcon from '@mui/icons-material/Person';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import MapIcon from '@mui/icons-material/Map';
-import AddIcon from '@mui/icons-material/Add';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import BusinessIcon from '@mui/icons-material/Business';
+import HomeIcon from '@mui/icons-material/Home';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import PersonIcon from '@mui/icons-material/Person';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import ShareIcon from '@mui/icons-material/Share';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CloseIcon from '@mui/icons-material/Close';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+
+
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -61,7 +76,7 @@ import http from '../api/http';
 import { showSuccess, showError, showWarning } from '../alertas/showAlert';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-
+import { PropiedadesApi } from '../api/propiedades';
 const PropiedadesPage = () => {
   // Estado para el modal de detalle de propiedad
   const [modalOpen, setModalOpen] = useState(false);
@@ -74,6 +89,10 @@ const PropiedadesPage = () => {
   const [modalImagenesOpen, setModalImagenesOpen] = useState(false);
   const [imagenesPropiedad, setImagenesPropiedad] = useState([]);
   const [propiedadImagenesId, setPropiedadImagenesId] = useState(null);
+
+  // Modal para detalles del prospecto
+  const [modalProspectoOpen, setModalProspectoOpen] = useState(false);
+  const [selectedProspecto, setSelectedProspecto] = useState(null);
 
   // Feedback simple (puedes reemplazar por Snackbar)
   const [uploadMsg, setUploadMsg] = useState(null);
@@ -118,14 +137,16 @@ const PropiedadesPage = () => {
   const [propiedades, setPropiedades] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
-  
+  const [prospectosCompatibles, setProspectosCompatibles] = useState({});
+  const [prospectosLoading, setProspectosLoading] = useState({});
+  const [prospectosError, setProspectosError] = useState({});
+  const [propiedadProspectosActiva, setPropiedadProspectosActiva] = useState(null);
   // Estados para filtros
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroBarrio, setFiltroBarrio] = useState('');
   const [filtroPrecioMin, setFiltroPrecioMin] = useState('');
   const [filtroPrecioMax, setFiltroPrecioMax] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  
   const [user, setUser] = useState({
     name: '',
     authorities: '',
@@ -171,6 +192,54 @@ const PropiedadesPage = () => {
       fetchPropiedades();
     }
   }, [user.name]);
+
+ const handleBuscarProspectos = async (event, propiedadId) => {
+    event.stopPropagation();
+    setPropiedadProspectosActiva(propiedadId);
+    setProspectosLoading((prev) => ({ ...prev, [propiedadId]: true }));
+    setProspectosError((prev) => ({ ...prev, [propiedadId]: null }));
+    try {
+      const response = await PropiedadesApi.listarProspectosCompatibles(propiedadId);
+      const data = Array.isArray(response?.data) ? response.data : response?.data?.data;
+      setProspectosCompatibles((prev) => ({
+        ...prev,
+        [propiedadId]: Array.isArray(data) ? data : []
+      }));
+    } catch (err) {
+      setProspectosError((prev) => ({
+        ...prev,
+        [propiedadId]: err?.message || 'Error al cargar prospectos compatibles.'
+      }));
+    } finally {
+      setProspectosLoading((prev) => ({ ...prev, [propiedadId]: false }));
+    }
+  };
+
+  const handleOcultarProspectos = (event, propiedadId) => {
+    event.stopPropagation();
+    setPropiedadProspectosActiva((prev) => (prev === propiedadId ? null : prev));
+  };
+
+  const handleOpenProspectoModal = (prospecto) => {
+    setSelectedProspecto(prospecto);
+    setModalProspectoOpen(true);
+  };
+
+  const handleCloseProspectoModal = () => {
+    setModalProspectoOpen(false);
+    setSelectedProspecto(null);
+  };
+
+  const handleWhatsAppContact = (prospecto) => {
+    const phoneNumber = prospecto?.telefono?.replace(/\D/g, ''); // Eliminar caracteres no numéricos
+    if (phoneNumber) {
+      const message = encodeURIComponent(`Hola ${prospecto?.nombre || ''}, te contacto desde la inmobiliaria regarding tu búsqueda de propiedad.`);
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+      window.open(whatsappUrl, '_blank');
+    } else {
+      showError('El prospecto no tiene un número de teléfono válido.');
+    }
+  };
 
   const eliminarPropiedad = async (id) => {
     const result = await Swal.fire({
@@ -464,7 +533,6 @@ ${propiedad.inventario ? `📝 Inventario: ${propiedad.inventario}` : ''}`;
       }
     }
   };
-
 useEffect(() => {
 }, [propiedades]);
   return (
@@ -912,23 +980,29 @@ useEffect(() => {
                         ml: { xs: 0, sm: -2 }
                       }}
                     >
-                      {propiedadesPaginadas.map((propiedad, index) => (
+                      {propiedadesPaginadas.map((propiedad, index) => {
+                        const isCompact = propiedadProspectosActiva === propiedad?.id;
+                        const prospectos = prospectosCompatibles[propiedad?.id] || [];
+                        const isLoadingProspectos = prospectosLoading[propiedad?.id];
+                        const errorProspectos = prospectosError[propiedad?.id];
+                        return (
   <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`} sx={{ display: 'flex', justifyContent: 'center' }}>  
+  <Box sx={{ width: { xs: '19rem', sm: '20rem' }, }}>
     <Card
       data-tour={index === 0 ? 'propiedades-card' : undefined}
       sx={{
-        mb: 2,
+          mb: 1,
         width: { xs: '19rem', sm: '20rem' },
-        height: {sm:"26rem"},
-        borderRadius: 3,
-        overflow: 'hidden',
-        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-        boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
-        },
+       height: isCompact ? { sm: '14.5rem' } : { sm: '26rem' },
+                                  borderRadius: 3,
+                                  overflow: 'hidden',
+                                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                                  boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
+                                  transition: 'transform 0.2s, box-shadow 0.2s, height 0.3s ease',
+                                  '&:hover': {
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
+                                  },
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
@@ -1079,8 +1153,19 @@ useEffect(() => {
           </Box>
         )}
       </Box>
+           {/* Dirección visible en estado compacto */}
+                                <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                  >
+                                    <HomeIcon fontSize="small" />
+                                    {propiedad.direccion}
+                                  </Typography>
+                                </Box>
+                                <Collapse in={!isCompact} timeout="auto" unmountOnExit>
       {/* Header con icono y tipo */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, ml: 2 }}>
         <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
         <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
           {propiedad.tipoPropiedad || propiedad.tipo}
@@ -1096,13 +1181,13 @@ useEffect(() => {
       <Divider sx={{ my: 1.5 }} />
       {/* Info organizada con iconos */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
-        <Typography
+        {/* <Typography
           variant="body2"
           sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
         >
           <HomeIcon fontSize="small" />
           {propiedad.direccion}
-        </Typography>
+        </Typography> */}
         <Typography
           variant="body2"
           sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
@@ -1126,11 +1211,151 @@ useEffect(() => {
             ? `${propiedad.usuarioDtoSalida.username}`
             : 'No asignado'}
         </Typography>
-       
-      </Box>
-    </Card>
-  </Grid2>
-))}
+         <Button
+                                      variant="outlined"
+                                      size="small"
+                                      onClick={(e) => handleBuscarProspectos(e, propiedad.id)}
+                                      sx={{ alignSelf: 'flex-start', mt: 1 }}
+                                    >
+                                      Buscar prospectos compatibles
+                                    </Button>
+                                  </Box>
+                                </Collapse>
+                              </Card>
+                              <Collapse in={isCompact} timeout="auto" unmountOnExit>
+                                <Box sx={{
+                                  mt: 1,
+                                  p: 2,
+                                  borderRadius: 2,
+                                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'white',
+                                  boxShadow: theme.palette.mode === 'dark' ? '0 4px 16px rgba(0,0,0,0.2)' : '0 6px 12px rgba(0,0,0,0.08)'
+                                }}>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                      Prospectos compatibles
+                                    </Typography>
+                                    <Button size="small" onClick={(e) => handleOcultarProspectos(e, propiedad.id)}>
+                                      Ocultar
+                                    </Button>
+                                  </Box>
+                                  {isLoadingProspectos ? (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                                      <CircularProgress size={24} />
+                                    </Box>
+                                  ) : errorProspectos ? (
+                                    <Typography variant="body2" color="error">
+                                      {errorProspectos}
+                                    </Typography>
+                                  ) : prospectos.length > 0 ? (
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                      {prospectos.map((prospecto) => {
+                                        const nombreCompleto = `${prospecto?.nombre || ''} ${prospecto?.apellido || ''}`.trim() || 'Sin nombre';
+                                        const zonas = Array.isArray(prospecto?.zonaPreferencia) 
+                                          ? prospecto.zonaPreferencia.join(', ') 
+                                          : prospecto?.zonaPreferencia || 'Sin zona preferida';
+                                        
+                                        return (
+                                          <Card
+                                            key={prospecto?.id || nombreCompleto}
+                                            onClick={() => handleOpenProspectoModal(prospecto)}
+                                            sx={{
+                                              cursor: 'pointer',
+                                              transition: 'all 0.2s ease',
+                                              border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                                              '&:hover': {
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: theme.palette.mode === 'dark' 
+                                                  ? '0 8px 25px rgba(0,0,0,0.3)' 
+                                                  : '0 8px 20px rgba(0,0,0,0.12)',
+                                                borderColor: 'primary.main',
+                                              }
+                                            }}
+                                          >
+                                            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                <Avatar
+                                                  src={prospecto?.logo}
+                                                  sx={{ 
+                                                    bgcolor: 'primary.main',
+                                                    width: 48,
+                                                    height: 48,
+                                                    flexShrink: 0
+                                                  }}
+                                                >
+                                                  <PersonIcon />
+                                                </Avatar>
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                                    {nombreCompleto}
+                                                  </Typography>
+                                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                                                    {prospecto?.email && (
+                                                      <Chip
+                                                        icon={<EmailIcon sx={{ fontSize: 14 }} />}
+                                                        label={prospecto.email}
+                                                        size="small"
+                                                        variant="outlined"
+                                                        sx={{ fontSize: '0.75rem' }}
+                                                      />
+                                                    )}
+                                                    {prospecto?.telefono && (
+                                                      <Chip
+                                                        icon={<PhoneIcon sx={{ fontSize: 14 }} />}
+                                                        label={prospecto.telefono}
+                                                        size="small"
+                                                        variant="outlined"
+                                                        sx={{ fontSize: '0.75rem' }}
+                                                      />
+                                                    )}
+                                                  </Box>
+                                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                    <Chip
+                                                      icon={<LocationOnIcon sx={{ fontSize: 14 }} />}
+                                                      label={zonas}
+                                                      size="small"
+                                                      color="primary"
+                                                      variant="filled"
+                                                      sx={{ fontSize: '0.75rem' }}
+                                                    />
+                                                    {prospecto?.rangoPrecioMin && (
+                                                      <Chip
+                                                        icon={<AttachMoneyIcon sx={{ fontSize: 14 }} />}
+                                                        label={`$${prospecto.rangoPrecioMin.toLocaleString()}`}
+                                                        size="small"
+                                                        color="success"
+                                                        variant="filled"
+                                                        sx={{ fontSize: '0.75rem' }}
+                                                      />
+                                                    )}
+                                                    {prospecto?.cantidadAmbientes && (
+                                                      <Chip
+                                                        icon={<HomeIcon sx={{ fontSize: 14 }} />}
+                                                        label={`${prospecto.cantidadAmbientes} amb`}
+                                                        size="small"
+                                                        color="info"
+                                                        variant="filled"
+                                                        sx={{ fontSize: '0.75rem' }}
+                                                      />
+                                                    )}
+                                                  </Box>
+                                                </Box>
+                                              </Box>
+                                            </CardContent>
+                                          </Card>
+                                        );
+                                      })}
+                                    </Box>
+                                  ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                      No hay prospectos compatibles.
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </Collapse>
+                            </Box>
+                          </Grid2>
+                        );
+                      })}
                     </Grid2>
                   </Box>
                 ) : (
@@ -1149,201 +1374,325 @@ useEffect(() => {
                       gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
                       gap: { xs: 2, md: 1 },
                     }}>
-                      {propiedadesPaginadas.map((propiedad, index) => (
-                        <Box key={propiedad?.id || `fallback-${Math.random()}` } sx={{ width: {xs:"100%",sm:"100%", md:"100%"}}}>
-                          <Card
-                            data-tour={index === 0 ? 'propiedades-card' : undefined}
-                            sx={{
-                              mb: 2,
-                              width: {xs:"100%", sm:"100%", md:"100%"},
-                              height: '23rem',
-                              borderRadius: 3,
-                              overflow: 'hidden',
-                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-                              boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-                              transition: 'transform 0.2s, box-shadow 0.2s',
-                              '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
-                              },
-                              position: 'relative',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              cursor: 'pointer',
-                            }}
-                            onClick={() => {
-                              setSelectedPropiedad(propiedad);
-                              setModalOpen(true);
-                            }}
-                          >
-                            {/* Barra de estado */}
-                            <Box
+                      {propiedadesPaginadas.map((propiedad, index) => {
+                        const isCompact = propiedadProspectosActiva === propiedad?.id;
+                        const prospectos = prospectosCompatibles[propiedad?.id] || [];
+                        const isLoadingProspectos = prospectosLoading[propiedad?.id];
+                        const errorProspectos = prospectosError[propiedad?.id];
+                        return (
+                          <Box key={propiedad?.id || `fallback-${Math.random()}` } sx={{ width: {xs:"100%",sm:"100%", md:"100%"}}}>
+                            <Card
+                              data-tour={index === 0 ? 'propiedades-card' : undefined}
                               sx={{
-                                position: 'absolute',
-                                left: 0,
-                                top: 0,
-                                width: '8px',
-                                height: '100%',
-                                bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
+                                mb: 1,
+                                width: {xs:"100%", sm:"100%", md:"100%"},
+                                height: isCompact ? '14.5rem' : '26rem',
+                                borderRadius: 3,
+                                overflow: 'hidden',
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                                boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
+                                transition: 'transform 0.2s, box-shadow 0.2s, height 0.3s ease',
+                                '&:hover': {
+                                  transform: 'translateY(-4px)',
+                                  boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
+                                },
+                                position: 'relative',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                cursor: 'pointer',
                               }}
-                            />
-                            {/* Imagen principal */}
-                            <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                              {/* Botón eliminar propiedad */}
-                              <Tooltip title="Eliminar propiedad">
-                                <span>
-                                  <IconButton
-                                    data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
-                                    size="small"
-                                    sx={{
-                                      position: 'absolute',
-                                      top: 8,
-                                      left: 8,
-                                      bgcolor: 'rgba(255,255,255,0.7)',
-                                      boxShadow: 1,
-                                      zIndex: 2,
-                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      eliminarPropiedad(propiedad.id);
-                                    }}
-                                  >
-                                    <DeleteForeverIcon color="error" fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-
-                              {/* Botón editar propiedad */}
-                              <Tooltip title="Editar propiedad">
-                                <span>
-                                  <IconButton
-                                    size="small"
-                                    sx={{
-                                      position: 'absolute',
-                                      top: 8,
-                                      left: 48,
-                                      bgcolor: 'rgba(255,255,255,0.7)',
-                                      boxShadow: 1,
-                                      zIndex: 2,
-                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/propiedades/editar/${propiedad.id}`);
-                                    }}
-                                  >
-                                    <EditIcon color="primary" fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-
-                              {/* Botón agregar imagen */}
-                              <Tooltip title="Agregar imagen">
-                                <span>
-                                  <IconButton
-                                    data-tour={index === 0 ? 'propiedades-card-addimg' : undefined}
-                                    size="small"
-                                    sx={{
-                                      position: 'absolute',
-                                      top: 8,
-                                      right: 8,
-                                      bgcolor: 'rgba(255,255,255,0.7)',
-                                      boxShadow: 1,
-                                      zIndex: 2,
-                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleAddImageClick(propiedad.id);
-                                    }}
-                                    disabled={uploadingId === propiedad.id}
-                                  >
-                                    <AddPhotoAlternateIcon color="primary" fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                              {/* Input file oculto global */}
-                              {uploadingId === propiedad.id && (
-                                <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-                                  <CircularProgress size={32} />
-                                </Box>
-                              )}
-                              {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
-                                <img
-                                  src={propiedad.imagenes[0].imageUrl}
-                                  alt={propiedad.direccion}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              ) : (
-                                <Box sx={{ 
-                                  width: '100%', 
-                                  height: '100%', 
-                                  display: 'flex', 
-                                  flexDirection: 'column',
-                                  alignItems: 'center', 
-                                  justifyContent: 'center', 
-                                  bgcolor: '#e5e7eb',
-                                  color: '#6b7280'
-                                }}>
-                                  <HomeIcon sx={{ fontSize: 48, mb: 1, color: '#9ca3af' }} />
-                                  <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
-                                    Sin imagen
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Box>
-                            {/* Header con icono y tipo */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, ml: 2 }}>
-                              <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
-                              <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem',md:".8rem" } }}>
-                                {propiedad.tipoPropiedad || propiedad.tipo}
-                              </Typography>
-                              <Chip
-                                icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
-                                label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
-                                color={propiedad.disponibilidad ? 'success' : 'warning'}
-                                size="small"
-                                sx={{ fontWeight: 500, ml: 2 }}
+                              onClick={() => {
+                                setSelectedPropiedad(propiedad);
+                                setModalOpen(true);
+                              }}
+                            >
+                              {/* Barra de estado */}
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  top: 0,
+                                  width: '8px',
+                                  height: '100%',
+                                  bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
+                                }}
                               />
-                            </Box>
-                            <Divider sx={{ my: 1.5 }} />
-                            {/* Info organizada con iconos */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
-                              <Typography
-                                variant="body2"
-                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-                              >
-                                <HomeIcon fontSize="small" />
-                                {propiedad.direccion}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-                              >
-                                <LocationOnIcon fontSize="small" />
-                                {propiedad.localidad}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-                              >
-                                <MapIcon fontSize="small" />
-                                {propiedad.partido}, {propiedad.provincia}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-                              >
-                                <PersonIcon fontSize="small" />
-                                {propiedad.usuarioDtoSalida
-                                  ? `${propiedad.usuarioDtoSalida.username}`
-                                  : 'No asignado'}
-                              </Typography>
-                            </Box>
-                          </Card>
-                        </Box>
-                      ))}
+                              {/* Imagen principal */}
+                              <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                {/* Botón eliminar propiedad */}
+                                <Tooltip title="Eliminar propiedad">
+                                  <span>
+                                    <IconButton
+                                      data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        left: 8,
+                                        bgcolor: 'rgba(255,255,255,0.7)',
+                                        boxShadow: 1,
+                                        zIndex: 2,
+                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        eliminarPropiedad(propiedad.id);
+                                      }}
+                                    >
+                                      <DeleteForeverIcon color="error" fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+
+                                {/* Botón agregar imagen */}
+                                <Tooltip title="Agregar imagen">
+                                  <span>
+                                    <IconButton
+                                      data-tour={index === 0 ? 'propiedades-card-addimg' : undefined}
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        right: 8,
+                                        bgcolor: 'rgba(255,255,255,0.7)',
+                                        boxShadow: 1,
+                                        zIndex: 2,
+                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddImageClick(propiedad.id);
+                                      }}
+                                      disabled={uploadingId === propiedad.id}
+                                    >
+                                      <AddPhotoAlternateIcon color="primary" fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                                {/* Input file oculto global */}
+                                {uploadingId === propiedad.id && (
+                                  <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+                                    <CircularProgress size={32} />
+                                  </Box>
+                                )}
+                                {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
+                                  <img
+                                    src={propiedad.imagenes[0].imageUrl}
+                                    alt={propiedad.direccion}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  />
+                                ) : (
+                                  <Box sx={{ 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    display: 'flex', 
+                                    flexDirection: 'column',
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    bgcolor: '#e5e7eb',
+                                    color: '#6b7280'
+                                  }}>
+                                    <HomeIcon sx={{ fontSize: 48, mb: 1, color: '#9ca3af' }} />
+                                    <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
+                                      Sin imagen
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                              {/* Dirección visible en estado compacto */}
+                              <Box sx={{ px: 2, pt: 2, pb: 1, height:"2rem"}}>
+                                <Typography
+                                  variant="body2"
+                                  sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                >
+                                  <HomeIcon fontSize="small" />
+                                  {propiedad.direccion}
+                                </Typography>
+                              </Box>
+                              <Collapse in={!isCompact} timeout="auto" unmountOnExit>
+                                {/* Header con icono y tipo */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, ml: 2 }}>
+                                  <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
+                                  <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem',md:".8rem" } }}>
+                                    {propiedad.tipoPropiedad || propiedad.tipo}
+                                  </Typography>
+                                  <Chip
+                                    icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
+                                    label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
+                                    color={propiedad.disponibilidad ? 'success' : 'warning'}
+                                    size="small"
+                                    sx={{ fontWeight: 500, ml: 2 }}
+                                  />
+                                </Box>
+                                <Divider sx={{ my: 1.5 }} />
+                                {/* Info organizada con iconos */}
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                  >
+                                    <LocationOnIcon fontSize="small" />
+                                    {propiedad.localidad}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                  >
+                                    <MapIcon fontSize="small" />
+                                    {propiedad.partido}, {propiedad.provincia}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+                                  >
+                                    <PersonIcon fontSize="small" />
+                                    {propiedad.usuarioDtoSalida
+                                      ? `${propiedad.usuarioDtoSalida.username}`
+                                      : 'No asignado'}
+                                  </Typography>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={(e) => handleBuscarProspectos(e, propiedad.id)}
+                                    sx={{ alignSelf: 'flex-start', mt: 1 }}
+                                  >
+                                    Buscar prospectos compatibles
+                                  </Button>
+                                </Box>
+                              </Collapse>
+                            </Card>
+                            <Collapse in={isCompact} timeout="auto" unmountOnExit>
+                              <Box sx={{
+                                mt: 1,
+                                p: 2,
+                                borderRadius: 2,
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'white',
+                                boxShadow: theme.palette.mode === 'dark' ? '0 4px 16px rgba(0,0,0,0.2)' : '0 6px 12px rgba(0,0,0,0.08)'
+                              }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                    Prospectos compatibles
+                                  </Typography>
+                                  <Button size="small" onClick={(e) => handleOcultarProspectos(e, propiedad.id)}>
+                                    Ocultar
+                                  </Button>
+                                </Box>
+                                {isLoadingProspectos ? (
+                                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                                    <CircularProgress size={24} />
+                                  </Box>
+                                ) : errorProspectos ? (
+                                  <Typography variant="body2" color="error">
+                                    {errorProspectos}
+                                  </Typography>
+                                ) : prospectos.length > 0 ? (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                    {prospectos.map((prospecto) => {
+                                      const nombreCompleto = `${prospecto?.nombre || ''} ${prospecto?.apellido || ''}`.trim() || 'Sin nombre';
+                                      const zonas = Array.isArray(prospecto?.zonaPreferencia) 
+                                        ? prospecto.zonaPreferencia.join(', ') 
+                                        : prospecto?.zonaPreferencia || 'Sin zona preferida';
+                                      
+                                      return (
+                                        <Card
+                                          key={prospecto?.id || nombreCompleto}
+                                          onClick={() => handleOpenProspectoModal(prospecto)}
+                                          sx={{
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                                            '&:hover': {
+                                              transform: 'translateY(-2px)',
+                                              boxShadow: theme.palette.mode === 'dark' 
+                                                ? '0 8px 25px rgba(0,0,0,0.3)' 
+                                                : '0 8px 20px rgba(0,0,0,0.12)',
+                                              borderColor: 'primary.main',
+                                            }
+                                          }}
+                                        >
+                                          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                              <Avatar
+                                                src={prospecto?.logo}
+                                                sx={{ 
+                                                  bgcolor: 'primary.main',
+                                                  width: 48,
+                                                  height: 48
+                                                }}
+                                              >
+                                                <PersonIcon />
+                                              </Avatar>
+                                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                                  {nombreCompleto}
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                                                  {prospecto?.email && (
+                                                    <Chip
+                                                      icon={<EmailIcon sx={{ fontSize: 14 }} />}
+                                                      label={prospecto.email}
+                                                      size="small"
+                                                      variant="outlined"
+                                                      sx={{ fontSize: '0.75rem' }}
+                                                    />
+                                                  )}
+                                                  {prospecto?.telefono && (
+                                                    <Chip
+                                                      icon={<PhoneIcon sx={{ fontSize: 14 }} />}
+                                                      label={prospecto.telefono}
+                                                      size="small"
+                                                      variant="outlined"
+                                                      sx={{ fontSize: '0.75rem' }}
+                                                    />
+                                                  )}
+                                                </Box>
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                  <Chip
+                                                    icon={<LocationOnIcon sx={{ fontSize: 14 }} />}
+                                                    label={zonas}
+                                                    size="small"
+                                                    color="primary"
+                                                    variant="filled"
+                                                    sx={{ fontSize: '0.75rem' }}
+                                                  />
+                                                  {prospecto?.rangoPrecioMin && (
+                                                    <Chip
+                                                      icon={<AttachMoneyIcon sx={{ fontSize: 14 }} />}
+                                                      label={`$${prospecto.rangoPrecioMin.toLocaleString()} - $${prospecto.rangoPrecioMax?.toLocaleString() || 'N/A'}`}
+                                                      size="small"
+                                                      color="success"
+                                                      variant="filled"
+                                                      sx={{ fontSize: '0.75rem' }}
+                                                    />
+                                                  )}
+                                                  {prospecto?.cantidadAmbientes && (
+                                                    <Chip
+                                                      icon={<HomeIcon sx={{ fontSize: 14 }} />}
+                                                      label={`${prospecto.cantidadAmbientes} amb`}
+                                                      size="small"
+                                                      color="info"
+                                                      variant="filled"
+                                                      sx={{ fontSize: '0.75rem' }}
+                                                    />
+                                                  )}
+                                                </Box>
+                                              </Box>
+                                            </Box>
+                                          </CardContent>
+                                        </Card>
+                                      );
+                                    })}
+                                  </Box>
+                                ) : (
+                                  <Typography variant="body2" color="text.secondary">
+                                    No hay prospectos compatibles.
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Collapse>
+                          </Box>
+                        );
+                      })}
                     </Box>
                 </TableContainer>
                 )}
@@ -1378,6 +1727,271 @@ useEffect(() => {
       onClose={() => setModalOpen(false)}
       propiedad={selectedPropiedad}
     />
+
+    {/* Modal de detalles del prospecto */}
+    <Modal
+      open={modalProspectoOpen}
+      onClose={handleCloseProspectoModal}
+      aria-labelledby="prospecto-modal-title"
+      aria-describedby="prospecto-modal-description"
+    >
+      <Box sx={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
+        maxHeight: '85vh',
+        overflow: 'auto',
+        bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'white',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        boxShadow: theme.palette.mode === 'dark' 
+          ? '0 -10px 40px rgba(0,0,0,0.4)' 
+          : '0 -10px 30px rgba(0,0,0,0.2)',
+        outline: 'none',
+        animation: 'slideUp 0.3s ease-out',
+        '@keyframes slideUp': {
+          from: {
+            transform: 'translateY(100%)',
+          },
+          to: {
+            transform: 'translateY(0)',
+          },
+        },
+      }}>
+        {/* Barra indicadora de arrastre */}
+        <Box sx={{
+          width: '40px',
+          height: '4px',
+          bgcolor: 'text.secondary',
+          borderRadius: 2,
+          mx: 'auto',
+          mt: 1,
+          mb: 2,
+          opacity: 0.3
+        }} />
+        
+        {selectedProspecto && (
+          <>
+            {/* Header del modal */}
+            <Box sx={{
+              p: 3,
+              borderBottom: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+              background: `linear-gradient(135deg, ${theme.palette.primary.main}15, ${theme.palette.primary.dark}05)`,
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar
+                    src={selectedProspecto?.logo}
+                    sx={{ 
+                      bgcolor: 'primary.main',
+                      width: 64,
+                      height: 64,
+                      border: `3px solid ${theme.palette.primary.main}`,
+                    }}
+                  >
+                    <PersonIcon sx={{ fontSize: 32 }} />
+                  </Avatar>
+                  <Box>
+                    <Typography id="prospecto-modal-title" variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      {`${selectedProspecto?.nombre || ''} ${selectedProspecto?.apellido || ''}`.trim() || 'Sin nombre'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Prospecto inmobiliario
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {selectedProspecto?.telefono && (
+                    <Tooltip title="Contactar por WhatsApp">
+                      <IconButton 
+                        onClick={() => handleWhatsAppContact(selectedProspecto)}
+                        sx={{ 
+                          bgcolor: '#25D366',
+                          color: 'white',
+                          '&:hover': { 
+                            bgcolor: '#128C7E',
+                            transform: 'scale(1.05)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <WhatsAppIcon />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <IconButton onClick={handleCloseProspectoModal} sx={{ color: 'text.secondary' }}>
+                    <CloseIcon />
+                  </IconButton>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Contenido del modal */}
+            <Box sx={{ p: 3 }}>
+              {/* Información de contacto */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PersonIcon color="primary" />
+                  Información de Contacto
+                </Typography>
+                <Grid2 container spacing={2}>
+                  {selectedProspecto?.email && (
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <EmailIcon color="primary" />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Email</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>{selectedProspecto.email}</Typography>
+                        </Box>
+                      </Box>
+                    </Grid2>
+                  )}
+                  {selectedProspecto?.telefono && (
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <PhoneIcon color="primary" />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Teléfono</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>{selectedProspecto.telefono}</Typography>
+                        </Box>
+                      </Box>
+                    </Grid2>
+                  )}
+                </Grid2>
+              </Box>
+
+              {/* Preferencias de búsqueda */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <HomeIcon color="primary" />
+                  Preferencias de Búsqueda
+                </Typography>
+                <Grid2 container spacing={2}>
+                  {selectedProspecto?.zonaPreferencia && (
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <LocationOnIcon sx={{ fontSize: 16 }} />
+                          Zonas Preferidas
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {Array.isArray(selectedProspecto.zonaPreferencia) 
+                            ? selectedProspecto.zonaPreferencia.map((zona, index) => (
+                                <Chip key={index} label={zona} size="small" color="primary" variant="filled" />
+                              ))
+                            : <Chip label={selectedProspecto.zonaPreferencia} size="small" color="primary" variant="filled" />
+                          }
+                        </Box>
+                      </Box>
+                    </Grid2>
+                  )}
+                  {selectedProspecto?.cantidadAmbientes && (
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <HomeIcon sx={{ fontSize: 16 }} />
+                          Ambientes
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedProspecto.cantidadAmbientes} ambientes
+                        </Typography>
+                      </Box>
+                    </Grid2>
+                  )}
+                  {selectedProspecto?.rangoPrecioMin && (
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <AttachMoneyIcon sx={{ fontSize: 16 }} />
+                          Rango de Precio
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          ${selectedProspecto.rangoPrecioMin.toLocaleString()} - ${selectedProspecto.rangoPrecioMax?.toLocaleString() || 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid2>
+                  )}
+                  
+                  {selectedProspecto?.cantidadPersonas && (
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          Personas
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedProspecto.cantidadPersonas} personas
+                        </Typography>
+                      </Box>
+                    </Grid2>
+                  )}
+                </Grid2>
+              </Box>
+
+              {/* Amenities */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Amenities Preferidos</Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {selectedProspecto?.cochera && (
+                    <Chip label="Cochera" color="success" variant="filled" size="small" />
+                  )}
+                  {selectedProspecto?.patio && (
+                    <Chip label="Patio" color="success" variant="filled" size="small" />
+                  )}
+                  {selectedProspecto?.jardin && (
+                    <Chip label="Jardín" color="success" variant="filled" size="small" />
+                  )}
+                  {selectedProspecto?.pileta && (
+                    <Chip label="Pileta" color="success" variant="filled" size="small" />
+                  )}
+                  {!selectedProspecto?.cochera && !selectedProspecto?.patio && !selectedProspecto?.jardin && !selectedProspecto?.pileta && (
+                    <Typography variant="body2" color="text.secondary">Sin preferencias específicas</Typography>
+                  )}
+                </Box>
+              </Box>
+
+              {/* Información de la inmobiliaria */}
+              <Box sx={{ 
+                p: 3, 
+                borderRadius: 2, 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'grey.50',
+                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+              }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <BusinessIcon color="primary" />
+                  Información de la Inmobiliaria
+                </Typography>
+                <Grid2 container spacing={2}>
+                  {selectedProspecto?.nombreNegocio && (
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <BusinessIcon color="action" />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Nombre</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>{selectedProspecto.nombreNegocio}</Typography>
+                        </Box>
+                      </Box>
+                    </Grid2>
+                  )}
+                  {selectedProspecto?.telefonoUsuario && (
+                    <Grid2 item xs={12} sm={6}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <PhoneIcon color="action" />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Contacto</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>{selectedProspecto.telefonoUsuario}</Typography>
+                        </Box>
+                      </Box>
+                    </Grid2>
+                  )}
+                </Grid2>
+              </Box>
+            </Box>
+          </>
+        )}
+      </Box>
+    </Modal>
     </Box>
 
    

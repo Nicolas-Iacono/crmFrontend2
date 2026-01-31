@@ -13,31 +13,25 @@ const EditarProspecto = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [prospecto, setProspecto] = useState(null);
   
-  console.log('EditarProspecto - Componente montado');
-  console.log('EditarProspecto - ID:', id);
+ 
 
   useEffect(() => {
     const loadProspecto = async () => {
       const stateProspecto = location.state?.prospecto;
-      console.log('EditarProspecto - stateProspecto:', stateProspecto);
       if (stateProspecto) {
-        console.log('EditarProspecto - Usando prospecto del estado:', stateProspecto);
         setProspecto(stateProspecto);
         return;
       }
       try {
         setIsLoading(true);
         const result = await ProspectosApi.listarMisProspectos();
-        console.log('EditarProspecto - Resultado API:', result);
         if (result.error) {
           throw new Error(result.error);
         }
         const arr = Array.isArray(result.data)
           ? result.data
           : (result.data?.data && Array.isArray(result.data.data)) ? result.data.data : [];
-        console.log('EditarProspecto - Array de prospectos:', arr);
         const found = arr.find((item) => String(item.id) === String(id));
-        console.log('EditarProspecto - Prospecto encontrado:', found);
         if (!found) {
           showError('No se encontró el prospecto.');
           navigate('/prospectos');
@@ -90,8 +84,6 @@ const EditarProspecto = () => {
           pileta: Boolean(prospecto?.pileta),
           visibilidadPublico: prospecto?.visibilidadPublico ?? true,
         };
-        console.log('EditarProspecto - initialValues:', initialValues);
-        console.log('EditarProspecto - prospecto:', prospecto);
         return initialValues;
       })()}
       onSubmit={handleSubmit}

@@ -58,6 +58,7 @@ const PropiedadesEditForm = ({ propiedad, onCancel, onSuccess }) => {
     partido: propiedad?.partido || '',
     provincia: propiedad?.provincia || '',
     disponibilidad: Boolean(propiedad?.disponibilidad),
+    visibleAOtros: Boolean(propiedad?.visibleAOtros),
     precio: propiedad?.precio?.toString() || '',
     cantidadAmbientes: propiedad?.cantidadAmbientes?.toString() || '',
     pileta: Boolean(propiedad?.pileta),
@@ -357,6 +358,25 @@ const PropiedadesEditForm = ({ propiedad, onCancel, onSuccess }) => {
                     />
                   }
                   label={values.disponibilidad ? 'Disponible' : 'No disponible'}
+                />
+              </Box>
+                 <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                  Visibilidad de terceros
+                </Typography>
+                 <Typography variant="subtitle1" sx={{ fontWeight: 400, mb: 1, fontSize:15, textAlign:"justify" }}>
+                  Activando esta funcion, permitis que otras inmobiliarias puedan ver tu propiedad, y recomendarte prospectos de ellos, para conectar mas facil tu propiedad en alquiler con un nuevo inquilino.
+                </Typography>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={values.visibleAOtros}
+                      onChange={handleChange}
+                      name="visibleAOtros"
+                      color="primary"
+                    />
+                  }
+                  label={values.visibleAOtros ? 'Visible para otros' : 'Solo para mi'}
                 />
               </Box>
 
