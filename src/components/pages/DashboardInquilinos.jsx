@@ -73,6 +73,7 @@ const DashboardInquilinos = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_URL;
+  const apiRoot = `${API_BASE}${String(API_BASE || '').includes('/api') ? '' : '/api'}`;
   
   const [recibos, setRecibos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -987,7 +988,7 @@ if (contratoInfo) {
     setPayingReciboId(recibo.id);
     try {
       const response = await axios.post(
-        `${API_BASE}/recibo/${recibo.id}/pagar`,
+        `${apiRoot}/recibo/${recibo.id}/pagar`,
         null,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1000,11 +1001,16 @@ if (contratoInfo) {
       window.location.href = initPoint;
     } catch (error) {
       console.error('Error iniciando pago:', error);
-      const msg =
+      const backendMessage =
         error?.response?.data?.error ||
         error?.response?.data?.message ||
         error?.message ||
         'No se pudo iniciar el pago.';
+      const normalizedMessage = backendMessage?.toLowerCase?.() || '';
+      const mpNotConnected = normalizedMessage.includes('mercado pago') && normalizedMessage.includes('conect');
+      const msg = mpNotConnected
+        ? 'La inmobiliaria aún no conectó Mercado Pago. Pedile que lo conecte desde Configuración.'
+        : backendMessage;
       Swal.fire({
         icon: 'error',
         title: 'Error al iniciar el pago',
