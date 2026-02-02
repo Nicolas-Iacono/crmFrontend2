@@ -288,11 +288,13 @@ const handleConfirmDelete = async () => {
   const codigoPostal = usuarioFetch?.codigoPostal || 'Ciudad, País';
   const pais = usuarioFetch?.pais || 'Ciudad, País';
   const matricula = usuarioFetch?.matricula || '000000';
+
   const apiRoot = `${import.meta.env.VITE_API_URL}${String(import.meta.env.VITE_API_URL || '').includes('/api') ? '' : '/api'}`;
   const isMercadoPagoConnected = Boolean(
     usuarioFetch?.mpConnected || usuarioFetch?.mpUserId || usuarioFetch?.mpAccessToken
   );
   const mercadoPagoAuthorizeUrl = `${apiRoot}/mercadopago/oauth/authorize`;
+
 
   const qrData = usuarioFetch
     ? `BEGIN:VCARD
