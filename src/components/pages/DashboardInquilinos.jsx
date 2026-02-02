@@ -93,6 +93,7 @@ const DashboardInquilinos = () => {
   const [currentPdfTitle, setCurrentPdfTitle] = useState('');
   const [downloadingPdf, setDownloadingPdf] = useState(null);
   const [downloadingRecibo, setDownloadingRecibo] = useState(null);
+  const [payingReciboId, setPayingReciboId] = useState(null);
   const [nombreInmoContrato, setNombreInmoContrato] = useState('');
   const [contratoCompleto, setContratoCompleto] = useState(null);
 
@@ -976,6 +977,44 @@ if (contratoInfo) {
     }
   };
 
+  const handlePayRecibo = async (recibo) => {
+    const token = localStorage.getItem('inquilino_token') || localStorage.getItem('propietario_token');
+    if (!token) {
+      navigate('/login-inquilinos');
+      return;
+    }
+
+    setPayingReciboId(recibo.id);
+    try {
+      const response = await axios.post(
+        `${API_BASE}/recibo/${recibo.id}/pagar`,
+        null,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const initPoint = response?.data?.initPoint;
+      if (!initPoint) {
+        throw new Error('No se pudo iniciar el pago.');
+      }
+
+      window.location.href = initPoint;
+    } catch (error) {
+      console.error('Error iniciando pago:', error);
+      const msg =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        'No se pudo iniciar el pago.';
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al iniciar el pago',
+        text: msg,
+      });
+    } finally {
+      setPayingReciboId(null);
+    }
+  };
+
   const toggleExpandRecibo = (reciboId) => {
     setExpandedRecibos(prev => {
       const newSet = new Set(prev);
@@ -1745,6 +1784,21 @@ if (contratoInfo) {
                           color={getEstadoColor(recibo.estado)}
                           variant="filled"
                         />
+                        <Button
+                          variant="contained"
+                          size="small"
+                          disabled={recibo.estado || payingReciboId === recibo.id}
+                          onClick={() => handlePayRecibo(recibo)}
+                          sx={{
+                            textTransform: 'none',
+                            backgroundColor: '#1a237e',
+                            '&:hover': {
+                              backgroundColor: '#0d47a1'
+                            }
+                          }}
+                        >
+                          {payingReciboId === recibo.id ? 'Redirigiendo...' : 'Pagar con Mercado Pago'}
+                        </Button>
                         <Button
                           variant="outlined"
                           size="small"
