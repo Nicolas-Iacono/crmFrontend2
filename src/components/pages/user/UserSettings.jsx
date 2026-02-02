@@ -4,6 +4,7 @@ import { useAuth } from '../../context/GlobalAuth';
 import { Box, Typography, Avatar, Paper, IconButton, Fab, Modal, Backdrop, Fade, TextField, Button, Divider, CircularProgress, useTheme, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import ShareIcon from '@mui/icons-material/Share';
 import QRCode from 'react-qr-code';
@@ -194,6 +195,13 @@ const handleConfirmDelete = async () => {
     setSubscriptionModalOpen(false);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('ok') === '1') {
+      showSuccess('Cuenta de Mercado Pago conectada exitosamente.');
+    }
+  }, []);
+
 
 
   // Carga inicial robusta: espera a que tengamos username desde usuarioFetch o user, y trae datos con token
@@ -280,6 +288,10 @@ const handleConfirmDelete = async () => {
   const codigoPostal = usuarioFetch?.codigoPostal || 'Ciudad, País';
   const pais = usuarioFetch?.pais || 'Ciudad, País';
   const matricula = usuarioFetch?.matricula || '000000';
+  const isMercadoPagoConnected = Boolean(
+    usuarioFetch?.mpConnected || usuarioFetch?.mpUserId || usuarioFetch?.mpAccessToken
+  );
+  const mercadoPagoAuthorizeUrl = `${import.meta.env.VITE_API_URL}/mercadopago/oauth/authorize`;
 
   const qrData = usuarioFetch
     ? `BEGIN:VCARD
@@ -547,6 +559,50 @@ END:VCARD`
                   <GoogleLoginButton onClick={handleLink} />
                 </Box>
               )}
+            </Box>
+
+            {/* Sección de Mercado Pago */}
+            <Box sx={{ 
+              my: 4, 
+              p: 2, 
+              border: `1px solid ${theme.palette.divider}`, 
+              borderRadius: '8px', 
+              backgroundColor: theme.palette.background.paper 
+            }}>
+              <Typography variant="h6" gutterBottom color={theme.palette.mode === 'dark' ? 'white' : "black"}>
+                Mercado Pago
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                {isMercadoPagoConnected ? (
+                  <>
+                    <CheckCircleIcon sx={{ color: '#4caf50' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Mercado Pago conectado
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <WarningAmberIcon sx={{ color: '#ff9800' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Mercado Pago no conectado
+                    </Typography>
+                  </>
+                )}
+              </Box>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {isMercadoPagoConnected
+                  ? 'Tu cuenta está lista para recibir pagos desde los recibos.'
+                  : 'Conectá tu cuenta para habilitar el cobro a inquilinos desde Mercado Pago.'}
+              </Typography>
+              <Button
+                variant={isMercadoPagoConnected ? 'outlined' : 'contained'}
+                color="primary"
+                onClick={() => {
+                  window.location.href = mercadoPagoAuthorizeUrl;
+                }}
+              >
+                {isMercadoPagoConnected ? 'Reconectar Mercado Pago' : 'Conectar Mercado Pago'}
+              </Button>
             </Box>
 
             {/* Sección de Estado de Suscripción */}
