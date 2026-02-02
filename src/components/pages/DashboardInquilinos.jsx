@@ -1000,11 +1000,16 @@ if (contratoInfo) {
       window.location.href = initPoint;
     } catch (error) {
       console.error('Error iniciando pago:', error);
-      const msg =
+      const backendMessage =
         error?.response?.data?.error ||
         error?.response?.data?.message ||
         error?.message ||
         'No se pudo iniciar el pago.';
+      const normalizedMessage = backendMessage?.toLowerCase?.() || '';
+      const mpNotConnected = normalizedMessage.includes('mercado pago') && normalizedMessage.includes('conect');
+      const msg = mpNotConnected
+        ? 'La inmobiliaria aún no conectó Mercado Pago. Pedile que lo conecte desde Configuración.'
+        : backendMessage;
       Swal.fire({
         icon: 'error',
         title: 'Error al iniciar el pago',
