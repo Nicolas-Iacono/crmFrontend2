@@ -73,6 +73,7 @@ const DashboardInquilinos = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_URL;
+  const apiRoot = `${API_BASE}${String(API_BASE || '').includes('/api') ? '' : '/api'}`;
   
   const [recibos, setRecibos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -987,7 +988,7 @@ if (contratoInfo) {
     setPayingReciboId(recibo.id);
     try {
       const response = await axios.post(
-        `${API_BASE}/recibo/${recibo.id}/pagar`,
+        `${apiRoot}/recibo/${recibo.id}/pagar`,
         null,
         { headers: { Authorization: `Bearer ${token}` } }
       );
