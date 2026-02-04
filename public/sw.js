@@ -150,16 +150,37 @@ self.addEventListener("fetch", (event) => {
 // ==========================
 // ====== NOTIFICACIONES ======
 self.addEventListener("push", (event) => {
-  const data = event.data.json();
-  event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: "/logoInmo512.png",
-      badge: "/logoInmo192.png",
-      vibrate: [200, 100, 200],
-      actions: [{ action: "view", title: "Ver recibo" }],
-    })
-  );
+  let data = {};
+  try {
+    if (event.data) {
+      data = event.data.json();
+    }
+  } catch (error) {
+    data = {};
+  }
+
+  const payload = data || {};
+  const notifyClients = self.clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  }).then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({
+        type: "PUSH_NOTIFICATION",
+        payload,
+      });
+    });
+  });
+
+  const showNotification = self.registration.showNotification(payload.title, {
+    body: payload.body,
+    icon: "/logoInmo512.png",
+    badge: "/logoInmo192.png",
+    vibrate: [200, 100, 200],
+    actions: [{ action: "view", title: "Ver recibo" }],
+  });
+
+  event.waitUntil(Promise.all([notifyClients, showNotification]));
 });
 
 self.addEventListener("notificationclick", (event) => {
