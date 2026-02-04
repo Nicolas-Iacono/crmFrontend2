@@ -20,6 +20,8 @@ import {
   useTheme,
   useMediaQuery,
   Collapse,
+  Modal,
+  Slide,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -61,7 +63,8 @@ import {
   PictureAsPdf as PdfIcon,
   Visibility as ViewIcon,
   Close as CloseIcon,
-  CloudDownload as CloudDownloadIcon
+  CloudDownload as CloudDownloadIcon,
+  ContentCopy as ContentCopyIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -97,6 +100,15 @@ const DashboardInquilinos = () => {
   const [payingReciboId, setPayingReciboId] = useState(null);
   const [nombreInmoContrato, setNombreInmoContrato] = useState('');
   const [contratoCompleto, setContratoCompleto] = useState(null);
+
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [selectedReciboToPay, setSelectedReciboToPay] = useState(null);
+  const [transferenciaInfo, setTransferenciaInfo] = useState(null);
+  const [loadingTransferenciaInfo, setLoadingTransferenciaInfo] = useState(false);
+  const [notifyingPayment, setNotifyingPayment] = useState(false);
+  const [yaPagueModalOpen, setYaPagueModalOpen] = useState(false);
+  const [yaPagueAmount, setYaPagueAmount] = useState('');
+  const [yaPagueReference, setYaPagueReference] = useState('');
 
   const [commTab, setCommTab] = useState(0); // 0: mensajes, 1: reportes, 2: notificaciones
   const [selectedThreadId, setSelectedThreadId] = useState('inmo');
@@ -174,6 +186,129 @@ const DashboardInquilinos = () => {
         time: 'Ayer',
       },
     ],
+  };
+
+  const copyToClipboard = async (text, successMessage) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showSnackbar(successMessage, 'success');
+    } catch (e) {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showSnackbar(successMessage, 'success');
+      } catch {
+        showSnackbar('No se pudo copiar al portapapeles', 'error');
+      }
+    }
+  };
+
+  const handleOpenYaPagueModal = () => {
+    if (!selectedReciboToPay) {
+      showSnackbar('No se encontró el recibo asociado.', 'warning');
+      return;
+    }
+
+    const amount = Number(calcularMontoTotal(selectedReciboToPay)).toFixed(2);
+    setYaPagueAmount(amount);
+    setYaPagueReference('');
+    setYaPagueModalOpen(true);
+  };
+
+  const handleCloseYaPagueModal = () => {
+    setYaPagueModalOpen(false);
+  };
+
+  const handleSubmitYaPague = async () => {
+    const token = localStorage.getItem('inquilino_token') || localStorage.getItem('propietario_token');
+    if (!token) {
+      navigate('/login-inquilinos');
+      return;
+    }
+
+    setNotifyingPayment(true);
+    try {
+      const reciboId = selectedReciboToPay?.id;
+      if (!reciboId) {
+        showSnackbar('No se encontró el recibo asociado.', 'warning');
+        return;
+      }
+
+      const amountNumber = Number(yaPagueAmount);
+      if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
+        showSnackbar('Ingresá un monto válido.', 'warning');
+        return;
+      }
+
+      const payload = {
+        amount: amountNumber,
+        reference: yaPagueReference?.trim() || null,
+      };
+
+      await axios.post(
+        `${apiRoot}/recibo/${reciboId}/pagar/transferencia/notificar`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      showSnackbar('Aviso enviado. La inmobiliaria verificará el pago.', 'success');
+      handleCloseYaPagueModal();
+      handleClosePayModal();
+    } catch (error) {
+      console.error('Error notificando pago por transferencia:', error);
+      const msg =
+        error?.response?.data?.detalle ||
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        'No se pudo avisar el pago.';
+
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo avisar el pago',
+        text: msg,
+      });
+    } finally {
+      setNotifyingPayment(false);
+    }
+  };
+
+  const handleCopyAlias = async () => {
+    const alias = transferenciaInfo?.alias?.trim();
+    if (!alias) {
+      showSnackbar('No hay alias para copiar', 'warning');
+      return;
+    }
+    await copyToClipboard(alias, 'Alias copiado');
+  };
+
+  const handleCopyMonto = async () => {
+    if (!selectedReciboToPay) {
+      showSnackbar('No hay monto para copiar', 'warning');
+      return;
+    }
+
+    const monto = Number(calcularMontoTotal(selectedReciboToPay)).toFixed(2);
+    await copyToClipboard(monto, 'Monto copiado');
+  };
+
+  const normalizeTransferenciaInfo = (raw) => {
+    const data = raw?.data ?? raw?.transferencia ?? raw ?? {};
+    return {
+      alias: data.alias ?? raw?.alias ?? '',
+      cbu: data.cbu ?? raw?.cbu ?? '',
+      titular: data.titular ?? raw?.titular ?? '',
+      cuit: data.cuit ?? raw?.cuit ?? '',
+      banco: data.banco ?? raw?.banco ?? '',
+      nombreNegocio: data.nombreNegocio ?? raw?.nombreNegocio ?? '',
+    };
   };
 
   const activeThread = commThreads.find(t => t.id === selectedThreadId) || commThreads[0];
@@ -459,6 +594,7 @@ const DashboardInquilinos = () => {
       }));
 
       setRecibos(recibosNormalizados);
+      console.log('[DashboardInquilinos] Recibos normalizados:', recibosNormalizados);
 
       // Si tenemos nombreContrato en contratoInfo, usarlo para buscar contrato completo
       if (!nombreInmoContrato && (contratoInfo?.nombreContrato)) {
@@ -488,6 +624,8 @@ const DashboardInquilinos = () => {
       if (response.data?.nombreContrato) {
         setNombreInmoContrato(response.data.nombreContrato);
       }
+
+      return response.data;
     } catch (error) {
       console.error('Error fetching contrato info:', error);
       
@@ -502,6 +640,75 @@ const DashboardInquilinos = () => {
       }
     } finally {
       setLoadingContrato(false);
+    }
+  };
+
+  const handleOpenPayModal = async (recibo) => {
+    const token = localStorage.getItem('inquilino_token') || localStorage.getItem('propietario_token');
+    if (!token) {
+      navigate('/login-inquilinos');
+      return;
+    }
+
+    setPayingReciboId(recibo.id);
+    setSelectedReciboToPay(recibo);
+    setPayModalOpen(true);
+
+    try {
+      setLoadingTransferenciaInfo(true);
+      setTransferenciaInfo(null);
+
+      let contrato = contratoInfo;
+      if (!contrato?.usuarioDtoSalida?.id) {
+        contrato = await fetchContratoInfo(token);
+      }
+
+      const usuarioId = contrato?.usuarioDtoSalida?.id;
+
+      if (!usuarioId) {
+        throw new Error('No se pudo obtener el usuario de la inmobiliaria.');
+      }
+
+      const resp = await axios.get(`${apiRoot}/usuario/cobro/${usuarioId}/transferencia`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setTransferenciaInfo(normalizeTransferenciaInfo(resp?.data));
+    } catch (error) {
+      console.error('Error obteniendo datos de transferencia:', error);
+      const msg =
+        error?.response?.data?.detalle ||
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        'No se pudo cargar la información de pago.';
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+      });
+    } finally {
+      setLoadingTransferenciaInfo(false);
+      setPayingReciboId(null);
+    }
+  };
+
+  const handleClosePayModal = () => {
+    setPayModalOpen(false);
+    setSelectedReciboToPay(null);
+    setTransferenciaInfo(null);
+    setPayingReciboId(null);
+    setYaPagueModalOpen(false);
+  };
+
+  const handleOpenMercadoPago = () => {
+    const mpUrl = 'https://www.mercadopago.com.ar/';
+
+    // mejor que location.href en PWA, pero con fallback si el popup está bloqueado
+    const w = window.open(mpUrl, '_blank', 'noopener,noreferrer');
+    if (!w) {
+      window.location.href = mpUrl;
     }
   };
 
@@ -669,10 +876,17 @@ if (contratoInfo) {
   };
 
   const calcularMontoTotal = (recibo) => {
-    const montoAlquiler = recibo.montoTotal || 0;
-    const montoImpuestos = Array.isArray(recibo.impuestos) 
-      ? recibo.impuestos.reduce((total, impuesto) => total + (impuesto.montoAPagar || 0), 0)
+    const montoAlquiler = Number(recibo?.montoTotal ?? 0) || 0;
+    const montoImpuestos = Array.isArray(recibo?.impuestos)
+      ? recibo.impuestos.reduce((total, impuesto) => {
+          const monto = Number(impuesto?.montoAPagar ?? 0) || 0;
+          const porcentaje = Number(impuesto?.porcentaje ?? 100);
+          const porcentajeValido = Number.isFinite(porcentaje) ? porcentaje : 100;
+          const montoCalculado = porcentajeValido === 100 ? monto : monto * (porcentajeValido / 100);
+          return total + montoCalculado;
+        }, 0)
       : 0;
+
     return montoAlquiler + montoImpuestos;
   };
 
@@ -749,7 +963,7 @@ if (contratoInfo) {
         })) : [],
         contrato: contratoCompleto || recibo.contrato || {}
       };
-
+console.log(reciboNormalizado)
       // Asegurar que el contrato tenga todas las propiedades necesarias
       if (reciboNormalizado.contrato) {
         reciboNormalizado.contrato.inquilino = reciboNormalizado.contrato.inquilino || {};
@@ -988,7 +1202,7 @@ if (contratoInfo) {
     setPayingReciboId(recibo.id);
     try {
       const response = await axios.post(
-        `${apiRoot}/recibo/${recibo.id}/pagar`,
+        `${apiRoot}/recibo/${recibo.id}/pagar/mp`,
         null,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1001,11 +1215,13 @@ if (contratoInfo) {
       window.location.href = initPoint;
     } catch (error) {
       console.error('Error iniciando pago:', error);
-      const backendMessage =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        error?.message ||
-        'No se pudo iniciar el pago.';
+   const backendMessage =
+  error?.response?.data?.detalle ||   
+  error?.response?.data?.error ||
+  error?.response?.data?.message ||
+  error?.message ||
+  'No se pudo iniciar el pago.';
+  console.log("BACKEND DATA:", error?.response?.data);
       const normalizedMessage = backendMessage?.toLowerCase?.() || '';
       const mpNotConnected = normalizedMessage.includes('mercado pago') && normalizedMessage.includes('conect');
       const msg = mpNotConnected
@@ -1091,6 +1307,254 @@ if (contratoInfo) {
       </AppBar>
 
       <Box sx={{ p: { xs: 2, md: 4 }, pb: { xs: 10, md: 12 } }}>
+        <Modal
+          open={payModalOpen}
+          onClose={handleClosePayModal}
+          closeAfterTransition
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+        >
+          <Slide in={payModalOpen} direction="up">
+            <Paper
+              sx={{
+                width: '100%',
+                maxWidth: 520,
+                maxHeight: '90vh',
+                height: '90vh',
+                borderTopLeftRadius: 25,
+                borderTopRightRadius: 25,
+                overflow: 'hidden',
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 2.5,
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Pagar
+                </Typography>
+                <IconButton onClick={handleClosePayModal}>
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+              <Divider />
+
+              <Box sx={{ p: 2.5, overflowY: 'auto', flex: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Mercado Pago
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Transferencia a la inmobiliaria
+                </Typography>
+
+                <Box sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: 'rgba(0, 181, 226, 0.06)',
+                  border: '1px solid rgba(0, 181, 226, 0.2)',
+                  mb: 2
+                }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
+                    ¿Cómo pagar?
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    1) Copiá el monto y el alias.
+                    <br />
+                    2) Abrí Mercado Pago.
+                    <br />
+                    3) Elegí la opción “Transferir”.
+                    <br />
+                    4) Pegá el alias y el monto para completar el pago.
+                    <br />
+                    5) Una vez realizado el pago, hacé click en “Ya pagué” para que sepamos de tu pago.
+                  </Typography>
+                </Box>
+
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Inmobiliaria
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {contratoInfo?.usuarioDtoSalida?.nombreNegocio || nombreInmoContrato || transferenciaInfo?.nombreNegocio || '—'}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Monto
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                      {selectedReciboToPay
+                        ? `$${calcularMontoTotal(selectedReciboToPay).toLocaleString('es-AR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
+                        : '—'}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={handleCopyMonto}
+                      disabled={loadingTransferenciaInfo || !selectedReciboToPay}
+                      startIcon={<ContentCopyIcon fontSize="small" />}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Copiar monto
+                    </Button>
+                  </Box>
+                </Box>
+
+                {loadingTransferenciaInfo ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : (
+                  <>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Alias
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
+                        <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                          {transferenciaInfo?.alias || '—'}
+                        </Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={handleCopyAlias}
+                          disabled={loadingTransferenciaInfo || !transferenciaInfo?.alias}
+                          startIcon={<ContentCopyIcon fontSize="small" />}
+                          sx={{ textTransform: 'none' }}
+                        >
+                          Copiar alias
+                        </Button>
+                      </Box>
+                    </Box>
+
+                    <Box sx={{ mb: 3 }}>
+                      {transferenciaInfo?.titular && (
+                        <Typography variant="body2" color="text.secondary">
+                          Titular: <span style={{ color: 'inherit', fontWeight: 600 }}>{transferenciaInfo.titular}</span>
+                        </Typography>
+                      )}
+                      {transferenciaInfo?.banco && (
+                        <Typography variant="body2" color="text.secondary">
+                          Banco: <span style={{ color: 'inherit', fontWeight: 600 }}>{transferenciaInfo.banco}</span>
+                        </Typography>
+                      )}
+                      {transferenciaInfo?.cbu && (
+                        <Typography variant="body2" color="text.secondary">
+                          CBU: <span style={{ color: 'inherit', fontWeight: 600 }}>{transferenciaInfo.cbu}</span>
+                        </Typography>
+                      )}
+                      {transferenciaInfo?.cuit && (
+                        <Typography variant="body2" color="text.secondary">
+                          CUIT: <span style={{ color: 'inherit', fontWeight: 600 }}>{transferenciaInfo.cuit}</span>
+                        </Typography>
+                      )}
+                    </Box>
+                  </>
+                )}
+              </Box>
+
+              <Box
+                sx={{
+                  p: 2.5,
+                  borderTop: '1px solid rgba(0,0,0,0.12)',
+                  backgroundColor: 'background.paper',
+                }}
+              >
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={handleOpenMercadoPago}
+                  disabled={loadingTransferenciaInfo}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 800,
+                    py: 1.4,
+                    borderRadius: 2,
+                    backgroundColor: '#00B5E2',
+                    '&:hover': { backgroundColor: '#0099CC' },
+                  }}
+                >
+                  Abrir Mercado Pago
+                </Button>
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1.5, textAlign: 'center' }}
+                >
+                  o abona desde tu app bancaria
+                </Typography>
+
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={handleOpenYaPagueModal}
+                  disabled={loadingTransferenciaInfo || notifyingPayment}
+                  sx={{
+                    mt: 2,
+                    textTransform: 'none',
+                    fontWeight: 800,
+                    py: 1.2,
+                    borderRadius: 2,
+                  }}
+                >
+                  {notifyingPayment ? 'Enviando...' : 'Ya pagué'}
+                </Button>
+              </Box>
+            </Paper>
+          </Slide>
+        </Modal>
+
+        <Dialog open={yaPagueModalOpen} onClose={handleCloseYaPagueModal} fullWidth maxWidth="sm">
+          <DialogTitle>Notificar pago por transferencia</DialogTitle>
+          <DialogContent>
+            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+
+              <TextField
+                label="Referencia"
+                value={yaPagueReference}
+                onChange={(e) => setYaPagueReference(e.target.value)}
+                fullWidth
+                disabled={notifyingPayment}
+                placeholder="Ej: apellido / febrero 26"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseYaPagueModal} disabled={notifyingPayment} sx={{ textTransform: 'none' }}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSubmitYaPague}
+              disabled={notifyingPayment}
+              sx={{ textTransform: 'none', fontWeight: 800 }}
+            >
+              {notifyingPayment ? 'Enviando...' : 'Enviar aviso'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         {/* Contenido según la sección activa */}
         {activeSection === 'home' && (
           <Box>
@@ -1794,7 +2258,7 @@ if (contratoInfo) {
                           variant="contained"
                           size="small"
                           disabled={recibo.estado || payingReciboId === recibo.id}
-                          onClick={() => handlePayRecibo(recibo)}
+                          onClick={() => handleOpenPayModal(recibo)}
                           sx={{
                             textTransform: 'none',
                             backgroundColor: '#1a237e',
@@ -1803,7 +2267,7 @@ if (contratoInfo) {
                             }
                           }}
                         >
-                          {payingReciboId === recibo.id ? 'Redirigiendo...' : 'Pagar con Mercado Pago'}
+                          {payingReciboId === recibo.id ? 'Cargando...' : 'Pagar'}
                         </Button>
                         <Button
                           variant="outlined"

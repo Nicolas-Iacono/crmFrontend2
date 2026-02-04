@@ -40,6 +40,7 @@ import { useAuth } from "./components/context/GlobalAuth";
 import { Navigate } from "react-router-dom";
 import CalculadoraDeAlquileres from "./components/pages/CalculadoraDeAlquileres";
 import MercadoPagoTest from "./components/pages/MercadoPagoTest.jsx";
+import MercadoPagoCallback from "./components/pages/MercadoPagoCallback";
 import CalendarioPage from "./components/pages/CalendarioPage";
 import AsignarPropietario from "./components/pages/pagesForm/AsignarPropietario";
 import EditarPropiedad from "./components/pages/pagesForm/EditarPropiedad.jsx";
@@ -180,6 +181,7 @@ function AppRoutes() {
         <Route path="garantes" element={<GarantesPage />} />
         <Route path="nuevo-garante" element={<NuevoGarante />} />
         <Route path="ajustes" element={<UserSettings />} />
+        <Route path="ajustes/mercadopago/callback" element={<MercadoPagoCallback />} />
         <Route path="calculadora-de-alquileres" element={<CalculadoraDeAlquileres />} />
         <Route path="calendario" element={<CalendarioPage />} />
         <Route path="presupuestos" element={<PresupuestoPage />} />

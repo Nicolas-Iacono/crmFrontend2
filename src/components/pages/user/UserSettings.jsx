@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/GlobalAuth';
-import { Box, Typography, Avatar, Paper, IconButton, Fab, Modal, Backdrop, Fade, TextField, Button, Divider, CircularProgress, useTheme, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
+import { Box, Typography, Avatar, Paper, IconButton, Fab, Modal, Backdrop, Fade, TextField, Button, Divider, CircularProgress, useTheme, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Chip, Stack } from '@mui/material';
 import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -14,10 +14,12 @@ import GoogleLoginButton from '../../common/BotonGoogle/GoogleLoginButton';
 import useGoogleLink from '../../../hooks/useGoogleLink';
 import { googleUserApi } from '../../api/googleUserApi';
 import DeleteIcon from '@mui/icons-material/Delete';
+import PaymentIcon from '@mui/icons-material/Payment';
 import { usuarioApi } from '../../api/usuarioApi';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import SubscriptionModal from '../../common/SubscriptionModal/SubscriptionModal';
+import ConfigurarPagosModal from '../../common/ConfigurarPagosModal';
 import { showSuccess, showError, showWarning } from '../../alertas/showAlert';
 const UserSettings = () => {
   const theme = useTheme();
@@ -32,6 +34,9 @@ const UserSettings = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [mercadoPagoStatus, setMercadoPagoStatus] = useState(null);
+  const [loadingMercadoPagoStatus, setLoadingMercadoPagoStatus] = useState(false);
+  const [configurarPagosModalOpen, setConfigurarPagosModalOpen] = useState(false);
     const handleOpenQR = () => setOpenQR(true);
   const handleCloseQR = () => setOpenQR(false);
 
@@ -293,7 +298,73 @@ const handleConfirmDelete = async () => {
   const isMercadoPagoConnected = Boolean(
     usuarioFetch?.mpConnected || usuarioFetch?.mpUserId || usuarioFetch?.mpAccessToken
   );
-  const mercadoPagoAuthorizeUrl = `${apiRoot}/mercadopago/oauth/authorize`;
+
+  // Función para conectar con Mercado Pago
+  const handleMercadoPagoConnect = async () => {
+    try {
+      const response = await axios.get(`${apiRoot}/mercadopago/connect-url`);
+      const { authUrl } = response.data;
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Error al obtener URL de conexión con Mercado Pago:', error);
+      showError('Error al conectar con Mercado Pago. Intente nuevamente.');
+    }
+  };
+
+  // Función para verificar el status de Mercado Pago
+  const fetchMercadoPagoStatus = async () => {
+    try {
+      setLoadingMercadoPagoStatus(true);
+      const token = localStorage.getItem("token") || localStorage.getItem("propietario_token") || localStorage.getItem("admin_token");
+      const response = await axios.get(`${apiRoot}/mercadopago/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMercadoPagoStatus(response.data);
+    } catch (error) {
+      console.error('Error al verificar status de Mercado Pago:', error);
+      setMercadoPagoStatus({ connected: false });
+    } finally {
+      setLoadingMercadoPagoStatus(false);
+    }
+  };
+
+  // Función para desconectar Mercado Pago
+  const handleMercadoPagoDisconnect = async () => {
+    try {
+      const result = await Swal.fire({
+        title: '¿Estás seguro?',
+        text: "Se desconectará tu cuenta de Mercado Pago y ya no podrás recibir pagos automáticos.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, desconectar',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (result.isConfirmed) {
+        const token = localStorage.getItem("token") || localStorage.getItem("propietario_token") || localStorage.getItem("admin_token");
+        await axios.post(`${apiRoot}/mercadopago/disconnect`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Actualizar el status local
+        setMercadoPagoStatus({ connected: false });
+        
+        showSuccess('Cuenta de Mercado Pago desconectada exitosamente.');
+      }
+    } catch (error) {
+      console.error('Error al desconectar Mercado Pago:', error);
+      showError('Error al desconectar Mercado Pago. Intente nuevamente.');
+    }
+  };
+
+  // Efecto para cargar el status de Mercado Pago
+  useEffect(() => {
+    if (isLogged && usuarioFetch) {
+      fetchMercadoPagoStatus();
+    }
+  }, [isLogged, usuarioFetch]);
 
 
   const qrData = usuarioFetch
@@ -332,16 +403,17 @@ END:VCARD`
       display: 'flex', 
       justifyContent: 'start', 
       alignItems: 'flex-start', 
-      pt: '6',
-      height: '100vh',
+      pt: 2,
+      minHeight: '100vh',
       flexDirection: 'column',
       marginLeft: { xs:"0",md: '15rem' },
+      overflowY: 'auto'
     }}>
       <Paper elevation={4} sx={{ 
         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
         borderRadius: "0 0 20px 20px",
           width:"100%",
-          height:"30%",
+          minHeight:"200px",
           overflow: 'hidden',
          
             display:"flex",
@@ -419,14 +491,14 @@ END:VCARD`
         {/* Datos del usuario */}
         
 
-        <Box px={3} pt={5} sx={{
+        <Box px={3} pt={3} pb={3} sx={{
     display: "flex",
     flexDirection: "column",
     width: { xs: '85%', md: '80%' },
     flex: 1, // importante: ocupa el resto del espacio disponible
     overflowY: "auto", // habilita el scroll
-    paddingBottom: "100px", // espacio para el botón fijo
-    justifyContent:"space-between",
+    paddingBottom: "50px", // espacio reducido para el botón fijo
+    justifyContent:"flex-start",
     alignItems:"flex-start"
   }}
 >
@@ -567,44 +639,254 @@ END:VCARD`
             {/* Sección de Mercado Pago */}
             <Box sx={{ 
               my: 4, 
-              p: 2, 
+              p: 3, 
               border: `1px solid ${theme.palette.divider}`, 
-              borderRadius: '8px', 
-              backgroundColor: theme.palette.background.paper 
+              borderRadius: '12px', 
+              backgroundColor: theme.palette.background.paper,
+              position: 'relative',
+              overflow: 'hidden'
             }}>
-              <Typography variant="h6" gutterBottom color={theme.palette.mode === 'dark' ? 'white' : "black"}>
-                Mercado Pago
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                {isMercadoPagoConnected ? (
-                  <>
-                    <CheckCircleIcon sx={{ color: '#4caf50' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      Mercado Pago conectado
+              {/* Header con logo y status */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ 
+                    width: 48, 
+                    height: 48, 
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #00B5E2 0%, #0055A4 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', fontSize: '14px' }}>
+                      MP
                     </Typography>
-                  </>
-                ) : (
-                  <>
-                    <WarningAmberIcon sx={{ color: '#ff9800' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      Mercado Pago no conectado
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      Mercado Pago
                     </Typography>
-                  </>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {/* Indicador de estado */}
+                      <Box sx={{ 
+                        width: 8, 
+                        height: 8, 
+                        borderRadius: '50%',
+                        backgroundColor: mercadoPagoStatus?.connected ? '#4caf50' : '#ff9800',
+                        animation: mercadoPagoStatus?.connected ? 'pulse 2s infinite' : 'none',
+                        '@keyframes pulse': {
+                          '0%': { transform: 'scale(1)', opacity: 1 },
+                          '50%': { transform: 'scale(1.1)', opacity: 0.8 },
+                          '100%': { transform: 'scale(1)', opacity: 1 },
+                        }
+                      }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {loadingMercadoPagoStatus 
+                          ? 'Verificando estado...' 
+                          : mercadoPagoStatus?.connected 
+                            ? 'Conectado' 
+                            : 'No conectado'
+                        }
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+                
+                {/* Badge de estado */}
+                {mercadoPagoStatus?.connected && (
+                  <Chip 
+                    label="Activo" 
+                    size="small"
+                    sx={{ 
+                      backgroundColor: '#e8f5e8',
+                      color: '#2e7d32',
+                      fontWeight: 500,
+                      fontSize: '0.75rem'
+                    }}
+                  />
                 )}
               </Box>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                {isMercadoPagoConnected
-                  ? 'Tu cuenta está lista para recibir pagos desde los recibos.'
-                  : 'Conectá tu cuenta para habilitar el cobro a inquilinos desde Mercado Pago.'}
-              </Typography>
+
+              {/* Información adicional */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  {mercadoPagoStatus?.connected
+                    ? 'Tu cuenta está lista para recibir pagos automáticos desde los recibos.'
+                    : 'Conectá tu cuenta de Mercado Pago para habilitar el cobro automático a inquilinos.'
+                  }
+                </Typography>
+                
+                {/* Información detallada cuando está conectado */}
+                {mercadoPagoStatus?.connected && mercadoPagoStatus.mpAccountEmail && (
+                  <Box sx={{ 
+                    p: 2, 
+                    borderRadius: '8px',
+                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#f5f5f5',
+                    mt: 2
+                  }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      <strong>Cuenta vinculada:</strong> {mercadoPagoStatus.mpAccountEmail}
+                    </Typography>
+                    {mercadoPagoStatus.tokenExpiresAt && (
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Tokens expiran:</strong> {new Date(mercadoPagoStatus.tokenExpiresAt).toLocaleDateString()}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Box>
+
+              {/* Botón de acción moderno */}
               <Button
-                variant={isMercadoPagoConnected ? 'outlined' : 'contained'}
-                color="primary"
-                onClick={() => {
-                  window.location.href = mercadoPagoAuthorizeUrl;
+                fullWidth
+                variant={mercadoPagoStatus?.connected ? "outlined" : "contained"}
+                onClick={mercadoPagoStatus?.connected ? handleMercadoPagoDisconnect : handleMercadoPagoConnect}
+                disabled={loadingMercadoPagoStatus}
+                sx={{ 
+                  py: 1.5,
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '16px',
+                  backgroundColor: mercadoPagoStatus?.connected 
+                    ? 'transparent' 
+                    : 'linear-gradient(135deg, #00B5E2 0%, #0055A4 100%)',
+                  border: mercadoPagoStatus?.connected 
+                    ? `2px solid #d32f2f` 
+                    : 'none',
+                  color: mercadoPagoStatus?.connected ? '#d32f2f' : 'white',
+                  '&:hover': {
+                    backgroundColor: mercadoPagoStatus?.connected 
+                      ? 'rgba(211, 47, 47, 0.04)' 
+                      : 'linear-gradient(135deg, #0099CC 0%, #004488 100%)',
+                    border: mercadoPagoStatus?.connected 
+                      ? `2px solid #c62828` 
+                      : 'none',
+                  },
+                  '&:disabled': {
+                    backgroundColor: theme.palette.action.disabled,
+                    color: theme.palette.action.disabled,
+                  }
                 }}
+                startIcon={
+                  <Box sx={{ 
+                    width: 20, 
+                    height: 20, 
+                    borderRadius: '50%',
+                    backgroundColor: mercadoPagoStatus?.connected ? 'transparent' : 'rgba(255,255,255,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {mercadoPagoStatus?.connected ? (
+                      <DeleteIcon sx={{ fontSize: 16 }} />
+                    ) : (
+                      <AddPhotoAlternateIcon sx={{ fontSize: 16 }} />
+                    )}
+                  </Box>
+                }
               >
-                {isMercadoPagoConnected ? 'Reconectar Mercado Pago' : 'Conectar Mercado Pago'}
+                {loadingMercadoPagoStatus 
+                  ? 'Verificando...' 
+                  : mercadoPagoStatus?.connected 
+                    ? 'Desconectar cuenta' 
+                    : 'Conectar Mercado Pago'
+                }
+              </Button>
+            </Box>
+
+            {/* Sección de Configuración de Pagos */}
+            <Box sx={{ 
+              my: 4, 
+              p: 3, 
+              border: `1px solid ${theme.palette.divider}`, 
+              borderRadius: '12px', 
+              backgroundColor: theme.palette.background.paper,
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Header con logo y acción */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ 
+                    width: 48, 
+                    height: 48, 
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <PaymentIcon sx={{ fontSize: 24, color: 'white' }} />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      Configuración de Pagos
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Datos bancarios para recibir cobros
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Información */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Configura tus datos bancarios para poder recibir pagos de los alquileres de forma automática y segura.
+                </Typography>
+                
+                <Box sx={{ 
+                  p: 2, 
+                  borderRadius: '8px',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(76, 175, 80, 0.05)',
+                  border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.2)'}`,
+                  mb: 2
+                }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>¿Qué necesitas configurar?</strong>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                    • Alias de la cuenta (obligatorio)<br/>
+                    • CBU (opcional, si usas solo alias)<br/>
+                    • Titular de la cuenta (obligatorio)<br/>
+                    • CUIT del titular (obligatorio)<br/>
+                    • Banco (opcional)
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Botón de acción */}
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => setConfigurarPagosModalOpen(true)}
+                sx={{ 
+                  py: 1.5,
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '16px',
+                  background: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #45A049 0%, #1B5E20 100%)',
+                  },
+                }}
+                startIcon={
+                  <Box sx={{ 
+                    width: 20, 
+                    height: 20, 
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <PaymentIcon sx={{ fontSize: 16 }} />
+                  </Box>
+                }
+              >
+                Configurar Pagos para Cobros
               </Button>
             </Box>
 
@@ -971,6 +1253,12 @@ END:VCARD`
       open={subscriptionModalOpen}
       onClose={handleCloseSubscriptionModal}
       onSelectPlan={handleSelectPlan}
+    />
+
+    {/* Configurar Pagos Modal */}
+    <ConfigurarPagosModal
+      open={configurarPagosModalOpen}
+      onClose={() => setConfigurarPagosModalOpen(false)}
     />
     </>
   );
