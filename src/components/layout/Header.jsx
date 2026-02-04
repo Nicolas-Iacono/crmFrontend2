@@ -183,9 +183,31 @@ export const Header = ({ toggleTheme, darkMode }) => {
         time: now.toLocaleString(),
         read: false,              // tu backend maneja visto/noMostrar; acá arrancás como no leída
         type,
+        source: "alerta",
         raw: a,                   // opcional: guardás el original
       };
     });
+  };
+
+  const mapPushToNotification = (payload) => {
+    const now = new Date();
+    const pushType = payload?.data?.type;
+    const isTransfer = pushType === "TRANSFERENCIA_PENDIENTE";
+    const title = payload?.title || (isTransfer ? "Transferencia notificada" : "Nueva notificación");
+    const message = payload?.body || "Tienes una nueva notificación.";
+    const type = isTransfer ? "payment" : "contract";
+
+    return {
+      id: `push-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      contratoId: payload?.data?.contratoId ?? null,
+      title,
+      message,
+      time: now.toLocaleString(),
+      read: false,
+      type,
+      source: "push",
+      raw: payload?.data ?? null,
+    };
   };
 
   // Función para obtener alertas de vencimiento desde el backend
@@ -210,8 +232,13 @@ export const Header = ({ toggleTheme, darkMode }) => {
           (notification) => !lastAlertIdsRef.current.has(notification.id)
         );
 
-        setNotifications(mappedNotifications);
-        setNotificationCount(alertas.length);
+        setNotifications((prev) => {
+          const nonAlertNotifications = prev.filter((notification) => notification.source !== "alerta");
+          const combined = [...mappedNotifications, ...nonAlertNotifications];
+          const unreadCount = combined.filter((notification) => !notification.read).length;
+          setNotificationCount(unreadCount);
+          return combined;
+        });
 
         lastAlertIdsRef.current = incomingIds;
 
@@ -258,6 +285,53 @@ export const Header = ({ toggleTheme, darkMode }) => {
     if (isLogged) {
       fetchVencimientoAlertas({ showToast: false });
     }
+  }, [isLogged]);
+
+  useEffect(() => {
+    if (!isLogged) return;
+    if (!("serviceWorker" in navigator)) return;
+
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data?.type !== "PUSH_NOTIFICATION") return;
+      const payload = event.data?.payload;
+      const notification = mapPushToNotification(payload);
+
+      setNotifications((prev) => {
+        const updated = [notification, ...prev];
+        const unreadCount = updated.filter((item) => !item.read).length;
+        setNotificationCount(unreadCount);
+        return updated;
+      });
+
+      if (Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "success",
+          title: notification.title,
+          text: notification.message,
+          showConfirmButton: false,
+          timer: 2500,
+          timerProgressBar: true,
+          customClass: {
+            popup: "compact-toast",
+            title: "compact-toast-title",
+            htmlContainer: "compact-toast-content",
+            timerProgressBar: "compact-toast-progress",
+          },
+          didOpen: (toast) => {
+            toast.addEventListener("mouseenter", Swal.stopTimer);
+            toast.addEventListener("mouseleave", Swal.resumeTimer);
+          },
+        });
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handleServiceWorkerMessage);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", handleServiceWorkerMessage);
+    };
   }, [isLogged]);
 
 
