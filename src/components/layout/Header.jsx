@@ -70,10 +70,12 @@ export const Header = ({ toggleTheme, darkMode }) => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [notificationDetailOpen, setNotificationDetailOpen] = useState(false);
   const [newAlertCount, setNewAlertCount] = useState(0);
+  const apiRoot = `${import.meta.env.VITE_API_URL}${String(import.meta.env.VITE_API_URL || '').includes('/api') ? '' : '/api'}`;
   // Datos de notificaciones desde el backend
   const [notifications, setNotifications] = useState([]);
    const lastAlertIdsRef = useRef(new Set());
   const initialAlertsLoadedRef = useRef(false);
+  const lastReciboAlertIdsRef = useRef(new Set());
   const lastScrollY = useRef(0);
   const hideTimer = useRef(null);
 
@@ -123,7 +125,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
 
     if (willOpen) {
       // Solo refrescás la lista, sin habilitar el toast
-        fetchVencimientoAlertas({ showToast: false });
+      refreshNotifications({ showToast: false });
     }
   };
 
@@ -147,7 +149,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
       setIsClosing(false);
     }, 600);
     // Marcar como leída (sin volver a fetch)
-    markAsRead(notification.id);
+    markAsRead(notification);
   };
 
   const handleCloseNotificationDetail = () => {
@@ -156,6 +158,16 @@ export const Header = ({ toggleTheme, darkMode }) => {
   };
 
   // Función para mapear alertas del backend al formato de notificaciones
+  const parseBackendDate = (value) => {
+    if (!value) return new Date();
+    if (Array.isArray(value)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+      return new Date(year, month - 1, day, hour, minute, second);
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
   const mapAlertasToNotifications = (alertas) => {
     const now = new Date();
 
@@ -181,10 +193,38 @@ export const Header = ({ toggleTheme, darkMode }) => {
         title,
         message,
         time: now.toLocaleString(),
+        timestamp: now.getTime(),
         read: false,              // tu backend maneja visto/noMostrar; acá arrancás como no leída
         type,
         source: "alerta",
         raw: a,                   // opcional: guardás el original
+      };
+    });
+  };
+
+  const mapReciboAlertasToNotifications = (alertas) => {
+    return alertas.map((a) => {
+      const createdAt = parseBackendDate(a.fechaCreacion || a.ultimaNotificacion);
+      const isTransfer = a.tipo === "TRANSFERENCIA_PENDIENTE";
+      const title = isTransfer ? "Transferencia pendiente" : "Alerta de recibo";
+      const reciboLabel = a.reciboId ? `#${a.reciboId}` : "sin número";
+      const message = isTransfer
+        ? `Tenés una transferencia pendiente para el recibo ${reciboLabel}.`
+        : `Tenés una alerta de pago para el recibo ${reciboLabel}.`;
+
+      return {
+        id: `recibo-${a.id}`,
+        backendId: a.id,
+        reciboId: a.reciboId ?? null,
+        contratoId: a.contratoId ?? null,
+        title,
+        message,
+        time: createdAt.toLocaleString(),
+        timestamp: createdAt.getTime(),
+        read: a.visto ?? false,
+        type: isTransfer ? "payment" : "warning",
+        source: "recibo-alerta",
+        raw: a,
       };
     });
   };
@@ -203,6 +243,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
       title,
       message,
       time: now.toLocaleString(),
+      timestamp: now.getTime(),
       read: false,
       type,
       source: "push",
@@ -210,12 +251,27 @@ export const Header = ({ toggleTheme, darkMode }) => {
     };
   };
 
+  const mergeNotifications = ({ contractAlerts, reciboAlerts } = {}) => {
+    setNotifications((prev) => {
+      const pushNotifications = prev.filter((notification) => notification.source === "push");
+      const contratoNotifications = contractAlerts
+        ?? prev.filter((notification) => notification.source === "alerta");
+      const reciboNotifications = reciboAlerts
+        ?? prev.filter((notification) => notification.source === "recibo-alerta");
+
+      const combined = [...reciboNotifications, ...contratoNotifications, ...pushNotifications];
+      combined.sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
+      const unreadCount = combined.filter((notification) => !notification.read).length;
+      setNotificationCount(unreadCount);
+      return combined;
+    });
+  };
+
   // Función para obtener alertas de vencimiento desde el backend
- const fetchVencimientoAlertas = async ({ showToast = false } = {}) => {
-    setLoadingNotifications(true);
+  const fetchVencimientoAlertas = async ({ showToast = false } = {}) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/contrato/alertas-vencimiento`, {
+      const response = await fetch(`${apiRoot}/contrato/alertas-vencimiento`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -232,13 +288,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
           (notification) => !lastAlertIdsRef.current.has(notification.id)
         );
 
-        setNotifications((prev) => {
-          const nonAlertNotifications = prev.filter((notification) => notification.source !== "alerta");
-          const combined = [...mappedNotifications, ...nonAlertNotifications];
-          const unreadCount = combined.filter((notification) => !notification.read).length;
-          setNotificationCount(unreadCount);
-          return combined;
-        });
+        mergeNotifications({ contractAlerts: mappedNotifications });
 
         lastAlertIdsRef.current = incomingIds;
 
@@ -257,20 +307,71 @@ export const Header = ({ toggleTheme, darkMode }) => {
     } catch (error) {
       console.error('Error en fetchVencimientoAlertas:', error);
      
-    } finally {
-      setLoadingNotifications(false);
     }
   };
 
-  const markAsRead = (id) => {
+  const fetchReciboAlertas = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiRoot}/alertas/recibos`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const alertas = result?.data ?? [];
+        const mappedNotifications = mapReciboAlertasToNotifications(alertas);
+        const incomingIds = new Set(mappedNotifications.map((notification) => notification.id));
+        lastReciboAlertIdsRef.current = incomingIds;
+        mergeNotifications({ reciboAlerts: mappedNotifications });
+      } else {
+        console.error('Error al obtener alertas de recibos:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error en fetchReciboAlertas:', error);
+    }
+  };
+
+  const refreshNotifications = async ({ showToast = false } = {}) => {
+    if (!isLogged) return;
+    setLoadingNotifications(true);
+    await Promise.all([
+      fetchVencimientoAlertas({ showToast }),
+      fetchReciboAlertas()
+    ]);
+    setLoadingNotifications(false);
+  };
+
+  const markAsRead = async (notification) => {
     setNotifications(prev => {
       const updated = prev.map(notif =>
-        notif.id === id ? { ...notif, read: true } : notif
+        notif.id === notification?.id ? { ...notif, read: true } : notif
       );
       const unreadCount = updated.filter(n => !n.read).length;
       setNotificationCount(unreadCount);
       return updated;
     });
+
+    if (notification?.source !== "recibo-alerta" || !notification?.backendId) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${apiRoot}/alertas/recibos/${notification.backendId}/visto`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch (error) {
+      console.error('Error al marcar alerta de recibo como vista:', error);
+    }
   };
 
   const markAllAsRead = () => {
@@ -283,7 +384,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
   // Cargar alertas de vencimiento al montar el componente
   useEffect(() => {
     if (isLogged) {
-      fetchVencimientoAlertas({ showToast: false });
+      refreshNotifications({ showToast: false });
     }
   }, [isLogged]);
 
@@ -339,7 +440,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
     if (!isLogged)return;
 
     const intervalId = setInterval(() => {
-      fetchVencimientoAlertas({ showToast: true });
+      refreshNotifications({ showToast: true });
     }, 60000);
 
     return () => clearInterval(intervalId);
@@ -744,13 +845,13 @@ const authorities = localStorage.getItem('authorities');
           {loadingNotifications ? (
             <Box sx={{ p: 4, textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
-                Cargando alertas de vencimiento...
+                Cargando notificaciones...
               </Typography>
             </Box>
           ) : notifications.length === 0 ? (
             <Box sx={{ p: 4, textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
-                No tienes alertas de vencimiento
+                No tienes notificaciones
               </Typography>
             </Box>
           ) : (

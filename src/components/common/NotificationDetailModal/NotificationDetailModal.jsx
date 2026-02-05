@@ -26,9 +26,20 @@ const NotificationDetailModal = ({ open, onClose, notification }) => {
 
   if (!notification) return null;
 
+  const isContractAlert = notification.source === 'alerta';
+  const isReciboAlert = notification.source === 'recibo-alerta';
+  const isPaymentAlert = notification.type === 'payment' || isReciboAlert;
+
   const handleGoToContract = () => {
     // Navegar al contrato específico
     navigate(`/contratos/${notification.contratoId}`);
+    onClose();
+  };
+
+  const handleGoToRecibos = () => {
+    if (notification.contratoId) {
+      navigate(`/recibos-page/${notification.contratoId}`);
+    }
     onClose();
   };
 
@@ -86,17 +97,26 @@ const NotificationDetailModal = ({ open, onClose, notification }) => {
     onClose();
   };
 
-  const getContractStatus = () => {
-    if (notification.raw?.vencido) {
-      return { label: 'Vencido', color: 'error', severity: 'error' };
-    } else if (notification.raw?.diasRestantes <= 7) {
-      return { label: 'Por vencer', color: 'warning', severity: 'warning' };
-    } else {
+  const getAlertStatus = () => {
+    if (isContractAlert) {
+      if (notification.raw?.vencido) {
+        return { label: 'Vencido', color: 'error', severity: 'error' };
+      } else if (notification.raw?.diasRestantes <= 7) {
+        return { label: 'Por vencer', color: 'warning', severity: 'warning' };
+      }
       return { label: 'Activo', color: 'success', severity: 'success' };
     }
+
+    if (isPaymentAlert) {
+      return notification.read
+        ? { label: 'Visto', color: 'success', severity: 'success' }
+        : { label: 'Pendiente', color: 'warning', severity: 'warning' };
+    }
+
+    return { label: 'Info', color: 'default', severity: 'info' };
   };
 
-  const status = getContractStatus();
+  const status = getAlertStatus();
 
   return (
     <Modal
@@ -150,24 +170,40 @@ const NotificationDetailModal = ({ open, onClose, notification }) => {
             />
           </Box>
 
-          {/* Información del contrato */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Contrato: <strong>{notification.raw?.nombreContrato || 'N/A'}</strong>
-            </Typography>
-            
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Fecha de vencimiento: <strong>{notification.raw?.fechaFin || 'N/A'}</strong>
-            </Typography>
-            
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Días restantes: <strong>{notification.raw?.diasRestantes || 'N/A'}</strong>
-            </Typography>
+          {/* Información del contrato o recibo */}
+          {isContractAlert ? (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Contrato: <strong>{notification.raw?.nombreContrato || 'N/A'}</strong>
+              </Typography>
+              
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Fecha de vencimiento: <strong>{notification.raw?.fechaFin || 'N/A'}</strong>
+              </Typography>
+              
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Días restantes: <strong>{notification.raw?.diasRestantes || 'N/A'}</strong>
+              </Typography>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Estado: <strong>{notification.raw?.estado || 'N/A'}</strong>
-            </Typography>
-          </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Estado: <strong>{notification.raw?.estado || 'N/A'}</strong>
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Recibo: <strong>{notification.reciboId ? `#${notification.reciboId}` : 'N/A'}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Contrato: <strong>{notification.contratoId || 'N/A'}</strong>
+              </Typography>
+              {notification.raw?.tipo && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Tipo: <strong>{notification.raw?.tipo}</strong>
+                </Typography>
+              )}
+            </Box>
+          )}
 
           {/* Mensaje adicional */}
           <Typography variant="body2" sx={{ 
@@ -182,36 +218,50 @@ const NotificationDetailModal = ({ open, onClose, notification }) => {
 
         {/* Botones de acción */}
         <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
-          <Button
-            variant="contained"
-            startIcon={<ContractIcon />}
-            onClick={handleGoToContract}
-            sx={{ flex: 1, borderRadius:"25px" }}
-          >
-            Ir al Contrato
-          </Button>
-          
-          {notification.raw?.finalizable && (
+          {isContractAlert ? (
+            <>
+              <Button
+                variant="contained"
+                startIcon={<ContractIcon />}
+                onClick={handleGoToContract}
+                sx={{ flex: 1, borderRadius:"25px" }}
+              >
+                Ir al Contrato
+              </Button>
+              
+              {notification.raw?.finalizable && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<FinalizeIcon />}
+                  onClick={handleFinalizeContract}
+                  sx={{ flex: 1, borderRadius:"25px" }}
+                >
+                  Finalizar Contrato
+                </Button>
+              )}
+              
+              {notification.raw?.renovable && (
+                <Button
+                  variant="outlined"
+                  color="success"
+                  startIcon={<RenewIcon />}
+                  onClick={handleRenewContract}
+                  sx={{ flex: 1, borderRadius:"25px" }}
+                >
+                  Renovar Contrato
+                </Button>
+              )}
+            </>
+          ) : (
             <Button
-              variant="outlined"
-              color="error"
-              startIcon={<FinalizeIcon />}
-              onClick={handleFinalizeContract}
+              variant="contained"
+              startIcon={<ContractIcon />}
+              onClick={handleGoToRecibos}
               sx={{ flex: 1, borderRadius:"25px" }}
+              disabled={!notification.contratoId}
             >
-              Finalizar Contrato
-            </Button>
-          )}
-          
-          {notification.raw?.renovable && (
-            <Button
-              variant="outlined"
-              color="success"
-              startIcon={<RenewIcon />}
-              onClick={handleRenewContract}
-              sx={{ flex: 1, borderRadius:"25px" }}
-            >
-              Renovar Contrato
+              Ver recibos del contrato
             </Button>
           )}
         </Box>
