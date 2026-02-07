@@ -51,7 +51,7 @@ import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
 import TenantsTour from '../common/tour/TenantsTour';
 import http from '../api/http';
-import { showSuccess, showError, showWarning } from '../alertas/showAlert';
+import { showSuccess, showError, showWarning, showConfirm } from '../alertas/showAlert';
 import NamePage from '../common/titulos/NamePage.jsx';
 import MobileInquilinoCard from '../common/cards/MobileInquilinoCard.jsx';
 import EditarInquilinoModal from '../common/modals/EditarInquilinoModal.jsx';
@@ -65,6 +65,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import DocumentManagerModal from '../common/DocumentManagerModal';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import PeopleIcon from '@mui/icons-material/People';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 
 const InquilinosPage = () => {
   const theme = useTheme();
@@ -397,15 +400,10 @@ const InquilinosPage = () => {
   }, [profileCreatedTenantId]);
 
   const handleDeleteInquilino = async (id) => {
-    const result = await Swal.fire({
+    const result = await showConfirm({
       title: 'Confirmar Eliminación',
-      text: `¿Estás seguro de que deseas eliminar este inquilino?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      text: '¿Estás seguro de que deseas eliminar este inquilino?',
+      confirmText: 'Sí, eliminar',
     });
 
     if (result.isConfirmed) {
@@ -697,18 +695,63 @@ const InquilinosPage = () => {
     );
   };
 
+  const totalInquilinos = filteredInquilinos.length;
+  const inquilinosConCuenta = filteredInquilinos.filter(i => (i?.usuarioCuentaId != null) || (i?.usuarioDtoSalida?.usuarioCuentaId != null)).length;
+  const inquilinosSinCuenta = totalInquilinos - inquilinosConCuenta;
+
+  const StatCard = ({ icon, value, label, gradient }) => (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        borderRadius: 3,
+        background: gradient,
+        color: 'white',
+        minWidth: { xs: 100, sm: 140 },
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 0.5,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+        transition: 'transform 0.2s ease',
+        '&:hover': { transform: 'translateY(-2px)' },
+      }}
+    >
+      {icon}
+      <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1 }}>
+        {value}
+      </Typography>
+      <Typography variant="caption" sx={{ opacity: 0.9, textAlign: 'center', fontSize: '0.7rem' }}>
+        {label}
+      </Typography>
+    </Paper>
+  );
+
   return (
-    <Box sx={{ width: { xs: '100%', sm: '100%', md: '90vw' }, minHeight: '100vh',   pt: { xs: 3, sm: 4 },
-        pb: { xs: 12, sm: 4 },
-        pl: { xs: 0, sm: 5 },
-        pr: { xs: 0, sm: 2 }, display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' }, bgcolor: 'background.default', marginLeft: { md: '15rem' } }}>
+    <Box sx={{ 
+      width: '100vw',
+      minHeight: '100vh', 
+      pt: { xs: 0, sm: 4, md: 2 },
+      pb: { xs: 14, sm: 12 },
+      pl: { xs: 2, sm: 3, md: '16rem' },
+      pr: { xs: 2, sm: 4, md: 3 },
+      display: 'flex', 
+      flexDirection: 'column', 
+      bgcolor: 'background.default', 
+      boxSizing: 'border-box',
+    }}>
       <TenantsTour />
-      <Box sx={{ width: { xs: "90%", sm: "80%" }, mt: { xs: '4rem', sm: 0 }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', marginTop:{xs:"0rem",sm:"2rem"}, width: '100%', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5,}}>
+      <Box sx={{ 
+        width: '100%',
+        mt: { xs: '4rem', sm: 0 }, 
+        display: 'flex', 
+        flexDirection: 'column', 
+      }}>
+        <Box sx={{ display: 'flex', marginTop:{xs:"0rem",sm:"2rem"}, width: '100%', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 2, sm: 2 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <IconButton 
               onClick={() => {
-                // Intentar ir hacia atrás, si falla navegar al dashboard
                 try {
                   if (window.history.length > 1) {
                     navigate(-1);
@@ -719,27 +762,96 @@ const InquilinosPage = () => {
                   navigate('/');
                 }
               }} 
-              sx={{ bgcolor: 'action.hover' }}
+              sx={{ 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+                }
+              }}
             >
               <ArrowBackIcon />
             </IconButton>
-            <NamePage title="Inquilinos" dataTour="tenants-title" mobileSize="1.5rem" tabletSize="2rem" desktopSize="1.5rem"/>
+            <Box>
+              <Typography 
+                data-tour="tenants-title"
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: 'text.primary',
+                  lineHeight: 1.2,
+                }}
+              >
+                Inquilinos
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                Gestiona tus inquilinos y sus cuentas
+              </Typography>
+            </Box>
           </Box>
           <Tooltip title="Añadir inquilino">
-            <Fab color="primary" aria-label="add" size="small" data-tour="tenants-add" onClick={() => navigate('/nuevo-inquilino')}>
+            <Fab 
+              color="primary" 
+              aria-label="add" 
+              size="small" 
+              data-tour="tenants-add" 
+              onClick={() => navigate('/nuevo-inquilino')}
+                sx={{ 
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+            color: '#fff',
+            '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' },
+          }}
+            >
               <AddIcon />
             </Fab>
           </Tooltip>
         </Box>
+
+        <Box sx={{ 
+          display: { xs: 'none', sm: 'flex' }, 
+          gap: 1.5, 
+          width: '100%', 
+          mb: 2.5,
+          flexWrap: 'wrap',
+        }}>
+          <StatCard 
+            icon={<PeopleIcon sx={{ fontSize: 24, opacity: 0.9 }} />}
+            value={totalInquilinos}
+            label="Total"
+            gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+          />
+          <StatCard 
+            icon={<CheckCircleIcon sx={{ fontSize: 24, opacity: 0.9 }} />}
+            value={inquilinosConCuenta}
+            label="Con cuenta"
+            gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
+          />
+          <StatCard 
+            icon={<PersonAddAlt1Icon sx={{ fontSize: 24, opacity: 0.9 }} />}
+            value={inquilinosSinCuenta}
+            label="Sin cuenta"
+            gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+          />
+        </Box>
         
         <TextField
           data-tour="tenants-search"
-          placeholder="Buscar por nombre, apellido, email..."
+          placeholder="Buscar por nombre, apellido, email, DNI..."
           variant="outlined"
           fullWidth
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ mb: 3, bgcolor: 'background.paper', borderRadius: 6, '& fieldset': { borderRadius: 6 } }}
+          sx={{ 
+            mb: 3, 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+            borderRadius: 6, 
+            '& fieldset': { borderRadius: 6 },
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '8px',
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'divider'
+              }
+            }
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">

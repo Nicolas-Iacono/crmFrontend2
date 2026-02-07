@@ -1,17 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Modal,
   Box,
   Typography,
   Button,
-  Card,
-  CardContent,
+  Paper,
   IconButton,
   Chip,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   useTheme,
   useMediaQuery,
   Fade,
@@ -20,19 +15,17 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider,
   CircularProgress
 } from '@mui/material';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, EffectCoverflow } from 'swiper/modules';
 import CloseIcon from '@mui/icons-material/Close';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckIcon from '@mui/icons-material/Check';
 import StarIcon from '@mui/icons-material/Star';
 import BusinessIcon from '@mui/icons-material/Business';
 import PremiumIcon from '@mui/icons-material/Diamond';
-import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import suscripcionesApi from '../../api/suscripcionesMp';
-// Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -40,14 +33,47 @@ import 'swiper/css/effect-coverflow';
 
 const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [plans, setPlans] = useState([]);
+  const swiperRef = useRef(null);
+  const autoScrollDone = useRef(false);
 
-  
+  const onSwiperInit = useCallback((swiper) => {
+    swiperRef.current = swiper;
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      autoScrollDone.current = false;
+      return;
+    }
+    if (autoScrollDone.current) return;
+
+    const timer = setTimeout(() => {
+      const swiper = swiperRef.current;
+      if (!swiper || swiper.destroyed) return;
+      const lastIndex = swiper.slides?.length ? swiper.slides.length - 1 : 0;
+      if (lastIndex === 0) return;
+      swiper.slideTo(0, 0);
+      setTimeout(() => {
+        if (!swiper || swiper.destroyed) return;
+        swiper.slideTo(lastIndex, 1200);
+        setTimeout(() => {
+          if (!swiper || swiper.destroyed) return;
+          swiper.slideTo(0, 1200);
+          autoScrollDone.current = true;
+        }, 1400);
+      }, 300);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [open, plans.length]);
+
   useEffect(() => {
     const fetchPlans = async () => {
       try {
@@ -68,34 +94,21 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
     FREE2: {
       id: 'free',
       description: 'Experiencia completa limitada',
-      icon: <StarIcon sx={{ fontSize: 40, color: 'rgb(195, 162, 233)' }} />,
-      color: '#4CAF50',
-      gradient: 'linear-gradient(135deg,rgb(149, 125, 177) 0%,rgb(12, 23, 121) 100%)',
+      icon: <StarIcon />,
+      color: '#8b5cf6',
+      gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
       popular: false,
       features: [
         'Hasta 3 contratos Grátis',
         'Gestión completa',
       ],
-    },   
-    // BARATO: {
-    //   id: 'barato',
-    //   description: 'pruebas',
-    //   icon: <StarIcon sx={{ fontSize: 40, color: 'rgb(144, 226, 148)' }} />,
-    //   color: '#4CAF50',
-    //   gradient: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-    //   popular: false,
-    //   features: [
-    //     'Hasta 10 contratos',
-    //     'Gestión completa',
-    //     'Todo lo que ya usas',
-    //   ],
-    // },
+    },
     FREE: {
       id: 'basic',
       description: 'Perfecto para comenzar',
-      icon: <StarIcon sx={{ fontSize: 40, color: 'rgb(144, 226, 148)' }} />,
-      color: '#4CAF50',
-      gradient: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+      icon: <StarIcon />,
+      color: '#22c55e',
+      gradient: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
       popular: false,
       features: [
         'Hasta 10 contratos',
@@ -106,23 +119,22 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
     PROFESIONAL: {
       id: 'professional',
       description: 'Para profesionales inmobiliarios',
-      icon: <BusinessIcon sx={{ fontSize: 40, color: 'rgb(153, 202, 241)' }} />,
-      color: '#2196F3',
-      gradient: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+      icon: <BusinessIcon />,
+      color: '#3b82f6',
+      gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
       popular: true,
       features: [
         'Hasta 20 contratos',
         'Gestión completa',
         'Todo lo que ya usas',
-        
       ],
     },
     SUPERIOR: {
       id: 'premium',
       description: 'Para empresas inmobiliarias',
-      icon: <PremiumIcon sx={{ fontSize: 40, color: 'rgb(240, 198, 134)' }} />,
-      color: '#FF9800',
-      gradient: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+      icon: <PremiumIcon />,
+      color: '#f59e0b',
+      gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
       popular: false,
       features: [
         'Hasta 30 contratos',
@@ -141,7 +153,7 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
       const code = String(p.code || '').toUpperCase();
       const preset = codePresets[code] || codePresets.FREE;
       return {
-        id: preset.id, // mantener ids esperados por estilos y selección
+        id: preset.id,
         name: p.name || code,
         price: p.priceArs != null ? formatArs(p.priceArs) : (code === 'FREE' ? 'Gratis' : formatArs(0)),
         period: '/mes',
@@ -151,10 +163,9 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
         gradient: preset.gradient,
         popular: preset.popular,
         features: preset.features,
-        backendCode: p.code, // para checkout
+        backendCode: p.code,
       };
     });
-    // Fallback si el backend aún no responde
     if (mapped.length === 0) {
       return [
         { ...codePresets.FREE2, id: 'free', name: 'Free',  price: formatArs(0), period: '/mes'},
@@ -182,12 +193,10 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
     setError(null);
 
     const token = localStorage.getItem('token');
-    // Mapear ids UI -> códigos esperados por el backend
     const planCodeMap = {
-      // barato: 'PLAN-BARATO',
-      basic: 'PLAN-PRO',         // Plan base (Profesional)
-      professional: 'PLAN-PROF', // Plan medio
-      premium: 'PLAN-SUP'        // Plan superior
+      basic: 'PLAN-PRO',
+      professional: 'PLAN-PROF',
+      premium: 'PLAN-SUP'
     };
     const planCode = selectedPlan.backendCode || planCodeMap[selectedPlan.id] || selectedPlan.id;
     try {
@@ -228,7 +237,6 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
       setIsSubmitting(false);
       setConfirmOpen(false);
       if (onSelectPlan && selectedPlan) {
-        // notificar selección si el padre lo requiere
         onSelectPlan(selectedPlan);
       }
     }
@@ -244,6 +252,7 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
       slotProps={{
         backdrop: {
           timeout: 500,
+          sx: { bgcolor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' },
         },
       }}
     >
@@ -253,67 +262,72 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: { xs: '90%', sm: '90%', md: '80%', lg: '70%' },
-          maxWidth: '1200px',
-          height: { xs: '90%', md: '85%' },
-          bgcolor: 'background.paper',
+          width: { xs: '95%', sm: '92%', md: '82%', lg: '72%' },
+          maxWidth: 1100,
+          height: { xs: '93%', md: '85%' },
+          background: isDark
+            ? 'linear-gradient(160deg, #0f0f1a 0%, #1a1028 40%, #0f0f1a 100%)'
+            : 'linear-gradient(160deg, #faf8ff 0%, #f0ebff 40%, #faf8ff 100%)',
           borderRadius: 5,
-          boxShadow: 24,
+          boxShadow: '0 32px 100px rgba(139,92,246,0.15), 0 0 0 1px rgba(139,92,246,0.1)',
           overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
         }}>
           {/* Header */}
           <Box sx={{
-            p: 3,
-            background: theme.palette.mode === 'dark' 
-              ? 'linear-gradient(135deg,rgb(79, 26, 126) 0%,rgb(79, 13, 177) 100%)'
-              : 'linear-gradient(135deg, #1a237e 0%, #3f51b5 100%)',
-            color: 'white',
+            px: { xs: 2.5, md: 4 },
+            py: { xs: 2.5, md: 3 },
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #4c1d95 100%)',
+            color: '#fff',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            borderTop: '5px solid #D4AF37',
-            borderLeft: '5px solid #D4AF37',
-            borderRight: '5px solid #D4AF37',
-            borderRadius:"20px 20px 0 0"
+            position: 'relative',
+            overflow: 'hidden',
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, height:"5rem" }}>
-              <CardGiftcardIcon sx={{ fontSize: 50, color: '#D4AF37' }} />
+            {/* Decorative circles */}
+            <Box sx={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.06)' }} />
+            <Box sx={{ position: 'absolute', bottom: -20, left: '40%', width: 80, height: 80, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, zIndex: 1 }}>
+              <Box sx={{
+                width: 44, height: 44, borderRadius: 3,
+                bgcolor: 'rgba(255,255,255,0.15)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid rgba(255,255,255,0.2)',
+              }}>
+                <WorkspacePremiumIcon sx={{ color: '#fbbf24', fontSize: 24 }} />
+              </Box>
               <Box>
-                
-                <Typography variant="body1" sx={{ opacity: 0.9, color: 'white' }}>
-                  Elige el plan perfecto para tu negocio inmobiliario
+                <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.2 }}>
+                  Planes Premium
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8, fontSize: '0.8rem' }}>
+                  Elige el plan perfecto para tu negocio
                 </Typography>
               </Box>
             </Box>
-            <IconButton 
-              onClick={onClose} 
-              sx={{ 
-                color: 'white',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
-              }}
+            <IconButton
+              onClick={onClose}
+              sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }, zIndex: 1 }}
             >
-              <CloseIcon />
+              <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
 
           {/* Plans Swiper */}
-          <Box sx={{ 
-            flex: 1, 
-            height: { xs: "50vh", md: "45vh" },
-            p: { xs: 5, md: 2 },
+          <Box sx={{
+            flex: 1,
+            p: { xs: 1.5, md: 2.5 },
             display: 'flex',
             alignItems: 'center',
-            borderLeft: '5px solid #D4AF37',
-            borderRight: '5px solid #D4AF37',
-            borderBottom: '5px solid #D4AF37',
-            borderRadius:"0 0 20px 20px",
-            overflow: 'hidden'
+            overflow: 'hidden',
           }}>
             <Swiper
+              onSwiper={onSwiperInit}
               modules={[Navigation, Pagination, EffectCoverflow]}
-              spaceBetween={30}
+              spaceBetween={20}
               slidesPerView={isMobile ? 1 : 3}
               centeredSlides={true}
               effect="coverflow"
@@ -322,208 +336,296 @@ const SubscriptionModal = ({ open, onClose, onSelectPlan }) => {
                 stretch: 0,
                 depth: 100,
                 modifier: 1,
-                slideShadows: true,
+                slideShadows: false,
               }}
               navigation={!isMobile}
-              pagination={{ 
+              pagination={{
                 clickable: true,
                 dynamicBullets: true
               }}
-              style={{ 
-                width: '100%', 
+              style={{
+                width: '100%',
                 height: '100%',
-                paddingTop: '20px',
+                paddingTop: '40px',
                 paddingBottom: '40px'
               }}
             >
-              {subscriptionPlans.map((plan) => (
+              {subscriptionPlans.map((plan) => {
+                const isSelected = selectedPlan?.id === plan.id;
+                return (
                 <SwiperSlide key={plan.id}>
-                  <Card sx={{
-                    height: { xs: '580px', md: '420px' },
-                    maxHeight: { xs: '425px', md: '420px' },
-                    width: { xs: '100%', md: '420px' },
-                    position: 'relative',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    border: selectedPlan?.id === plan.id ? `3px solid ${plan.color}` : '1px solid transparent',
-                    overflow: 'hidden',
-                    borderRadius: '15px',
-                    top:"0px",
-                    position:"relative",
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: `0 15px 30px rgba(0,0,0,0.1)`
-                    }
-                  }}>
+                  <Box
+                    sx={{
+                      height: { xs: '430px', md: '410px' },
+                      maxHeight: { xs: '430px', md: '410px' },
+                      position: 'relative',
+                      cursor: 'pointer',
+                      transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                      overflow: 'hidden',
+                      borderRadius: 4,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      background: plan.gradient,
+                      boxShadow: isSelected
+                        ? `0 20px 50px ${plan.color}50, 0 0 0 2px ${plan.color}`
+                        : `0 8px 30px ${plan.color}20`,
+                      '&:hover': {
+                        transform: 'translateY(-6px) scale(1.01)',
+                        boxShadow: `0 24px 60px ${plan.color}40`,
+                      },
+                    }}
+                  >
+                    {/* Glass inner card */}
+                    <Box sx={{
+                      position: 'absolute', inset: 0,
+                      background: isDark
+                        ? 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%)'
+                        : 'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.95) 100%)',
+                      backdropFilter: 'blur(40px)',
+                    }} />
+
+                    {/* Gradient accent top */}
+                    <Box sx={{ position: 'relative', height: 4, background: plan.gradient, zIndex: 1 }} />
+
+                    {/* Decorative glow */}
+                    <Box sx={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: `${plan.color}15`, filter: 'blur(20px)', zIndex: 0 }} />
+                    <Box sx={{ position: 'absolute', bottom: -30, left: -30, width: 100, height: 100, borderRadius: '50%', background: `${plan.color}10`, filter: 'blur(20px)', zIndex: 0 }} />
+
                     {plan.popular && (
                       <Chip
                         label="MÁS POPULAR"
+                        size="small"
                         sx={{
                           position: 'absolute',
-                          top: '20px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          bgcolor: ' #FF4081',
-                          fontWeight: 'bold',
+                          top: 14,
+                          right: 14,
+                          background: plan.gradient,
+                          fontWeight: 700,
+                          fontSize: '0.55rem',
+                          height: 24,
                           zIndex: 10,
-                          borderRadius:"30px",
-                          color:"white",
-                         
+                          color: '#fff',
+                          letterSpacing: 0.8,
+                          boxShadow: `0 4px 12px ${plan.color}40`,
                         }}
                       />
                     )}
 
-                    <CardContent sx={{
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      p: { xs: 2, md: 2.5 },
-                      background: plan.gradient,
-                      color: 'white',
-                      overflow: 'hidden'
-                    }}>
+                    <Box sx={{ p: { xs: 2.5, md: 2.5 }, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', position: 'relative', zIndex: 1 }}>
                       {/* Plan Icon */}
-                      <Box sx={{ textAlign: 'center',  }}>
-                        {plan.icon}
+                      <Box sx={{ textAlign: 'center', mb: 1.5 }}>
+                        <Box sx={{
+                          width: 56, height: 56, borderRadius: 3, mx: 'auto', mb: 1,
+                          background: plan.gradient,
+                          boxShadow: `0 8px 24px ${plan.color}35`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff',
+                          '& .MuiSvgIcon-root': { fontSize: 26 },
+                        }}>
+                          {plan.icon}
+                        </Box>
+                        <Typography variant="h6" sx={{
+                          fontWeight: 800, fontSize: { xs: '1.1rem', md: '1.2rem' },
+                          background: plan.gradient,
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: isDark ? 'unset' : 'transparent',
+                          color: isDark ? '#fff' : undefined,
+                        }}>
+                          {plan.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'text.secondary', fontSize: '0.7rem' }}>
+                          {plan.description}
+                        </Typography>
                       </Box>
 
-                      {/* Plan Name */}
-                      <Typography variant={ isMobile ? "h6" : "h5" } fontWeight="bold" textAlign="center" gutterBottom>
-                        {plan.name}
-                      </Typography>
-
-                      {/* Plan Description */}
-                      <Typography variant="body2" textAlign="center" sx={{ opacity: 0.9, mb: 2, fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
-                        {plan.description}
-                      </Typography>
-
                       {/* Price */}
-                      <Box sx={{ textAlign: 'center', mb: 2 }}>
-                        <Typography variant={ isMobile ? "h4" : "h3" } fontWeight="bold" component="span">
+                      <Box sx={{
+                        textAlign: 'center', mb: 2, py: 1.5, mx: -1,
+                        borderRadius: 2.5,
+                        bgcolor: isDark ? 'rgba(255,255,255,0.05)' : `${plan.color}08`,
+                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : `${plan.color}15`}`,
+                      }}>
+                        <Typography sx={{
+                          fontWeight: 900, fontSize: { xs: '1.8rem', md: '2rem' }, lineHeight: 1,
+                          color: isDark ? '#fff' : plan.color,
+                        }}>
                           {plan.price}
                         </Typography>
-                        <Typography variant={ isMobile ? "body1" : "h6" } component="span" sx={{ opacity: 0.8 }}>
+                        <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary', fontSize: '0.7rem' }}>
                           {plan.period}
                         </Typography>
                       </Box>
 
                       {/* Features */}
-                      <List sx={{ flex: 0.8, py: 0, overflow: 'auto' }}>
+                      <Box sx={{ flex: 1, overflow: 'auto', mb: 1.5 }}>
                         {plan.features.slice(0, isMobile ? 4 : plan.features.length).map((feature, index) => (
-                          <ListItem key={index} sx={{ py: 0.3, px: 0 }}>
-                            <ListItemIcon sx={{ minWidth: 25 }}>
-                              <CheckCircleIcon sx={{ color: 'white', fontSize: 17 }} />
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary={feature}
-                              primaryTypographyProps={{
-                                fontSize: { xs: '0.75rem', md: '0.85rem' },
-                                color: 'white',
-                                lineHeight: 1.2
-                              }}
-                            />
-                          </ListItem>
+                          <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+                            <Box sx={{
+                              width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                              background: plan.gradient, color: '#fff',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              boxShadow: `0 2px 6px ${plan.color}30`,
+                            }}>
+                              <CheckIcon sx={{ fontSize: 13 }} />
+                            </Box>
+                            <Typography variant="body2" sx={{
+                              fontSize: { xs: '0.78rem', md: '0.82rem' }, lineHeight: 1.3,
+                              color: isDark ? 'rgba(255,255,255,0.85)' : 'text.primary',
+                            }}>
+                              {feature}
+                            </Typography>
+                          </Box>
                         ))}
                         {isMobile && plan.features.length > 4 && (
-                          <ListItem sx={{ py: 0.3, px: 0 }}>
-                            <ListItemText 
-                              primary={`+${plan.features.length - 4} características más`}
-                              primaryTypographyProps={{
-                                fontSize: '0.7rem',
-                                color: 'white',
-                                opacity: 0.8,
-                                fontStyle: 'italic'
-                              }}
-                            />
-                          </ListItem>
+                          <Typography variant="caption" sx={{ fontStyle: 'italic', pl: 3.5, color: isDark ? 'rgba(255,255,255,0.4)' : 'text.secondary' }}>
+                            +{plan.features.length - 4} más
+                          </Typography>
                         )}
-                      </List>
+                      </Box>
 
-                      {/* Select Button - No mostrar para plan Free */}
+                      {/* Select Button */}
                       {plan.name !== 'Free' && (
                         <Button
-                          variant="contained"
                           fullWidth
                           onClick={() => handleSelectPlan(plan)}
                           sx={{
-                            mt: -6,
-                            py: { xs: 0.8, md: 1 },
-                            bgcolor: 'white',
-                            color: plan.color,
-                            fontWeight: 'bold',
-                            fontSize: { xs: '0.8rem', md: '0.9rem' },
+                            py: 1.2,
+                            borderRadius: 3,
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            textTransform: 'none',
+                            background: isSelected ? plan.gradient : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.9)'),
+                            color: isSelected ? '#fff' : plan.color,
+                            border: isSelected ? 'none' : `1.5px solid ${plan.color}50`,
+                            boxShadow: isSelected ? `0 6px 20px ${plan.color}40` : 'none',
+                            backdropFilter: 'blur(10px)',
                             '&:hover': {
-                              bgcolor: 'rgba(255,255,255,0.9)',
-                              transform: 'scale(1.02)'
-                            }
+                              background: plan.gradient,
+                              color: '#fff',
+                              border: 'none',
+                              boxShadow: `0 8px 24px ${plan.color}45`,
+                              transform: 'scale(1.02)',
+                            },
                           }}
                         >
-                          {selectedPlan?.id === plan.id ? 'SELECCIONADO' : 'SELECCIONAR'}
+                          {isSelected ? '✓ Seleccionado' : 'Seleccionar plan'}
                         </Button>
                       )}
-                    </CardContent>
-                  </Card>
+                    </Box>
+                  </Box>
                 </SwiperSlide>
-              ))}
+                );
+              })}
             </Swiper>
           </Box>
 
           {/* Footer */}
           <Box sx={{
-            p: 2,
-            height:"2rem",
-            borderTop: `1px solid ${theme.palette.divider}`,
-            bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+            px: { xs: 2, md: 3 },
+            py: 1.5,
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
             alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 2
+            gap: 2,
+            borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(139,92,246,0.08)'}`,
           }}>
-            <Typography variant="body2" color="text.secondary">
-              • Cancela en cualquier momento • Soporte 24/7 • Garantía de 30 días
-            </Typography>
-          
+            {['Cancela cuando quieras', 'Soporte 24/7', 'Garantía 30 días'].map((text, i) => (
+              <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#8b5cf6' }} />
+                <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'text.secondary', fontSize: '0.65rem' }}>
+                  {text}
+                </Typography>
+              </Box>
+            ))}
           </Box>
         </Box>
       </Fade>
     </Modal>
+
     {/* Confirmación de Checkout */}
-    <Dialog open={confirmOpen} onClose={() => (!isSubmitting ? setConfirmOpen(false) : null)} maxWidth="xs" fullWidth>
-      <DialogTitle>Confirmar suscripción</DialogTitle>
-      <DialogContent>
-        {selectedPlan && (
-          <Box>
-            <Typography variant="subtitle1" fontWeight="bold">
-              {selectedPlan.name}
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              {selectedPlan.description}
-            </Typography>
-            <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
-              {selectedPlan.price}
-              <Typography component="span" variant="subtitle1" sx={{ ml: 0.5, opacity: 0.8 }}>
-                {selectedPlan.period}
+    <Dialog
+      open={confirmOpen}
+      onClose={() => (!isSubmitting ? setConfirmOpen(false) : null)}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 4,
+          overflow: 'hidden',
+          background: isDark ? '#111118' : '#fff',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+        }
+      }}
+    >
+      {selectedPlan && (
+        <>
+          <Box sx={{ height: 6, background: selectedPlan.gradient }} />
+          <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, pb: 1, pt: 2.5 }}>
+            <Box sx={{
+              width: 36, height: 36, borderRadius: 2.5,
+              background: selectedPlan.gradient,
+              color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 12px ${selectedPlan.color}30`,
+              '& .MuiSvgIcon-root': { fontSize: 18 },
+            }}>
+              {selectedPlan.icon}
+            </Box>
+            Confirmar suscripción
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{
+              p: 2.5, borderRadius: 3, mb: 2,
+              background: isDark
+                ? `linear-gradient(135deg, ${selectedPlan.color}12 0%, ${selectedPlan.color}06 100%)`
+                : `linear-gradient(135deg, ${selectedPlan.color}08 0%, ${selectedPlan.color}03 100%)`,
+              border: `1px solid ${isDark ? `${selectedPlan.color}20` : `${selectedPlan.color}15`}`,
+            }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: selectedPlan.color }}>
+                {selectedPlan.name}
               </Typography>
-            </Typography>
-            <Divider sx={{ my: 1 }} />
-            <Typography variant="body2" color="text.secondary">
-              Serás redirigido a Mercado Pago para completar el pago.
+              <Typography variant="caption" color="text.secondary">
+                {selectedPlan.description}
+              </Typography>
+              <Typography sx={{ fontWeight: 900, mt: 1, fontSize: '1.5rem', color: isDark ? '#fff' : selectedPlan.color }}>
+                {selectedPlan.price}
+                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                  {selectedPlan.period}
+                </Typography>
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Serás redirigido a Mercado Pago para completar el pago de forma segura.
             </Typography>
             {error && (
               <Typography variant="body2" color="error" sx={{ mt: 1 }}>
                 {error}
               </Typography>
             )}
-          </Box>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setConfirmOpen(false)} disabled={isSubmitting}>Cancelar</Button>
-        <Button onClick={handleCheckout} variant="contained" disabled={isSubmitting}>
-          {isSubmitting ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmar y pagar'}
-        </Button>
-      </DialogActions>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button onClick={() => setConfirmOpen(false)} disabled={isSubmitting} sx={{ borderRadius: 2.5, color: 'text.secondary', px: 3 }}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCheckout}
+              variant="contained"
+              disabled={isSubmitting}
+              sx={{
+                borderRadius: 2.5,
+                background: selectedPlan.gradient,
+                fontWeight: 700,
+                px: 4,
+                py: 1.2,
+                boxShadow: `0 6px 20px ${selectedPlan.color}35`,
+                '&:hover': { boxShadow: `0 8px 28px ${selectedPlan.color}50`, transform: 'scale(1.02)' },
+              }}
+            >
+              {isSubmitting ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : 'Confirmar y pagar'}
+            </Button>
+          </DialogActions>
+        </>
+      )}
     </Dialog>
     </>
   );

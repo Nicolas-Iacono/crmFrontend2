@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import TourTooltip, { modernTourStyles, modernTourLocale } from './TourTooltip';
 
 /**
  * AppTour
@@ -126,25 +127,10 @@ const AppTour = () => {
       spotlightClicks={false}
       disableScrolling={true}
       scrollToFirstStep={true}
-      styles={{
-        options: {
-          primaryColor: '#6f33f1',
-          zIndex: 20000,
-        },
-        tooltipTitle: {
-          fontFamily: 'Poppins, sans-serif',
-        },
-        tooltipContent: {
-          fontFamily: 'Poppins, sans-serif',
-        },
-      }}
-      locale={{
-        back: 'Atrás',
-        close: 'Cerrar',
-        last: 'Finalizar',
-        next: 'Siguiente',
-        skip: 'Saltar',
-      }}
+      tooltipComponent={TourTooltip}
+      styles={modernTourStyles}
+      locale={modernTourLocale}
+      floaterProps={{ hideArrow: false, styles: { floater: { filter: 'none' }, wrapper: { cursor: 'auto' } } }}
       callback={handleCallback}
     />
   );

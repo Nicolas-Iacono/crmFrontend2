@@ -38,7 +38,7 @@ const RecibosPage = () => {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [updatingEstado, setUpdatingEstado] = useState({});
-
+console.log(recibos)
   // Utils
 const formatFecha = (fecha) => {
   // Caso LocalDate de Java → [yyyy, mm, dd]

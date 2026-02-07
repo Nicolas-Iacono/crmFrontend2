@@ -7,8 +7,8 @@ import {
   Grid2,
   Chip,
   Button,
-  AppBar,
-  Toolbar,
+  // AppBar,
+  // Toolbar,
   IconButton,
   CircularProgress,
   Alert,
@@ -56,6 +56,7 @@ import ModalNotas from '../common/popUps/ModalNotas';
 
 const DashboardPropietario = () => {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_URL;
@@ -730,449 +731,153 @@ const DashboardPropietario = () => {
     );
   };
 
+  const accentColor = '#8b5cf6';
+  const accentDark = '#7c3aed';
+  const accentDarker = '#6d28d9';
+
   if (loading) {
     return (
       <Box sx={{ 
         display: 'flex', 
+        flexDirection: 'column',
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
-        backgroundColor: '#f5f5f5'
+        bgcolor: isDark ? '#0f0f17' : '#f8f7fc',
+        gap: 2,
       }}>
-        <CircularProgress size={60} />
+        <CircularProgress size={48} sx={{ color: accentColor }} />
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          Cargando tu portal...
+        </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: isDark ? '#0f0f17' : '#f8f7fc' }}>
       {/* Header */}
-      <AppBar position="static" sx={{ backgroundColor: 'rgb(86, 23, 164)' }}>
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Portal de Propietarios
-          </Typography>
-          <IconButton color="inherit" onClick={handleLogout}>
-            <LogoutIcon />
+      <Box sx={{
+        background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+        color: 'white',
+        px: { xs: 2, md: 3 },
+        pt: { xs: 2.5, md: 3 },
+        pb: { xs: 3, md: 3.5 },
+        borderBottomLeftRadius: { xs: 20, md: 24 },
+        borderBottomRightRadius: { xs: 20, md: 24 },
+        ml: { xs: 0, md: '15rem' },
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <Box sx={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.08)' }} />
+        <Box sx={{ position: 'absolute', bottom: -20, left: '30%', width: 80, height: 80, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.05)' }} />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+          <Box>
+            <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 500, letterSpacing: 0.5 }}>
+              Portal de Propietarios
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.25 }}>
+              Hola, {username || 'Propietario'}
+            </Typography>
+          </Box>
+          <IconButton 
+            onClick={handleLogout}
+            sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.12)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}
+            size="small"
+          >
+            <LogoutIcon sx={{ fontSize: 20 }} />
           </IconButton>
-        </Toolbar>
-      </AppBar>
+        </Box>
+      </Box>
 
       <Box sx={{ 
         p: { xs: 2, sm: 3, md: 4 }, 
-        pb: { xs: 10, md: 4 },
-        pl: { xs: 2, md: '270px' }, // Margen izquierdo ajustado para la sidebar de 210px
-        pr: { xs: 2, sm: 3, md: 6 }, // Más padding derecho en desktop
-        backgroundColor: '#f5f7fa',
-        minHeight: '100vh'
+        pb: { xs: 12, md: 6 },
+        pl: { xs: 2, md: '240px' },
+        pr: { xs: 2, sm: 3, md: 5 },
       }}>
         {/* Sección Home */}
         {activeSection === 'home' && userRole === 'ROLE_PROPIETARIO_USER' && (
-          <Box sx={{ 
-            maxWidth: '1200px', 
-            margin: '0 auto',
-            width: '100%'
-          }}>
-            <Typography variant="h4" sx={{ 
-              mb: { xs: 2, md: 4 }, 
-              fontWeight: 'bold', 
-              color: '#1a237e',
-              textAlign: { xs: 'left', md: 'left' }
-            }}>
-              Panel de Propietario
-            </Typography>
-            
+          <Box sx={{ maxWidth: '1000px', mx: 'auto', width: '100%' }}>
             {loadingPropietario ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                <CircularProgress />
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}>
+                <CircularProgress sx={{ color: accentColor }} />
               </Box>
             ) : (
-              <Box>
-                {/* Resumen financiero */}
-                <Paper sx={{ 
-                  p: { xs: 2, sm: 3, md: 4 }, 
-                  mb: 4, 
-                  borderRadius: 3,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                    zIndex: 1
-                  }
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Stat cards row */}
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  {[
+                    { value: propiedadesPropietario.length, label: 'Propiedades', icon: <PropiedadesIcon sx={{ fontSize: 20 }} />, color: '#22c55e', bg: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.06)' },
+                    { value: contratosPropietario.length, label: 'Contratos', icon: <ReceiptIcon sx={{ fontSize: 20 }} />, color: '#3b82f6', bg: isDark ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)' },
+                  ].map((stat) => (
+                    <Paper key={stat.label} elevation={0} sx={{
+                      flex: 1, p: 2, borderRadius: 3, textAlign: 'center',
+                      bgcolor: stat.bg, border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'transparent'}`,
+                    }}>
+                      <Box sx={{ color: stat.color, mb: 0.5 }}>{stat.icon}</Box>
+                      <Typography variant="h4" sx={{ fontWeight: 800, color: stat.color, lineHeight: 1.1 }}>{stat.value}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.65rem' }}>{stat.label}</Typography>
+                    </Paper>
+                  ))}
+                </Box>
+
+                {/* Ingresos mensuales */}
+                <Paper elevation={0} sx={{
+                  p: 2.5, borderRadius: 3,
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                  color: 'white', textAlign: 'center',
                 }}>
-                  <Box sx={{ position: 'relative', zIndex: 2 }}>
-                    <Typography variant="h5" sx={{ 
-                      mb: 3, 
-                      fontWeight: 'bold', 
-                      color: 'white',
-                      textAlign: { xs: 'center', md: 'left' },
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1
-                    }}>
-                      📊 Resumen Financiero
-                    </Typography>
-                    
-                    <Box sx={{ 
-                      display: 'flex', 
-                      flexDirection: { xs: 'column', sm: 'column', md: 'row' }, 
-                      gap: { xs: 2, sm: 3 },
-                      alignItems: 'center',
-                      justifyContent: { xs: 'center', sm: 'center', md: 'flex-start' },
-
-                    }}>
-                      {/* Fila superior - Propiedades y Contratos */}
-                      <Box sx={{ 
-                        display: 'flex', 
-                        gap: { xs: 2, sm: 3 }, 
-                        width: { xs: '100%', sm: '100%', md: '30%' },
-                        justifyContent: { xs: 'center', sm: 'center', md: 'flex-start' },
-                      }}>
-                        {/* Propiedades */}
-                        <Card sx={{ 
-                          width: { xs: '45%', sm: '45%', md: '50%' },
-                          background: 'rgba(255,255,255,0.95)',
-                          backdropFilter: 'blur(10px)',
-                          borderRadius: 2,
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                          }
-                        }}>
-                          <CardContent sx={{ 
-                            textAlign: 'center', 
-                            p: { xs: 1.5, sm: 2.5 },
-                            '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                          }}>
-                            <Box sx={{ 
-                              width: { xs: 40, sm: 50 }, 
-                              height: { xs: 40, sm: 50 }, 
-                              borderRadius: '50%', 
-                              backgroundColor: '#e8f5e8',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              margin: '0 auto 12px auto',
-                              fontSize: { xs: '16px', sm: '20px' }
-                            }}>
-                              🏠
-                            </Box>
-                            <Typography variant="h3" sx={{ 
-                              color: '#4caf50', 
-                              fontWeight: 'bold',
-                              fontSize: { xs: '1.5rem', sm: '2rem' },
-                              lineHeight: 1
-                            }}>
-                              {propiedadesPropietario.length}
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                              color: '#666',
-                              fontWeight: 500,
-                              mt: 1,
-                              fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                            }}>
-                              Propiedades
-                            </Typography>
-                          </CardContent>
-                        </Card>
-
-                        {/* Contratos */}
-                        <Card sx={{ 
-                          width: { xs: '45%', sm: '45%', md: '50%' },
-                          background: 'rgba(255,255,255,0.95)',
-                          backdropFilter: 'blur(10px)',
-                          borderRadius: 2,
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                          }
-                        }}>
-                          <CardContent sx={{ 
-                            textAlign: 'center', 
-                            p: { xs: 1.5, sm: 2.5 },
-                            '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                          }}>
-                            <Box sx={{ 
-                              width: { xs: 40, sm: 50 }, 
-                              height: { xs: 40, sm: 50 }, 
-                              borderRadius: '50%', 
-                              backgroundColor: '#e3f2fd',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              margin: '0 auto 12px auto',
-                              fontSize: { xs: '16px', sm: '20px' }
-                            }}>
-                              📋
-                            </Box>
-                            <Typography variant="h3" sx={{ 
-                              color: '#2196f3', 
-                              fontWeight: 'bold',
-                              fontSize: { xs: '1.5rem', sm: '2rem' },
-                              lineHeight: 1
-                            }}>
-                              {contratosPropietario.length}
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                              color: '#666',
-                              fontWeight: 500,
-                              mt: 1,
-                              fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                            }}>
-                              Contratos Activos
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Box>
-
-                      {/* Fila inferior - Ingresos */}
-                      <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'center',
-                        width: { xs: '100%', sm: '100%', md: '50%' }
-                      }}>
-                        <Card sx={{ 
-                          width: { xs: 'calc(90% + 16px)', sm: 'calc(90% + 24px)', md: '100%' },
-                          background: 'rgba(255,255,255,0.95)',
-                          backdropFilter: 'blur(10px)',
-                          borderRadius: 2,
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                          }
-                        }}>
-                          <CardContent sx={{ 
-                            textAlign: 'center', 
-                            p: { xs: 2, sm: 3 },
-                            '&:last-child': { pb: { xs: 2, sm: 3 } }
-                          }}>
-                            <Box sx={{ 
-                              width: { xs: 50, sm: 60 }, 
-                              height: { xs: 40, sm: 50 },  
-                              borderRadius: '50%', 
-                              backgroundColor: '#fff3e0',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              margin: '0 auto 16px auto',
-                              fontSize: { xs: '20px', sm: '24px' }
-                            }}>
-                              💰
-                            </Box>
-                            <Typography variant="h4" sx={{ 
-                              color: '#ff9800', 
-                              fontWeight: 'bold',
-                              fontSize: { xs: '1.3rem', sm: '1.8rem', md: '2rem' },
-                              lineHeight: 1.2,
-                              wordBreak: 'break-word'
-                            }}>
-                              {formatCurrency(totalIngresosMensual)}
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                              color: '#666',
-                              fontWeight: 500,
-                              mt: 1,
-                              fontSize: { xs: '0.9rem', sm: '1rem' }
-                            }}>
-                              Ingresos Mensuales
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Box>
-                    </Box>
-                  </Box>
+                  <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 500 }}>Ingresos Mensuales</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>{formatCurrency(totalIngresosMensual)}</Typography>
                 </Paper>
 
                 {/* Mis Propiedades */}
                 <Accordion 
                   expanded={expandedAccordions.propiedades} 
                   onChange={handleAccordionChange('propiedades')}
+                  elevation={0}
                   sx={{ 
-                    mb: 4, 
-                    borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                      zIndex: 1
-                    },
-                    '& .MuiAccordionSummary-root': {
-                      backgroundColor: 'transparent',
-                      color: 'white',
-                      position: 'relative',
-                      zIndex: 2
-                    },
-                    '& .MuiAccordionDetails-root': {
-                      backgroundColor: 'transparent',
-                      position: 'relative',
-                      zIndex: 2
-                    }
+                    borderRadius: '12px !important',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                    '&::before': { display: 'none' },
+                    '& .MuiAccordionSummary-root': { minHeight: 'auto', py: 1.5, px: 2.5 },
+                    '& .MuiAccordionDetails-root': { px: 2.5, pb: 2.5, pt: 0 },
                   }}
                 >
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />}
-                    sx={{ 
-                      p: { xs: 2, sm: 3, md: 4 },
-                      '& .MuiAccordionSummary-content': {
-                        margin: 0
-                      }
-                    }}
-                  >
-                    <Typography variant="h5" sx={{ 
-                      fontWeight: 'bold', 
-                      color: 'white',
-                      textAlign: { xs: 'center', md: 'left' },
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1
-                    }}>
-                      🏠 Mis Propiedades ({propiedadesPropietario.length})
-                    </Typography>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: accentColor }} />}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <PropiedadesIcon sx={{ fontSize: 20, color: accentColor }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        Mis Propiedades ({propiedadesPropietario.length})
+                      </Typography>
+                    </Box>
                   </AccordionSummary>
-                  <AccordionDetails sx={{ p: { xs: 2, sm: 3, md: 4 }, pt: 0 }}>
-                    
+                  <AccordionDetails>
                     {propiedadesPropietario.length > 0 ? (
-                      <Grid2 container spacing={{ xs: 2, sm: 3 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         {propiedadesPropietario.map((propiedad, index) => (
-                          <Grid2 item xs={12} sm={12} md={6} lg={4} key={index} sx={{ width: '100%' }}>
-                            <Card sx={{ 
-                              height: { xs: '200px', sm: '220px', md: '240px' },
-                              minHeight: { xs: '200px', sm: '220px', md: '240px' },
-                              background: 'rgba(255,255,255,0.95)',
-                              backdropFilter: 'blur(10px)',
-                              borderRadius: 2,
-                              border: '1px solid rgba(255,255,255,0.2)',
-                              transition: 'all 0.3s ease',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                              }
-                            }}>
-                              <CardContent sx={{ 
-                                p: { xs: 2, sm: 2.5 },
-                                '&:last-child': { pb: { xs: 2, sm: 2.5 } },
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column'
-                              }}>
-                                {/* Contenido superior */}
-                                <Box sx={{ flex: 1 }}>
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                    <Typography variant="h6" sx={{ 
-                                      fontWeight: 'bold', 
-                                      color: '#1a237e',
-                                      fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
-                                      lineHeight: 1.2,
-                                      flex: 1,
-                                      pr: 1
-                                    }}>
-                                      {propiedad.direccion}
-                                    </Typography>
-                                    <Chip 
-                                      label={propiedad.estado || 'Disponible'} 
-                                      color={propiedad.estado === 'Ocupado' ? 'error' : 'success'}
-                                      size="small"
-                                    />
-                                  </Box>
-                                  
-                                  <Typography variant="body2" sx={{ 
-                                    color: '#666',
-                                    mb: 1,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                    fontSize: { xs: '0.95rem', sm: '1rem', md: '1rem' }
-                                  }}>
-                                    📍 {propiedad.localidad}, {propiedad.partido}
-                                  </Typography>
-                                  
-                                  <Typography variant="body2" sx={{ 
-                                    color: '#666',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                    fontSize: { xs: '0.95rem', sm: '1rem', md: '1rem' }
-                                  }}>
-                                    🏢 {propiedad.tipoPropiedad}
-                                  </Typography>
-                                </Box>
-                                
-                                {/* Contenido inferior - Monto (si existe) */}
-                                {propiedad.estado === 'Ocupado' && propiedad.montoAlquiler && (
-                                  <Box sx={{ 
-                                    mt: 'auto',
-                                    p: 1.5, 
-                                    backgroundColor: '#e8f5e8', 
-                                    borderRadius: 1,
-                                    textAlign: 'center'
-                                  }}>
-                                    <Typography variant="body2" sx={{ 
-                                      color: '#4caf50', 
-                                      fontWeight: 'bold',
-                                      fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' }
-                                    }}>
-                                      💰 {formatCurrency(propiedad.montoAlquiler)}/mes
-                                    </Typography>
-                                  </Box>
-                                )}
-                                
-                                {/* Espaciador para propiedades sin monto */}
-                                {!(propiedad.estado === 'Ocupado' && propiedad.montoAlquiler) && (
-                                  <Box sx={{ mt: 'auto', height: '20px' }} />
-                                )}
-                              </CardContent>
-                            </Card>
-                          </Grid2>
+                          <Paper key={index} elevation={0} sx={{
+                            p: 2, borderRadius: 2.5,
+                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                          }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>{propiedad.direccion}</Typography>
+                              <Chip label={propiedad.estado || 'Disponible'} size="small" sx={{
+                                fontWeight: 700, fontSize: '0.65rem', height: 22,
+                                bgcolor: propiedad.estado === 'Ocupado' ? (isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.1)') : (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.1)'),
+                                color: propiedad.estado === 'Ocupado' ? '#ef4444' : '#22c55e',
+                              }} />
+                            </Box>
+                            <Typography variant="caption" color="text.secondary">{propiedad.localidad}, {propiedad.partido} · {propiedad.tipoPropiedad}</Typography>
+                            {propiedad.estado === 'Ocupado' && propiedad.montoAlquiler && (
+                              <Typography variant="body2" sx={{ mt: 1, fontWeight: 700, color: '#22c55e' }}>{formatCurrency(propiedad.montoAlquiler)}/mes</Typography>
+                            )}
+                          </Paper>
                         ))}
-                      </Grid2>
-                    ) : (
-                      <Box sx={{ 
-                        textAlign: 'center', 
-                        py: 6,
-                        background: 'rgba(255,255,255,0.95)',
-                        borderRadius: 2,
-                        backdropFilter: 'blur(10px)'
-                      }}>
-                        <Typography variant="h6" sx={{ 
-                          color: '#666', 
-                          mb: 2,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 1
-                        }}>
-                          🏠 No hay propiedades registradas
-                        </Typography>
-                        <Typography variant="body1" color="textSecondary">
-                          Cuando tengas propiedades, aparecerán aquí con toda su información.
-                        </Typography>
                       </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>No hay propiedades registradas</Typography>
                     )}
                   </AccordionDetails>
                 </Accordion>
@@ -1181,307 +886,96 @@ const DashboardPropietario = () => {
                 <Accordion 
                   expanded={expandedAccordions.contratos} 
                   onChange={handleAccordionChange('contratos')}
+                  elevation={0}
                   sx={{ 
-                    mb: 10, 
-                    borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                      zIndex: 1
-                    },
-                    '& .MuiAccordionSummary-root': {
-                      backgroundColor: 'transparent',
-                      color: 'white',
-                      position: 'relative',
-                      zIndex: 2
-                    },
-                    '& .MuiAccordionDetails-root': {
-                      backgroundColor: 'transparent',
-                      position: 'relative',
-                      zIndex: 2
-                    }
+                    borderRadius: '12px !important',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                    '&::before': { display: 'none' },
+                    '& .MuiAccordionSummary-root': { minHeight: 'auto', py: 1.5, px: 2.5 },
+                    '& .MuiAccordionDetails-root': { px: 2.5, pb: 2.5, pt: 0 },
                   }}
                 >
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />}
-                    sx={{ 
-                      p: { xs: 2, sm: 3, md: 4 },
-                      '& .MuiAccordionSummary-content': {
-                        margin: 0
-                      }
-                    }}
-                  >
-                    <Typography variant="h5" sx={{ 
-                      fontWeight: 'bold', 
-                      color: 'white',
-                      textAlign: { xs: 'center', md: 'left' },
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1
-                    }}>
-                      📋 Contratos Activos ({contratosPropietario.length})
-                    </Typography>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: accentColor }} />}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <ReceiptIcon sx={{ fontSize: 20, color: accentColor }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        Contratos Activos ({contratosPropietario.length})
+                      </Typography>
+                    </Box>
                   </AccordionSummary>
-                  <AccordionDetails sx={{ p: { xs: 2, sm: 3, md: 4 }, pt: 0 }}>
-                    
+                  <AccordionDetails>
                     {contratosPropietario.length > 0 ? (
-                      <Grid2 container spacing={{ xs: 2, sm: 3 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         {contratosPropietario.map((contrato, index) => (
-                          <Grid2 item xs={12} sm={12} md={12} lg={6} key={index} sx={{ width: '100%' }}>
-                            <Card 
-                              onClick={() => handleContratoClick(contrato)}
-                              sx={{ 
-                                minHeight: { xs: '300px', sm: '320px', md: '340px' },
-                                background: 'rgba(255,255,255,0.95)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: 2,
-                                border: contrato.activo ? '2px solid #4caf50' : '2px solid #ff9800',
-                                cursor: 'pointer',
-                              transition: 'all 0.3s ease',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                              }
-                            }}>
-                              <CardContent sx={{ 
-                                p: { xs: 2, sm: 2.5, md: 3 },
-                                '&:last-child': { pb: { xs: 2, sm: 2.5, md: 3 } },
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column'
-                              }}>
-                                {/* Header del contrato */}
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-                                  <Typography variant="h6" sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#1a237e',
-                                    fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
-                                    lineHeight: 1.2,
-                                    flex: 1,
-                                    pr: 1
-                                  }}>
-                                    {contrato.nombreContrato}
-                                  </Typography>
-                                  <Chip 
-                                    label={contrato.activo ? 'Activo' : 'Inactivo'} 
-                                    color={contrato.activo ? 'success' : 'warning'}
-                                    size="small"
-                                  />
+                          <Paper key={index} elevation={0} onClick={() => handleContratoClick(contrato)} sx={{
+                            borderRadius: 2.5, overflow: 'hidden', cursor: 'pointer',
+                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                            transition: 'all 0.2s',
+                            '&:hover': { borderColor: accentColor, boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.08)' },
+                          }}>
+                            <Box sx={{ height: 3, background: contrato.activo ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #f59e0b, #ef4444)' }} />
+                            <Box sx={{ p: 2 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>{contrato.nombreContrato}</Typography>
+                                <Chip label={contrato.activo ? 'Activo' : 'Inactivo'} size="small" sx={{
+                                  fontWeight: 700, fontSize: '0.65rem', height: 22,
+                                  bgcolor: contrato.activo ? (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.1)') : (isDark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.1)'),
+                                  color: contrato.activo ? '#22c55e' : '#f59e0b',
+                                }} />
+                              </Box>
+                              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 1.5 }}>
+                                <Box sx={{ flex: 1, p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }}>
+                                  <Typography variant="caption" color="text.secondary">Inquilino</Typography>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{contrato.inquilino.nombre} {contrato.inquilino.apellido}</Typography>
+                                  <Typography variant="caption" color="text.secondary">{contrato.inquilino.telefono}</Typography>
                                 </Box>
-                                
-                                {/* Contenido principal */}
-                                <Box sx={{ flex: 1 , width: '100%'}}>
-                                  <Grid2 container spacing={{ xs: 2, sm: 3 }}>
-                                    {/* Información del Inquilino */}
-                                    <Grid2 item xs={12} md={6} width="100%">
-                                      <Box sx={{ 
-                                        p: 2, 
-                                        backgroundColor: '#f8f9fa', 
-                                        borderRadius: 1,
-                                        height: '100%',
-                                        border: '1px solid #e0e0e0',
-                                         width: '90%'
-                                      }}>
-                                        <Typography variant="body2" sx={{ 
-                                          fontWeight: 'bold', 
-                                          mb: 1.5,
-                                          color: '#1a237e',
-                                          fontSize: { xs: '0.9rem', sm: '1rem' }
-                                        }}>
-                                          👤 Inquilino
-                                        </Typography>
-                                        <Typography variant="body1" sx={{ 
-                                          fontWeight: 'bold',
-                                          mb: 1,
-                                          fontSize: { xs: '1rem', sm: '1.1rem' }
-                                        }}>
-                                          {contrato.inquilino.pronombre} {contrato.inquilino.nombre} {contrato.inquilino.apellido}
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ 
-                                          color: '#666',
-                                          mb: 0.5,
-                                          fontSize: { xs: '0.9rem', sm: '0.95rem' }
-                                        }}>
-                                          📞 {contrato.inquilino.telefono}
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ 
-                                          color: '#666',
-                                          fontSize: { xs: '0.9rem', sm: '0.95rem' }
-                                        }}>
-                                          📧 {contrato.inquilino.email}
-                                        </Typography>
-                                      </Box>
-                                    </Grid2>
-                                    
-                                    {/* Información de la Propiedad */}
-                                    <Grid2 item xs={12} md={6} width="100%" sx={{ mt: 3, mb: 3}}>
-                                      <Box sx={{ 
-                                        p: 2, 
-                                        backgroundColor: '#f0f8ff', 
-                                        borderRadius: 1,
-                                        height: '100%',
-                                        border: '1px solid #e3f2fd',
-                                        width: '90%'
-                                      }}>
-                                        <Typography variant="body2" sx={{ 
-                                          fontWeight: 'bold', 
-                                          mb: 1.5,
-                                          color: '#1a237e',
-                                          fontSize: { xs: '0.9rem', sm: '1rem' }
-                                        }}>
-                                          🏠 Propiedad
-                                        </Typography>
-                                        <Typography variant="body1" sx={{ 
-                                          fontWeight: 'bold',
-                                          mb: 1,
-                                          fontSize: { xs: '1rem', sm: '1.1rem' }
-                                        }}>
-                                          {contrato.propiedad.direccion}
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ 
-                                          color: '#666',
-                                          mb: 0.5,
-                                          fontSize: { xs: '0.9rem', sm: '0.95rem' }
-                                        }}>
-                                          📍 {contrato.propiedad.localidad}, {contrato.propiedad.partido}
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ 
-                                          color: '#666',
-                                          fontSize: { xs: '0.9rem', sm: '0.95rem' }
-                                        }}>
-                                          🏢 {contrato.propiedad.tipo}
-                                        </Typography>
-                                      </Box>
-                                    </Grid2>
-                                  </Grid2>
+                                <Box sx={{ flex: 1, p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }}>
+                                  <Typography variant="caption" color="text.secondary">Propiedad</Typography>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{contrato.propiedad.direccion}</Typography>
+                                  <Typography variant="caption" color="text.secondary">{contrato.propiedad.localidad}</Typography>
                                 </Box>
-                                
-                                {/* Información Financiera */}
-                                <Box sx={{ 
-                                  mt: 2, 
-                                  p: 2, 
-                                  backgroundColor: '#e8f5e8', 
-                                  borderRadius: 1,
-                                  border: '1px solid #4caf50'
-                                }}>
-                                  <Typography variant="body2" sx={{ 
-                                    fontWeight: 'bold', 
-                                    mb: 1,
-                                    color: '#2e7d32',
-                                    fontSize: { xs: '0.9rem', sm: '1rem' }
-                                  }}>
-                                    💰 Información Financiera
-                                  </Typography>
-                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-                                    <Typography variant="h6" sx={{ 
-                                      color: '#4caf50', 
-                                      fontWeight: 'bold',
-                                      fontSize: { xs: '1.2rem', sm: '1.3rem', md: '1.4rem' }
-                                    }}>
-                                      {formatCurrency(contrato.montoAlquiler)}/mes
-                                    </Typography>
-                                    <Box sx={{ flex: 1, minWidth: '200px' }}>
-                                      <Typography variant="body2" sx={{ 
-                                        color: '#666',
-                                        fontSize: { xs: '0.85rem', sm: '0.9rem' }
-                                      }}>
-                                        📅 {new Date(contrato.fecha_inicio).toLocaleDateString('es-AR')} - {new Date(contrato.fecha_fin).toLocaleDateString('es-AR')}
-                                      </Typography>
-                                      <Typography variant="body2" sx={{ 
-                                        color: '#666',
-                                        fontSize: { xs: '0.85rem', sm: '0.9rem' }
-                                      }}>
-                                        ⏱️ {Math.floor(contrato.tiempoRestante / 30)} meses y {contrato.tiempoRestante % 30} días restantes • 📊 {contrato.indiceAjuste.toUpperCase()}
-                                      </Typography>
-                                    </Box>
-                                  </Box>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.04)' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: isDark ? '#a78bfa' : accentDark }}>{formatCurrency(contrato.montoAlquiler)}/mes</Typography>
+                                <Typography variant="caption" color="text.secondary">{Math.floor(contrato.tiempoRestante / 30)}m {contrato.tiempoRestante % 30}d restantes</Typography>
+                              </Box>
+                              {(contrato.aguaPorcentaje > 0 || contrato.luzPorcentaje > 0 || contrato.gasPorcentaje > 0) && (
+                                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1.5 }}>
+                                  {contrato.aguaPorcentaje > 0 && <Chip label={`Agua ${contrato.aguaPorcentaje}%`} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 22 }} />}
+                                  {contrato.luzPorcentaje > 0 && <Chip label={`Luz ${contrato.luzPorcentaje}%`} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 22 }} />}
+                                  {contrato.gasPorcentaje > 0 && <Chip label={`Gas ${contrato.gasPorcentaje}%`} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 22 }} />}
+                                  {contrato.municipalPorcentaje > 0 && <Chip label={`Municipal ${contrato.municipalPorcentaje}%`} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 22 }} />}
                                 </Box>
-                                
-                                {/* Servicios */}
-                                <Box sx={{ mt: 2, p: 2, backgroundColor: '#fff3e0', borderRadius: 1, border: '1px solid #ffcc02' }}>
-                                  <Typography variant="body2" sx={{ 
-                                    fontWeight: 'bold', 
-                                    mb: 1,
-                                    color: '#f57c00',
-                                    fontSize: { xs: '0.9rem', sm: '1rem' }
-                                  }}>
-                                    🔧 Servicios a cargo del inquilino:
-                                  </Typography>
-                                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                    {contrato.aguaPorcentaje > 0 && (
-                                      <Chip 
-                                        label={`💧 ${contrato.aguaEmpresa} (${contrato.aguaPorcentaje}%)`} 
-                                        size="small" 
-                                        variant="outlined"
-                                      />
-                                    )}
-                                    {contrato.luzPorcentaje > 0 && (
-                                      <Chip 
-                                        label={`⚡ ${contrato.luzEmpresa} (${contrato.luzPorcentaje}%)`} 
-                                        size="small" 
-                                        variant="outlined"
-                                      />
-                                    )}
-                                    {contrato.gasPorcentaje > 0 && (
-                                      <Chip 
-                                        label={`🔥 ${contrato.gasEmpresa} (${contrato.gasPorcentaje}%)`} 
-                                        size="small" 
-                                        variant="outlined"
-                                      />
-                                    )}
-                                    {contrato.municipalPorcentaje > 0 && (
-                                      <Chip 
-                                        label={`🏛️ ${contrato.municipalEmpresa} (${contrato.municipalPorcentaje}%)`} 
-                                        size="small" 
-                                        variant="outlined"
-                                      />
-                                    )}
-                                  </Box>
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          </Grid2>
+                              )}
+                            </Box>
+                          </Paper>
                         ))}
-                      </Grid2>
-                    ) : (
-                      <Box sx={{ 
-                        textAlign: 'center', 
-                        py: 6,
-                        background: 'rgba(255,255,255,0.95)',
-                        borderRadius: 2,
-                        backdropFilter: 'blur(10px)'
-                      }}>
-                        <Typography variant="h6" sx={{ 
-                          color: '#666', 
-                          mb: 2,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 1
-                        }}>
-                          📋 No hay contratos activos
-                        </Typography>
-                        <Typography variant="body1" color="textSecondary">
-                          Cuando tengas contratos activos, aparecerán aquí con toda su información.
-                        </Typography>
                       </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>No hay contratos activos</Typography>
                     )}
                   </AccordionDetails>
                 </Accordion>
 
-           
+                {/* Quick actions */}
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  {[
+                    { key: 'propiedades', label: 'Propiedades', sub: 'Ver detalle', icon: <PropiedadesIcon sx={{ fontSize: 20 }} />, color: accentColor, bg: isDark ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.08)' },
+                    { key: 'recibos', label: 'Recibos', sub: 'Ver pagos', icon: <ReceiptIcon sx={{ fontSize: 20 }} />, color: '#3b82f6', bg: isDark ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.08)' },
+                    { key: 'comunicaciones', label: 'Reportes', sub: 'Ver notas', icon: <MessageIcon sx={{ fontSize: 20 }} />, color: '#ec4899', bg: isDark ? 'rgba(236,72,153,0.1)' : 'rgba(236,72,153,0.08)' },
+                  ].map((action) => (
+                    <Paper key={action.key} elevation={0} onClick={() => setActiveSection(action.key)} sx={{
+                      flex: 1, p: 2, borderRadius: 3, cursor: 'pointer', textAlign: 'center',
+                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                      transition: 'all 0.2s',
+                      '&:hover': { borderColor: action.color, transform: 'translateY(-2px)' },
+                    }}>
+                      <Box sx={{ width: 36, height: 36, borderRadius: 2, mx: 'auto', mb: 1, bgcolor: action.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: action.color }}>{action.icon}</Box>
+                      <Typography variant="caption" sx={{ fontWeight: 700, display: 'block' }}>{action.label}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>{action.sub}</Typography>
+                    </Paper>
+                  ))}
+                </Box>
               </Box>
             )}
           </Box>
@@ -1489,1264 +983,224 @@ const DashboardPropietario = () => {
 
         {/* Sección Propiedades */}
         {activeSection === 'propiedades' && userRole === 'ROLE_PROPIETARIO_USER' && (
-          <Box sx={{ 
-            maxWidth: '1200px', 
-            margin: '0 auto',
-            width: '100%'
-          }}>
-            <Typography variant="h4" sx={{ 
-              mb: { xs: 2, md: 4 }, 
-              fontWeight: 'bold', 
-              color: '#1a237e',
-              textAlign: { xs: 'left', md: 'left' }
-            }}>
-              Mis Propiedades ({propiedadesPropietario.length})
-            </Typography>
-            
-            {/* Estadísticas rápidas con estilo moderno */}
-            <Paper sx={{ 
-              p: { xs: 2, sm: 3, md: 4 }, 
-              mb: 4, 
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                zIndex: 1
-              }
-            }}>
-              <Box sx={{ position: 'relative', zIndex: 2 }}>
-                <Typography variant="h5" sx={{ 
-                  mb: 3, 
-                  fontWeight: 'bold', 
-                  color: 'white',
-                  textAlign: { xs: 'center', md: 'left' },
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1
+          <Box sx={{ maxWidth: '1000px', mx: 'auto', width: '100%' }}>
+            {/* Stats row */}
+            <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5 }}>
+              {[
+                { value: propiedadesPropietario.filter(p => p.estado === 'Ocupado').length, label: 'Ocupadas', icon: <HomeIcon sx={{ fontSize: 18 }} />, color: '#22c55e', bg: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.06)' },
+                { value: propiedadesPropietario.filter(p => p.estado === 'Disponible').length, label: 'Disponibles', icon: <PropiedadesIcon sx={{ fontSize: 18 }} />, color: '#f59e0b', bg: isDark ? 'rgba(245,158,11,0.12)' : 'rgba(245,158,11,0.06)' },
+                { value: [...new Set(propiedadesPropietario.map(p => p.tipoPropiedad))].length, label: 'Tipos', icon: <PropiedadesIcon sx={{ fontSize: 18 }} />, color: '#3b82f6', bg: isDark ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)' },
+              ].map((stat) => (
+                <Paper key={stat.label} elevation={0} sx={{
+                  flex: 1, p: 1.5, borderRadius: 3, textAlign: 'center',
+                  bgcolor: stat.bg, border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'transparent'}`,
                 }}>
-                  📊 Estadísticas de Propiedades
-                </Typography>
-                
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'column', sm: 'column', md: 'row' }, 
-                  gap: { xs: 2, sm: 3 },
-                  alignItems: 'center',
-                  justifyContent: { xs: 'center', sm: 'center', md: 'flex-start' }
-                }}>
-                  {/* Fila superior - Ocupadas y Disponibles */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: { xs: 2, sm: 3 }, 
-                    width: { xs: '100%', sm: '100%', md: '50%' },
-                    justifyContent: { xs: 'center', sm: 'center', md: 'flex-start' }
+                  <Box sx={{ color: stat.color, mb: 0.25 }}>{stat.icon}</Box>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: stat.color, lineHeight: 1.1 }}>{stat.value}</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.6rem' }}>{stat.label}</Typography>
+                </Paper>
+              ))}
+            </Box>
+
+            {/* Property cards */}
+            {propiedadesPropietario.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {propiedadesPropietario.map((propiedad, index) => (
+                  <Paper key={index} elevation={0} sx={{
+                    borderRadius: 3, overflow: 'hidden',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
                   }}>
-                    {/* Ocupadas */}
-                    <Card sx={{ 
-                      width: { xs: '45%', sm: '45%', md: '50%' },
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: 2,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                      }
-                    }}>
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: { xs: 1.5, sm: 2.5 },
-                        '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                      }}>
-                        <Box sx={{ 
-                          width: { xs: 40, sm: 50 }, 
-                          height: { xs: 40, sm: 50 }, 
-                          borderRadius: '50%', 
-                          backgroundColor: '#e8f5e8',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '0 auto 12px auto',
-                          fontSize: { xs: '16px', sm: '20px' }
-                        }}>
-                          🏠
-                        </Box>
-                        <Typography variant="h3" sx={{ 
-                          color: '#4caf50', 
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1.5rem', sm: '2rem' },
-                          lineHeight: 1
-                        }}>
-                          {propiedadesPropietario.filter(p => p.estado === 'Ocupado').length}
-                        </Typography>
-                        <Typography variant="body2" sx={{ 
-                          color: '#666',
-                          fontWeight: 500,
-                          mt: 1,
-                          fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                        }}>
-                          Ocupadas
-                        </Typography>
-                      </CardContent>
-                    </Card>
-
-                    {/* Disponibles */}
-                    <Card sx={{ 
-                      width: { xs: '45%', sm: '45%', md: '50%' },
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: 2,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                      }
-                    }}>
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: { xs: 1.5, sm: 2.5 },
-                        '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                      }}>
-                        <Box sx={{ 
-                          width: { xs: 40, sm: 50 }, 
-                          height: { xs: 40, sm: 50 }, 
-                          borderRadius: '50%', 
-                          backgroundColor: '#fff3e0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '0 auto 12px auto',
-                          fontSize: { xs: '16px', sm: '20px' }
-                        }}>
-                          🏘️
-                        </Box>
-                        <Typography variant="h3" sx={{ 
-                          color: '#ff9800', 
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1.5rem', sm: '2rem' },
-                          lineHeight: 1
-                        }}>
-                          {propiedadesPropietario.filter(p => p.estado === 'Disponible').length}
-                        </Typography>
-                        <Typography variant="body2" sx={{ 
-                          color: '#666',
-                          fontWeight: 500,
-                          mt: 1,
-                          fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                        }}>
-                          Disponibles
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Box>
-
-                  {/* Fila inferior - Tipos y Localidades */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: { xs: 2, sm: 3 }, 
-                    width: { xs: '100%', sm: '100%', md: '50%' },
-                    justifyContent: { xs: 'center', sm: 'center', md: 'flex-start' }
-                  }}>
-                    {/* Tipos */}
-                    <Card sx={{ 
-                      width: { xs: '45%', sm: '45%', md: '50%' },
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: 2,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                      }
-                    }}>
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: { xs: 1.5, sm: 2.5 },
-                        '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                      }}>
-                        <Box sx={{ 
-                          width: { xs: 40, sm: 50 }, 
-                          height: { xs: 40, sm: 50 }, 
-                          borderRadius: '50%', 
-                          backgroundColor: '#e3f2fd',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '0 auto 12px auto',
-                          fontSize: { xs: '16px', sm: '20px' }
-                        }}>
-                          🏢
-                        </Box>
-                        <Typography variant="h3" sx={{ 
-                          color: '#2196f3', 
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1.5rem', sm: '2rem' },
-                          lineHeight: 1
-                        }}>
-                          {[...new Set(propiedadesPropietario.map(p => p.tipoPropiedad))].length}
-                        </Typography>
-                        <Typography variant="body2" sx={{ 
-                          color: '#666',
-                          fontWeight: 500,
-                          mt: 1,
-                          fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                        }}>
-                          Tipos
-                        </Typography>
-                      </CardContent>
-                    </Card>
-
-                    {/* Localidades */}
-                    <Card sx={{ 
-                      width: { xs: '45%', sm: '45%', md: '50%' },
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: 2,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                      }
-                    }}>
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: { xs: 1.5, sm: 2.5 },
-                        '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                      }}>
-                        <Box sx={{ 
-                          width: { xs: 40, sm: 50 }, 
-                          height: { xs: 40, sm: 50 }, 
-                          borderRadius: '50%', 
-                          backgroundColor: '#f3e5f5',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '0 auto 12px auto',
-                          fontSize: { xs: '16px', sm: '20px' }
-                        }}>
-                          📍
-                        </Box>
-                        <Typography variant="h3" sx={{ 
-                          color: '#9c27b0', 
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1.5rem', sm: '2rem' },
-                          lineHeight: 1
-                        }}>
-                          {[...new Set(propiedadesPropietario.map(p => p.localidad))].length}
-                        </Typography>
-                        <Typography variant="body2" sx={{ 
-                          color: '#666',
-                          fontWeight: 500,
-                          mt: 1,
-                          fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                        }}>
-                          Localidades
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Box>
-                </Box>
-              </Box>
-            </Paper>
-
-            {/* Lista de propiedades con estilo moderno */}
-            <Paper sx={{ 
-              p: { xs: 2, sm: 3, md: 4 }, 
-              mb: 4, 
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                zIndex: 1
-              }
-            }}>
-              <Box sx={{ position: 'relative', zIndex: 2 }}>
-                <Typography variant="h5" sx={{ 
-                  mb: 3, 
-                  fontWeight: 'bold', 
-                  color: 'white',
-                  textAlign: { xs: 'center', md: 'left' },
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1
-                }}>
-                  🏠 Detalle de Propiedades
-                </Typography>
-                
-                {propiedadesPropietario.length > 0 ? (
-                  <Grid2 container spacing={{ xs: 2, sm: 3 }}>
-                    {propiedadesPropietario.map((propiedad, index) => (
-                      <Grid2 item xs={12} sm={12} md={6} lg={4} key={index} sx={{ width: '100%' }}>
-                        <Card sx={{ 
-                          height: 'auto',
-                          minHeight: { xs: '300px', sm: '320px', md: '350px' },
-                          background: 'rgba(255,255,255,0.95)',
-                          backdropFilter: 'blur(10px)',
-                          borderRadius: 2,
-                          border: propiedad.estado === 'Ocupado' ? '2px solid #4caf50' : '2px solid #ff9800',
-                          transition: 'all 0.3s ease',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                          }
-                        }}>
-                          <CardContent sx={{ 
-                            p: { xs: 2, sm: 2.5, md: 3 },
-                            '&:last-child': { pb: { xs: 2, sm: 2.5, md: 3 } },
-                            display: 'flex',
-                            flexDirection: 'column',
-                            flex: 1
-                          }}>
-                            {/* Header con dirección y estado */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                              <Typography variant="h6" sx={{ 
-                                fontWeight: 'bold', 
-                                color: '#1a237e', 
-                                flex: 1,
-                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
-                                lineHeight: 1.2
-                              }}>
-                                {propiedad.direccion}
-                              </Typography>
-                              <Chip 
-                                label={propiedad.estado} 
-                                color={propiedad.estado === 'Ocupado' ? 'success' : 'warning'}
-                                size="small"
-                                sx={{ ml: 1 }}
-                              />
-                            </Box>
-                            
-                            {/* Contenido principal */}
-                            <Box sx={{ flex: 1  }}>
-                              {/* Ubicación */}
-                              <Typography variant="body2" sx={{ 
-                                color: '#666',
-                                mb: 1,
-                                fontSize: { xs: '0.9rem', sm: '0.95rem' }
-                              }}>
-                                📍 {propiedad.localidad}, {propiedad.partido}
-                              </Typography>
-                              <Typography variant="body2" sx={{ 
-                                color: '#666',
-                                mb: 2,
-                                fontSize: { xs: '0.9rem', sm: '0.95rem' }
-                              }}>
-                                🌎 {propiedad.provincia}
-                              </Typography>
-                              
-                              {/* Tipo de propiedad */}
-                              <Box sx={{ 
-                                p: 1.5, 
-                                backgroundColor: '#e3f2fd', 
-                                borderRadius: 1,
-                                mb: 2,
-                                border: '1px solid #2196f3'
-                              }}>
-                                <Typography variant="body2" sx={{ 
-                                  fontWeight: 'bold',
-                                  color: '#1976d2',
-                                  fontSize: { xs: '0.9rem', sm: '1rem' }
-                                }}>
-                                  🏠 {propiedad.tipo}
-                                </Typography>
-                              </Box>
-                        
-                        {/* Información del contrato si está ocupado */}
-                        {propiedad.estado === 'Ocupado' && (
-                          <Box sx={{ 
-                                  p: 2, 
-                                  backgroundColor: '#e8f5e8', 
-                                  borderRadius: 1, 
-                                  mb: 2,
-                                  border: '1px solid #4caf50'
-                                }}>
-                            <Typography variant="body2" sx={{ 
-                              fontWeight: 'bold', 
-                              mb: 1, 
-                              color: '#2e7d32',
-                              fontSize: { xs: '0.9rem', sm: '1rem' }
-                            }}>
-                              📋 Información del Contrato
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                              mb: 1,
-                              fontSize: { xs: '0.85rem', sm: '0.9rem' }
-                            }}>
-                              👤 {propiedad.inquilino}
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                              mb: 1,
-                              fontSize: { xs: '0.85rem', sm: '0.9rem' }
-                            }}>
-                              📄 {propiedad.contrato}
-                            </Typography>
-                            <Typography variant="h6" sx={{ 
-                              color: '#4caf50', 
-                              fontWeight: 'bold',
-                              fontSize: { xs: '1.1rem', sm: '1.25rem' }
-                            }}>
-                              💰 {formatCurrency(propiedad.montoAlquiler)}/mes
-                            </Typography>
+                    <Box sx={{ height: 3, background: propiedad.estado === 'Ocupado' ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #f59e0b, #d97706)' }} />
+                    <Box sx={{ p: 2.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>{propiedad.direccion}</Typography>
+                        <Chip label={propiedad.estado || 'Disponible'} size="small" sx={{
+                          fontWeight: 700, fontSize: '0.65rem', height: 22,
+                          bgcolor: propiedad.estado === 'Ocupado' ? (isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.1)') : (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.1)'),
+                          color: propiedad.estado === 'Ocupado' ? '#ef4444' : '#22c55e',
+                        }} />
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">{propiedad.localidad}, {propiedad.partido} · {propiedad.tipo || propiedad.tipoPropiedad}</Typography>
+                      
+                      {propiedad.estado === 'Ocupado' && (
+                        <Box sx={{ mt: 1.5, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
+                          <Box sx={{ flex: 1, p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }}>
+                            <Typography variant="caption" color="text.secondary">Inquilino</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{propiedad.inquilino}</Typography>
+                            <Typography variant="caption" color="text.secondary">{propiedad.contrato}</Typography>
                           </Box>
-                        )}
-                        
-                        {/* Imágenes si las hay */}
-                        {propiedad.imagenes && propiedad.imagenes.length > 0 && (
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="body2" sx={{ 
-                              fontWeight: 'bold', 
-                              mb: 1,
-                              fontSize: { xs: '0.9rem', sm: '1rem' }
+                          {propiedad.montoAlquiler && (
+                            <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: isDark ? '#a78bfa' : accentDark }}>{formatCurrency(propiedad.montoAlquiler)}/mes</Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      )}
+
+                      {propiedad.imagenes && propiedad.imagenes.length > 0 && (
+                        <Box sx={{ display: 'flex', gap: 0.75, mt: 1.5 }}>
+                          {propiedad.imagenes.slice(0, 4).map((imagen, imgIndex) => (
+                            <Box key={imgIndex} onClick={() => handleImageClick(propiedad.imagenes, imgIndex)} sx={{
+                              width: 44, height: 44, borderRadius: 1.5, overflow: 'hidden', cursor: 'pointer',
+                              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                              transition: 'all 0.2s', '&:hover': { transform: 'scale(1.08)' },
                             }}>
-                              📸 Imágenes ({propiedad.imagenes.length})
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                              {propiedad.imagenes.slice(0, 3).map((imagen, imgIndex) => (
-                                <Box
-                                  key={imgIndex}
-                                  onClick={() => handleImageClick(propiedad.imagenes, imgIndex)}
-                                  sx={{
-                                    width: 50,
-                                    height: 50,
-                                    borderRadius: 1,
-                                    overflow: 'hidden',
-                                    border: '1px solid #ddd',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
-                                    '&:hover': {
-                                      transform: 'scale(1.1)',
-                                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                                      zIndex: 1
-                                    }
-                                  }}
-                                >
-                                  <img
-                                    src={imagen.imageUrl}
-                                    alt={`Propiedad ${imgIndex + 1}`}
-                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      objectFit: 'cover'
-                                    }}
-                                  />
-                                </Box>
-                              ))}
-                              {propiedad.imagenes.length > 3 && (
-                                <Box 
-                                  onClick={() => handleImageClick(propiedad.imagenes, 3)}
-                                  sx={{
-                                    width: 50,
-                                    height: 50,
-                                    borderRadius: 1,
-                                    backgroundColor: '#f5f5f5',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    border: '1px solid #ddd',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
-                                    '&:hover': {
-                                      transform: 'scale(1.1)',
-                                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                                      backgroundColor: '#e0e0e0'
-                                    }
-                                  }}>
-                                  <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                                    +{propiedad.imagenes.length - 3}
-                                  </Typography>
-                                </Box>
-                              )}
+                              <img src={imagen.imageUrl} alt={`Img ${imgIndex + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </Box>
-                          </Box>
-                        )}
-                        
-                           
+                          ))}
+                          {propiedad.imagenes.length > 4 && (
+                            <Box onClick={() => handleImageClick(propiedad.imagenes, 4)} sx={{
+                              width: 44, height: 44, borderRadius: 1.5, cursor: 'pointer',
+                              bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.7rem' }}>+{propiedad.imagenes.length - 4}</Typography>
                             </Box>
-                          </CardContent>
-                        </Card>
-                      </Grid2>
-                    ))}
-                  </Grid2>
-                ) : (
-                  <Box sx={{ 
-                    textAlign: 'center', 
-                    py: 6,
-                    background: 'rgba(255,255,255,0.95)',
-                    borderRadius: 2,
-                    backdropFilter: 'blur(10px)'
-                  }}>
-                    <Typography variant="h6" sx={{ 
-                      color: '#666', 
-                      mb: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 1
-                    }}>
-                      🏠 No hay propiedades registradas
-                    </Typography>
-                    <Typography variant="body1" color="textSecondary">
-                      Cuando tengas propiedades, aparecerán aquí con toda su información detallada.
-                    </Typography>
-                  </Box>
-                )}
+                          )}
+                        </Box>
+                      )}
+                    </Box>
+                  </Paper>
+                ))}
               </Box>
-            </Paper>
+            ) : (
+              <Paper elevation={0} sx={{ textAlign: 'center', py: 6, borderRadius: 3, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+                <PropiedadesIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+                <Typography variant="body2" color="text.secondary">No hay propiedades registradas</Typography>
+              </Paper>
+            )}
           </Box>
         )}
 
         {/* Sección Recibos */}
         {activeSection === 'recibos' && userRole === 'ROLE_PROPIETARIO_USER' && (
-          <Box sx={{ 
-            maxWidth: '1200px', 
-            margin: '0 auto',
-            width: '100%'
-          }}>
-            <Typography variant="h4" sx={{ 
-              mb: { xs: 2, md: 4 }, 
-              fontWeight: 'bold', 
-              color: '#1a237e',
-              textAlign: { xs: 'left', md: 'left' }
+          <Box sx={{ maxWidth: '1000px', mx: 'auto', width: '100%' }}>
+            {/* Filter bar */}
+            <Paper elevation={0} sx={{
+              p: 2, mb: 2, borderRadius: 3, display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
             }}>
-              Recibos de Mis Propiedades ({filteredRecibos.length})
-            </Typography>
+              <FormControl size="small" sx={{ minWidth: 90, flex: { xs: 1, sm: 'none' }, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
+                <InputLabel>Año</InputLabel>
+                <Select value={selectedYear} label="Año" onChange={(e) => setSelectedYear(e.target.value)}>
+                  <MenuItem value=""><em>Todos</em></MenuItem>
+                  {getAvailableYears().map(year => (<MenuItem key={year} value={year.toString()}>{year}</MenuItem>))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 100, flex: { xs: 1, sm: 'none' }, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
+                <InputLabel>Mes</InputLabel>
+                <Select value={selectedMonth} label="Mes" onChange={(e) => setSelectedMonth(e.target.value)}>
+                  <MenuItem value=""><em>Todos</em></MenuItem>
+                  {getAvailableMonths().map(month => (<MenuItem key={month} value={month.toString()}>{new Date(2024, month - 1).toLocaleString('es-ES', { month: 'long' })}</MenuItem>))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 120, flex: { xs: 1, sm: 'none' }, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
+                <InputLabel>Propiedad</InputLabel>
+                <Select value={selectedProperty} label="Propiedad" onChange={(e) => setSelectedProperty(e.target.value)}>
+                  <MenuItem value=""><em>Todas</em></MenuItem>
+                  {getAvailableProperties().map(property => (<MenuItem key={property} value={property}>{property}</MenuItem>))}
+                </Select>
+              </FormControl>
+              <Chip label={`${filteredRecibos.length}`} size="small" sx={{ fontWeight: 700, bgcolor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)', color: accentColor }} />
+              {(selectedMonth || selectedYear || selectedProperty) && (
+                <Button size="small" onClick={clearFilters} sx={{ textTransform: 'none', color: 'text.secondary', fontSize: '0.75rem' }}>Limpiar</Button>
+              )}
+            </Paper>
 
-            {/* Panel de filtros con estilo moderno */}
-            <Paper sx={{ 
-              p: { xs: 2, sm: 3, md: 4 }, 
-              mb: 4, 
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                zIndex: 1
-              }
-            }}>
-              <Box sx={{ position: 'relative', zIndex: 2 }}>
-                <Typography variant="h5" sx={{ 
-                  mb: 3, 
-                  fontWeight: 'bold', 
-                  color: 'white',
-                  textAlign: { xs: 'center', md: 'left' },
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1
+            {/* Stats row */}
+            <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5 }}>
+              {[
+                { value: filteredRecibos.filter(r => r.estado).length, label: 'Pagados', color: '#22c55e', bg: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.06)' },
+                { value: filteredRecibos.filter(r => !r.estado).length, label: 'Pendientes', color: '#ef4444', bg: isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.06)' },
+              ].map((stat) => (
+                <Paper key={stat.label} elevation={0} sx={{
+                  flex: 1, p: 1.5, borderRadius: 3, textAlign: 'center',
+                  bgcolor: stat.bg, border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'transparent'}`,
                 }}>
-                  🔍 Filtros de Búsqueda
-                </Typography>
-              
-              {/* Filtros en fila para móvil */}
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: { xs: 'column', md: 'row' },
-                gap: 3,
-                alignItems: { xs: 'stretch', md: 'center' }
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: stat.color, lineHeight: 1.1 }}>{stat.value}</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.6rem' }}>{stat.label}</Typography>
+                </Paper>
+              ))}
+              <Paper elevation={0} sx={{
+                flex: 1.5, p: 1.5, borderRadius: 3, textAlign: 'center',
+                bgcolor: isDark ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.04)',
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'transparent'}`,
               }}>
-                {/* Primera fila: Filtros */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'row', md: 'row' },
-                  gap: { xs: 1, md: 3 },
-                  flex: 1,
-                  flexWrap: { xs: 'nowrap', md: 'wrap' }
-                }}>
-                  <FormControl 
-                    sx={{
-                      flex: { xs: 1, md: 'none' },
-                      minWidth: { xs: 'auto', md: '120px' },
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                        backdropFilter: 'blur(10px)',
-                        borderRadius: 2,
-                        width: { xs: 'auto', md: '6rem' },
-                        '& fieldset': {
-                          borderColor: 'rgba(255, 255, 255, 0.3)',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: 'rgba(255, 255, 255, 0.5)',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: 'rgba(255, 255, 255, 0.8)',
-                        },
-                      },
-                      '& .MuiInputLabel-root': {
-                        color: '#666',
-                        '&.Mui-focused': {
-                          color: '#1976d2',
-                        },
-                      },
-                    }}
-                  >
-                    <InputLabel>Año</InputLabel>
-                    <Select
-                      value={selectedYear}
-                      label="Año"
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                    >
-                      <MenuItem value="">
-                        <em>Todos los años</em>
-                      </MenuItem>
-                      {getAvailableYears().map(year => (
-                        <MenuItem key={year} value={year.toString()}>
-                          {year}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  
-                  <FormControl 
-                    sx={{
-                      flex: { xs: 1, md: 'none' },
-                      minWidth: { xs: 'auto', md: '120px' },
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                        backdropFilter: 'blur(10px)',
-                        borderRadius: 2,
-                        width: { xs: 'auto', md: '6rem' },
-                        '& fieldset': {
-                          borderColor: 'rgba(255, 255, 255, 0.3)',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: 'rgba(255, 255, 255, 0.5)',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: 'rgba(255, 255, 255, 0.8)',
-                        },
-                      },
-                      '& .MuiInputLabel-root': {
-                        color: '#666',
-                        '&.Mui-focused': {
-                          color: '#1976d2',
-                        },
-                      },
-                    }}
-                  >
-                    <InputLabel>Mes</InputLabel>
-                    <Select
-                      value={selectedMonth}
-                      label="Mes"
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                    >
-                      <MenuItem value="">
-                        <em>Todos los meses</em>
-                      </MenuItem>
-                      {getAvailableMonths().map(month => (
-                        <MenuItem key={month} value={month.toString()}>
-                          {new Date(2024, month - 1).toLocaleString('es-ES', { month: 'long' })}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  
-                  <FormControl 
-                    sx={{
-                      flex: { xs: 1, md: 'none' },
-                      width: { xs: 'auto', md: '8rem' },
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                        backdropFilter: 'blur(10px)',
-                        borderRadius: 2,
-                        width: { xs: '100%', md: '8rem' },
-                        '& fieldset': {
-                          borderColor: 'rgba(255, 255, 255, 0.3)',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: 'rgba(255, 255, 255, 0.5)',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: 'rgba(255, 255, 255, 0.8)',
-                        },
-                      },
-                      '& .MuiSelect-select': {
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      },
-                      '& .MuiInputLabel-root': {
-                        color: '#666',
-                        '&.Mui-focused': {
-                          color: '#1976d2',
-                        },
-                      },
-                    }}
-                  >
-                    <InputLabel>Propiedad</InputLabel>
-                    <Select
-                      value={selectedProperty}
-                      label="Propiedad"
-                      onChange={(e) => setSelectedProperty(e.target.value)}
-                    >
-                      <MenuItem value="">
-                        <em>Todas las propiedades</em>
-                      </MenuItem>
-                      {getAvailableProperties().map(property => (
-                        <MenuItem key={property} value={property}>
-                          {property}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-                
-                {/* Segunda fila: Botones en fila para móvil */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'row', md: 'column' },
-                  gap: { xs: 1, md: 2 },
-                  alignItems: { xs: 'center', md: 'stretch' },
-                  minWidth: { xs: 'auto', md: '140px' }
-                }}>
-                  <Button
-                    variant="contained"
-                    onClick={clearFilters}
-                    disabled={!selectedMonth && !selectedYear && !selectedProperty}
-                    size="medium"
-                    sx={{
-                      flex: { xs: 1, md: 'none' },
-                      minWidth: { xs: 'auto', md: '100%' },
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      backdropFilter: 'blur(10px)',
-                      color: '#1976d2',
-                      borderRadius: 2,
-                      fontWeight: 'bold',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 1)',
-                        boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
-                      },
-                      '&:disabled': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                        color: '#999',
-                      }
-                    }}
-                  >
-                    🗑️ Limpiar
-                  </Button>
-                  <Chip
-                    label={`📊 ${filteredRecibos.length} recibos`}
-                    sx={{
-                      flex: { xs: 1, md: 'none' },
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      backdropFilter: 'blur(10px)',
-                      color: '#1976d2',
-                      fontWeight: 'bold',
-                      borderRadius: 2,
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
-                      '& .MuiChip-label': {
-                        fontSize: '0.9rem',
-                        px: 2
-                      }
-                    }}
-                  />
-                </Box>
-              </Box>
-              </Box>
-            </Paper>
+                <Typography variant="body2" sx={{ fontWeight: 800, color: isDark ? '#a78bfa' : accentDark, lineHeight: 1.1, fontSize: '0.85rem' }}>{formatCurrency(filteredRecibos.reduce((total, r) => total + calcularMontoTotal(r), 0))}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.6rem' }}>Total</Typography>
+              </Paper>
+            </Box>
 
-            {/* Estadísticas rápidas con estilo moderno */}
-            <Paper sx={{ 
-              p: { xs: 2, sm: 3, md: 4 }, 
-              mb: 4, 
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                zIndex: 1
-              }
-            }}>
-              <Box sx={{ position: 'relative', zIndex: 2 }}>
-                <Typography variant="h5" sx={{ 
-                  mb: 3, 
-                  fontWeight: 'bold', 
-                  color: 'white',
-                  textAlign: { xs: 'center', md: 'left' },
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1
-                }}>
-                  📊 Estadísticas de Recibos
+            {/* Receipt cards */}
+            {filteredRecibos.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {filteredRecibos.map((recibo, index) => (
+                  <Paper key={index} elevation={0} onClick={() => handleReciboClick(recibo)} sx={{
+                    borderRadius: 3, overflow: 'hidden', cursor: 'pointer',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                    transition: 'all 0.2s',
+                    '&:hover': { borderColor: accentColor, boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.08)' },
+                  }}>
+                    <Box sx={{ height: 3, background: recibo.estado ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #f59e0b, #ef4444)' }} />
+                    <Box sx={{ p: 2.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>Recibo #{recibo.numeroRecibo} — {recibo.periodo}</Typography>
+                          <Typography variant="caption" color="text.secondary">{recibo.nombreContrato}</Typography>
+                        </Box>
+                        <Chip label={getEstadoText(recibo.estado)} size="small" sx={{
+                          fontWeight: 700, fontSize: '0.65rem', height: 22,
+                          bgcolor: recibo.estado ? (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.1)') : (isDark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.1)'),
+                          color: recibo.estado ? '#22c55e' : '#f59e0b',
+                        }} />
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
+                        <Box sx={{ flex: 1, p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }}>
+                          <Typography variant="caption" color="text.secondary">Inquilino</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{recibo.inquilino?.nombre} {recibo.inquilino?.apellido}</Typography>
+                        </Box>
+                        <Box sx={{ flex: 1, p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }}>
+                          <Typography variant="caption" color="text.secondary">Propiedad</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{recibo.propiedad?.direccion}</Typography>
+                        </Box>
+                      </Box>
+                      {recibo.impuestos && recibo.impuestos.length > 0 && (
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
+                          {recibo.impuestos.slice(0, 3).map((imp, idx) => (
+                            <Chip key={idx} label={imp.tipoImpuesto} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 20 }} />
+                          ))}
+                          {recibo.impuestos.length > 3 && <Chip label={`+${recibo.impuestos.length - 3}`} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 20 }} />}
+                        </Box>
+                      )}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.04)' }}>
+                        <Typography variant="caption" color="text.secondary">Emision: {recibo.fechaEmision} · Vto: {recibo.fechaVencimiento}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 800, color: isDark ? '#a78bfa' : accentDark }}>{formatCurrency(calcularMontoTotal(recibo))}</Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+                ))}
+              </Box>
+            ) : (
+              <Paper elevation={0} sx={{ textAlign: 'center', py: 6, borderRadius: 3, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+                <ReceiptIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {recibos.length === 0 ? 'No hay recibos disponibles.' : 'No hay recibos que coincidan con los filtros.'}
                 </Typography>
-                
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'column', sm: 'column', md: 'row' }, 
-                  gap: { xs: 2, sm: 3 },
-                  alignItems: 'center',
-                  justifyContent: { xs: 'center', sm: 'center', md: 'flex-start' }
-                }}>
-                  {/* Fila superior - Pagados y Pendientes */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: { xs: 2, sm: 3 }, 
-                    width: { xs: '100%', sm: '100%', md: '50%' },
-                    justifyContent: { xs: 'center', sm: 'center', md: 'flex-start' }
-                  }}>
-                    {/* Pagados */}
-                    <Card sx={{ 
-                      width: { xs: '45%', sm: '45%', md: '50%' },
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: 2,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                      }
-                    }}>
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: { xs: 1.5, sm: 2.5 },
-                        '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                      }}>
-                        <Box sx={{ 
-                          width: { xs: 40, sm: 50 }, 
-                          height: { xs: 40, sm: 50 }, 
-                          borderRadius: '50%', 
-                          backgroundColor: '#e8f5e8',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '0 auto 12px auto',
-                          fontSize: { xs: '16px', sm: '20px' }
-                        }}>
-                          ✅
-                        </Box>
-                        <Typography variant="h3" sx={{ 
-                          color: '#4caf50', 
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1.5rem', sm: '2rem' },
-                          lineHeight: 1
-                        }}>
-                          {filteredRecibos.filter(r => r.estado).length}
-                        </Typography>
-                        <Typography variant="body2" sx={{ 
-                          color: '#666',
-                          fontWeight: 500,
-                          mt: 1,
-                          fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                        }}>
-                          Pagados
-                        </Typography>
-                      </CardContent>
-                    </Card>
-
-                    {/* Pendientes */}
-                    <Card sx={{ 
-                      width: { xs: '45%', sm: '45%', md: '50%' },
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: 2,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                      }
-                    }}>
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: { xs: 1.5, sm: 2.5 },
-                        '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                      }}>
-                        <Box sx={{ 
-                          width: { xs: 40, sm: 50 }, 
-                          height: { xs: 40, sm: 50 }, 
-                          borderRadius: '50%', 
-                          backgroundColor: '#ffebee',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '0 auto 12px auto',
-                          fontSize: { xs: '16px', sm: '20px' }
-                        }}>
-                          ⏳
-                        </Box>
-                        <Typography variant="h3" sx={{ 
-                          color: '#f44336', 
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1.5rem', sm: '2rem' },
-                          lineHeight: 1
-                        }}>
-                          {filteredRecibos.filter(r => !r.estado).length}
-                        </Typography>
-                        <Typography variant="body2" sx={{ 
-                          color: '#666',
-                          fontWeight: 500,
-                          mt: 1,
-                          fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                        }}>
-                          Pendientes
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Box>
-
-                  {/* Fila inferior - Total y Propiedades */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: { xs: 2, sm: 3 }, 
-                    width: { xs: '100%', sm: '100%', md: '50%' },
-                    justifyContent: { xs: 'center', sm: 'center', md: 'flex-start' }
-                  }}>
-                    {/* Total */}
-                    <Card sx={{ 
-                      width: { xs: '45%', sm: '45%', md: '50%' },
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: 2,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                      }
-                    }}>
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: { xs: 1.5, sm: 2.5 },
-                        '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                      }}>
-                        <Box sx={{ 
-                          width: { xs: 40, sm: 50 }, 
-                          height: { xs: 40, sm: 50 }, 
-                          borderRadius: '50%', 
-                          backgroundColor: '#e3f2fd',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '0 auto 12px auto',
-                          fontSize: { xs: '16px', sm: '20px' }
-                        }}>
-                          💰
-                        </Box>
-                        <Typography variant="h3" sx={{ 
-                          color: '#2196f3', 
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1rem', sm: '1.2rem' },
-                          lineHeight: 1
-                        }}>
-                          {formatCurrency(filteredRecibos.reduce((total, r) => total + calcularMontoTotal(r), 0))}
-                        </Typography>
-                        <Typography variant="body2" sx={{ 
-                          color: '#666',
-                          fontWeight: 500,
-                          mt: 1,
-                          fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                        }}>
-                          Total
-                        </Typography>
-                      </CardContent>
-                    </Card>
-
-                    {/* Propiedades */}
-                    <Card sx={{ 
-                      width: { xs: '45%', sm: '45%', md: '50%' },
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: 2,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                      }
-                    }}>
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: { xs: 1.5, sm: 2.5 },
-                        '&:last-child': { pb: { xs: 1.5, sm: 2.5 } }
-                      }}>
-                        <Box sx={{ 
-                          width: { xs: 40, sm: 50 }, 
-                          height: { xs: 40, sm: 50 }, 
-                          borderRadius: '50%', 
-                          backgroundColor: '#fff3e0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '0 auto 12px auto',
-                          fontSize: { xs: '16px', sm: '20px' }
-                        }}>
-                          🏠
-                        </Box>
-                        <Typography variant="h3" sx={{ 
-                          color: '#ff9800', 
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1.5rem', sm: '2rem' },
-                          lineHeight: 1
-                        }}>
-                          {[...new Set(filteredRecibos.map(r => r.propiedad?.direccion))].length}
-                        </Typography>
-                        <Typography variant="body2" sx={{ 
-                          color: '#666',
-                          fontWeight: 500,
-                          mt: 1,
-                          fontSize: { xs: '0.75rem', sm: '0.9rem' }
-                        }}>
-                          Propiedades
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Box>
-                </Box>
-              </Box>
-            </Paper>
-
-            {/* Lista de recibos con estilo moderno */}
-            <Paper sx={{ 
-              p: { xs: 2, sm: 3, md: 4 }, 
-              mb: 4, 
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                zIndex: 1
-              }
-            }}>
-              <Box sx={{ position: 'relative', zIndex: 2 }}>
-                <Typography variant="h5" sx={{ 
-                  mb: 3, 
-                  fontWeight: 'bold', 
-                  color: 'white',
-                  textAlign: { xs: 'center', md: 'left' },
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1
-                }}>
-                  🧾 Lista de Recibos
-                </Typography>
-                
-                {filteredRecibos.length > 0 ? (
-                  <Grid2 container spacing={{ xs: 2, sm: 3 }}>
-                    {filteredRecibos.map((recibo, index) => (
-                      <Grid2 item xs={12} sm={12} md={6} lg={4} key={index} sx={{ width: '100%' }}>
-                        <Card 
-                          onClick={() => handleReciboClick(recibo)}
-                          sx={{ 
-                            height: 'auto',
-                            minHeight: { xs: '280px', sm: '300px', md: '320px' },
-                            background: 'rgba(255,255,255,0.95)',
-                            backdropFilter: 'blur(10px)',
-                            borderRadius: 2,
-                            border: recibo.estado ? '2px solid #4caf50' : '2px solid #f44336',
-                            transition: 'all 0.3s ease',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            cursor: 'pointer',
-                            '&:hover': {
-                              transform: 'translateY(-4px)',
-                              boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                            }
-                          }}>
-                          <CardContent sx={{ 
-                            p: { xs: 2, sm: 2.5, md: 3 },
-                            '&:last-child': { pb: { xs: 2, sm: 2.5, md: 3 } },
-                            height: '100%',
-                            display: 'flex',
-                            flexDirection: 'column'
-                          }}>
-                            {/* Header con número y estado */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                              <Typography variant="h6" sx={{ 
-                                fontWeight: 'bold', 
-                                color: '#1a237e',
-                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
-                              }}>
-                                Recibo #{recibo.numeroRecibo}
-                              </Typography>
-                              <Chip 
-                                label={getEstadoText(recibo.estado)} 
-                                color={getEstadoColor(recibo.estado)}
-                                size="small"
-                              />
-                            </Box>
-                        
-                        {/* Información del período */}
-                        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                          📅 {recibo.periodo}
-                        </Typography>
-                        
-                        {/* Información del contrato */}
-                        <Box sx={{ 
-                          p: 2, 
-                          backgroundColor: '#f8f9fa', 
-                          borderRadius: 1, 
-                          mb: 2,
-                          border: '1px solid #e0e0e0'
-                        }}>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                            📋 {recibo.nombreContrato}
-                          </Typography>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
-                            👤 {recibo.inquilino.nombre} {recibo.inquilino.apellido}
-                          </Typography>
-                          <Typography variant="body2">
-                            📍 {recibo.propiedad.direccion}
-                          </Typography>
-                        </Box>
-                        
-                        {/* Fechas */}
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                            📅 Emisión: {recibo.fechaEmision}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary">
-                            ⏰ Vencimiento: {recibo.fechaVencimiento}
-                          </Typography>
-                        </Box>
-                        
-                        {/* Servicios incluidos */}
-                        {recibo.impuestos && recibo.impuestos.length > 0 && (
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                              🔧 Servicios incluidos ({recibo.impuestos.length}):
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                              {recibo.impuestos.slice(0, 3).map((impuesto, idx) => (
-                                <Chip 
-                                  key={idx}
-                                  label={impuesto.descripcion || impuesto.tipoImpuesto}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              ))}
-                              {recibo.impuestos.length > 3 && (
-                                <Chip 
-                                  label={`+${recibo.impuestos.length - 3}`}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )}
-                            </Box>
-                          </Box>
-                        )}
-                        
-                        {/* Monto total */}
-                        <Box sx={{ 
-                          p: 2, 
-                          backgroundColor: recibo.estado ? '#e8f5e8' : '#ffebee', 
-                          borderRadius: 1,
-                          textAlign: 'center'
-                        }}>
-                          <Typography variant="h6" sx={{ 
-                            color: recibo.estado ? '#4caf50' : '#f44336', 
-                            fontWeight: 'bold' 
-                          }}>
-                            💰 {formatCurrency(calcularMontoTotal(recibo))}
-                          </Typography>
-                        </Box>
-                
-                          </CardContent>
-                        </Card>
-                      </Grid2>
-                    ))}
-                  </Grid2>
-                ) : (
-                  <Box sx={{ 
-                    textAlign: 'center', 
-                    py: 6,
-                    background: 'rgba(255,255,255,0.95)',
-                    borderRadius: 2,
-                    backdropFilter: 'blur(10px)'
-                  }}>
-                    <Typography variant="h6" sx={{ 
-                      color: '#666', 
-                      mb: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 1
-                    }}>
-                      🧾 No hay recibos que coincidan con los filtros
-                    </Typography>
-                    <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
-                      {recibos.length === 0 
-                        ? 'No hay recibos disponibles en este momento.'
-                      : 'Intenta ajustar los filtros para ver más resultados.'
-                    }
-                  </Typography>
-                  {(selectedMonth || selectedYear || selectedProperty) && (
-                    <Button 
-                      variant="outlined" 
-                      onClick={clearFilters}
-                    >
-                      Limpiar filtros
-                    </Button>
-                  )}
-                </Box>
+                {(selectedMonth || selectedYear || selectedProperty) && (
+                  <Button size="small" onClick={clearFilters} sx={{ textTransform: 'none', color: accentColor }}>Limpiar filtros</Button>
                 )}
-              </Box>
-            </Paper>
+              </Paper>
+            )}
           </Box>
         )}
 
         {/* Sección Comunicaciones */}
         {activeSection === 'comunicaciones' && userRole === 'ROLE_PROPIETARIO_USER' && (
-          <Box>
-            <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: '#1a237e' }}>
-              Reportes
-            </Typography>
+          <Box sx={{ maxWidth: '1000px', mx: 'auto' }}>
             <Grid2 container spacing={2} sx={{display:"flex", flexDirection:"column"}}>
               <Grid2 item xs={12} md={4}>
-                <Paper sx={{ p: 2.5, borderRadius: 3 }}>
-                  <Typography sx={{ fontWeight: 900, mb: 1.25, color: '#1a237e' }}>
+                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+                  <Typography sx={{ fontWeight: 700, mb: 1.25, color: isDark ? '#a78bfa' : accentDark, fontSize: '0.9rem' }}>
                     Contrato
                   </Typography>
                   <FormControl fullWidth size="small">
@@ -2773,8 +1227,8 @@ const DashboardPropietario = () => {
               </Grid2>
 
               <Grid2 item xs={12} md={8}>
-                <Paper sx={{ p: 2.5, borderRadius: 3 }}>
-                  <Typography sx={{ fontWeight: 900, mb: 1.25, color: '#1a237e' }}>
+                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+                  <Typography sx={{ fontWeight: 700, mb: 1.25, color: isDark ? '#a78bfa' : accentDark, fontSize: '0.9rem' }}>
                     Historial de reportes
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
@@ -2858,192 +1312,81 @@ const DashboardPropietario = () => {
         )}
       </Box>
 
-      {/* Barra de navegación - Responsive */}
+      {/* Navigation - Desktop sidebar + Mobile bottom nav */}
       {userRole === 'ROLE_PROPIETARIO_USER' && (
-        <Box sx={{ 
-          position: 'fixed',
-          // Mobile: bottom navigation
-          bottom: { xs: 0, md: 'auto' },
-          left: 0,
-          right: { xs: 0, md: 'auto' },
-          // Desktop: left sidebar
-          top: { xs: 'auto', md: 0 },
-          width: { xs: '100%', md: '210px' },
-          height: { xs: 'auto', md: '100vh' },
-          backgroundColor: 'white', 
-          borderTop: { xs: '1px solid #e0e0e0', md: 'none' },
-          borderRight: { xs: 'none', md: '1px solid #e0e0e0' },
-          boxShadow: { 
-            xs: '0 -2px 10px rgba(0,0,0,0.1)', 
-            md: '2px 0 10px rgba(0,0,0,0.1)' 
-          },
-          zIndex: 1000,
-          py: { xs: 1, md: 3 },
-          px: { xs: 0, md: 2 }
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            // Mobile: horizontal layout
-            flexDirection: { xs: 'row', md: 'column' },
-            justifyContent: { xs: 'space-around', md: 'flex-start' },
-            alignItems: { xs: 'center', md: 'stretch' },
-            gap: { xs: 0, md: 2 },
-            maxWidth: { xs: '600px', md: 'none' },
-            margin: { xs: '0 auto', md: 0 },
-            height: { xs: 'auto', md: '100%' }
+        <>
+          {/* Desktop Sidebar */}
+          <Box sx={{
+            display: { xs: 'none', md: 'flex' },
+            flexDirection: 'column',
+            position: 'fixed', top: 0, left: 0, width: '210px', height: '100vh',
+            bgcolor: isDark ? 'rgba(15,15,23,0.97)' : 'rgba(255,255,255,0.97)',
+            backdropFilter: 'blur(12px)',
+            borderRight: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+            zIndex: 1000, py: 3, px: 2,
           }}>
-            {/* Logo/Título solo en desktop */}
-            <Box sx={{ 
-              display: { xs: 'none', md: 'block' },
-              mb: 4,
-              pb: 3,
-              borderBottom: '1px solid #e0e0e0'
-            }}>
-              <Typography variant="h6" sx={{ 
-                fontWeight: 'bold',
-                color: '#1a237e',
-                textAlign: 'center'
-              }}>
-                🏠 Portal Propietario
-              </Typography>
+            <Box sx={{ mb: 4, pb: 3, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`, textAlign: 'center' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: isDark ? '#a78bfa' : accentDark }}>Portal Propietario</Typography>
             </Box>
-            <Button
-              onClick={() => setActiveSection('home')}
-              sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                alignItems: 'center',
-                justifyContent: { xs: 'center', md: 'flex-start' },
-                color: activeSection === 'home' ? '#1a237e' : '#666',
-                minWidth: { xs: 'auto', md: '100%' },
-                width: { xs: 'auto', md: '100%' },
-                px: { xs: 2, md: 3 },
-                py: { xs: 1, md: 2 },
-                borderRadius: { xs: 0, md: 2 },
-                backgroundColor: activeSection === 'home' ? 'rgba(26, 35, 126, 0.1)' : 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(26, 35, 126, 0.1)'
-                }
-              }}
-            >
-              <HomeIcon sx={{ 
-                fontSize: { xs: 24, md: 24 },
-                mb: { xs: 0.5, md: 0 },
-                mr: { xs: 0, md: 2 },
-                color: activeSection === 'home' ? '#1a237e' : '#666'
-              }} />
-              <Typography variant="caption" sx={{ 
-                fontSize: { xs: '0.7rem', md: '0.9rem' },
-                fontWeight: activeSection === 'home' ? 'bold' : 'normal',
-                textTransform: 'none'
-              }}>
-                Home
-              </Typography>
-            </Button>
-
-            <Button
-              onClick={() => setActiveSection('propiedades')}
-              sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                alignItems: 'center',
-                justifyContent: { xs: 'center', md: 'flex-start' },
-                color: activeSection === 'propiedades' ? '#1a237e' : '#666',
-                minWidth: { xs: 'auto', md: '100%' },
-                width: { xs: 'auto', md: '100%' },
-                px: { xs: 2, md: 3 },
-                py: { xs: 1, md: 2 },
-                borderRadius: { xs: 0, md: 2 },
-                backgroundColor: activeSection === 'propiedades' ? 'rgba(26, 35, 126, 0.1)' : 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(26, 35, 126, 0.1)'
-                }
-              }}
-            >
-              <PropiedadesIcon sx={{ 
-                fontSize: { xs: 24, md: 24 },
-                mb: { xs: 0.5, md: 0 },
-                mr: { xs: 0, md: 2 },
-                color: activeSection === 'propiedades' ? '#1a237e' : '#666'
-              }} />
-              <Typography variant="caption" sx={{ 
-                fontSize: { xs: '0.7rem', md: '0.9rem' },
-                fontWeight: activeSection === 'propiedades' ? 'bold' : 'normal',
-                textTransform: 'none'
-              }}>
-                Propiedades
-              </Typography>
-            </Button>
-
-            <Button
-              onClick={() => setActiveSection('recibos')}
-              sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                alignItems: 'center',
-                justifyContent: { xs: 'center', md: 'flex-start' },
-                color: activeSection === 'recibos' ? '#1a237e' : '#666',
-                minWidth: { xs: 'auto', md: '100%' },
-                width: { xs: 'auto', md: '100%' },
-                px: { xs: 2, md: 3 },
-                py: { xs: 1, md: 2 },
-                borderRadius: { xs: 0, md: 2 },
-                backgroundColor: activeSection === 'recibos' ? 'rgba(26, 35, 126, 0.1)' : 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(26, 35, 126, 0.1)'
-                }
-              }}
-            >
-              <ReceiptIcon sx={{ 
-                fontSize: { xs: 24, md: 24 },
-                mb: { xs: 0.5, md: 0 },
-                mr: { xs: 0, md: 2 },
-                color: activeSection === 'recibos' ? '#1a237e' : '#666'
-              }} />
-              <Typography variant="caption" sx={{ 
-                fontSize: { xs: '0.7rem', md: '0.9rem' },
-                fontWeight: activeSection === 'recibos' ? 'bold' : 'normal',
-                textTransform: 'none'
-              }}>
-                Recibos
-              </Typography>
-            </Button>
-
-            <Button
-              onClick={() => setActiveSection('comunicaciones')}
-              sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                alignItems: 'center',
-                justifyContent: { xs: 'center', md: 'flex-start' },
-                color: activeSection === 'comunicaciones' ? '#1a237e' : '#666',
-                minWidth: { xs: 'auto', md: '100%' },
-                width: { xs: 'auto', md: '100%' },
-                px: { xs: 2, md: 3 },
-                py: { xs: 1, md: 2 },
-                borderRadius: { xs: 0, md: 2 },
-                backgroundColor: activeSection === 'comunicaciones' ? 'rgba(26, 35, 126, 0.1)' : 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(26, 35, 126, 0.1)'
-                }
-              }}
-            >
-              <MessageIcon sx={{ 
-                fontSize: { xs: 24, md: 24 },
-                mb: { xs: 0.5, md: 0 },
-                mr: { xs: 0, md: 2 },
-                color: activeSection === 'comunicaciones' ? '#1a237e' : '#666'
-              }} />
-              <Typography variant="caption" sx={{ 
-                fontSize: { xs: '0.7rem', md: '0.9rem' },
-                fontWeight: activeSection === 'comunicaciones' ? 'bold' : 'normal',
-                textTransform: 'none'
-              }}>
-                Reportes
-              </Typography>
-            </Button>
+            {[
+              { key: 'home', icon: <HomeIcon />, label: 'Home' },
+              { key: 'propiedades', icon: <PropiedadesIcon />, label: 'Propiedades' },
+              { key: 'recibos', icon: <ReceiptIcon />, label: 'Recibos' },
+              { key: 'comunicaciones', icon: <MessageIcon />, label: 'Reportes' },
+            ].map((tab) => {
+              const isActive = activeSection === tab.key;
+              return (
+                <Button key={tab.key} onClick={() => setActiveSection(tab.key)} sx={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+                  width: '100%', px: 2.5, py: 1.5, mb: 0.5, borderRadius: 2.5,
+                  color: isActive ? accentColor : (isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)'),
+                  bgcolor: isActive ? (isDark ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)') : 'transparent',
+                  textTransform: 'none', transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
+                  '& .MuiSvgIcon-root': { fontSize: 20, mr: 1.5 },
+                }}>
+                  {tab.icon}
+                  <Typography variant="body2" sx={{ fontWeight: isActive ? 700 : 500, fontSize: '0.85rem' }}>{tab.label}</Typography>
+                </Button>
+              );
+            })}
           </Box>
-        </Box>
+
+          {/* Mobile Bottom Nav */}
+          <Box sx={{
+            display: { xs: 'block', md: 'none' },
+            position: 'fixed', bottom: 0, left: 0, right: 0,
+            bgcolor: isDark ? 'rgba(15,15,23,0.95)' : 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+            borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+            zIndex: 1000, py: 0.75, px: 1,
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: 500, mx: 'auto' }}>
+              {[
+                { key: 'home', icon: <HomeIcon />, label: 'Home' },
+                { key: 'propiedades', icon: <PropiedadesIcon />, label: 'Props' },
+                { key: 'recibos', icon: <ReceiptIcon />, label: 'Recibos' },
+                { key: 'comunicaciones', icon: <MessageIcon />, label: 'Reportes' },
+              ].map((tab) => {
+                const isActive = activeSection === tab.key;
+                return (
+                  <Button key={tab.key} onClick={() => setActiveSection(tab.key)} sx={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    minWidth: 'auto', px: 2, py: 0.75, borderRadius: 3,
+                    color: isActive ? accentColor : (isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)'),
+                    bgcolor: isActive ? (isDark ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)') : 'transparent',
+                    transition: 'all 0.2s ease',
+                    '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
+                    '& .MuiSvgIcon-root': { fontSize: 22, mb: 0.25 },
+                  }}>
+                    {tab.icon}
+                    <Typography variant="caption" sx={{ fontSize: '0.6rem', fontWeight: isActive ? 700 : 500, lineHeight: 1, textTransform: 'none' }}>{tab.label}</Typography>
+                  </Button>
+                );
+              })}
+            </Box>
+          </Box>
+        </>
       )}
 
       {/* Modal para ver imágenes */}
@@ -3210,7 +1553,7 @@ const DashboardPropietario = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
             color: 'white'
           }
         }}
@@ -3376,8 +1719,8 @@ const DashboardPropietario = () => {
                 justifyContent: 'space-between', 
                 alignItems: 'center',
                 p: 2,
-                backgroundColor: '#1976d2',
-                borderRadius: 1,
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                borderRadius: 2,
                 color: 'white'
               }}>
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
@@ -3462,7 +1805,7 @@ const DashboardPropietario = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
             color: 'white',
             maxHeight: '90vh'
           }
@@ -3623,7 +1966,7 @@ const DashboardPropietario = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
             color: 'white',
             maxHeight: '95vh'
           }

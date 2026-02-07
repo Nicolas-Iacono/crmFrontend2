@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import TourTooltip, { modernTourStyles, modernTourLocale } from './TourTooltip';
 
 const NewReceiptTour = () => {
   const [run, setRun] = useState(false);
@@ -42,8 +43,10 @@ const NewReceiptTour = () => {
       disableOverlayClose={false}
       disableScrolling
       scrollToFirstStep
-      styles={{ options: { primaryColor: '#6f33f1', zIndex: 20000 } }}
-      locale={{ back: 'Atrás', close: 'Cerrar', last: 'Finalizar', next: 'Siguiente', skip: 'Saltar' }}
+      tooltipComponent={TourTooltip}
+      styles={modernTourStyles}
+      locale={modernTourLocale}
+      floaterProps={{ hideArrow: false, styles: { floater: { filter: 'none' }, wrapper: { cursor: 'auto' } } }}
       callback={handleCallback}
     />
   );

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Paper, Typography, TextField, Button, MenuItem, Grid, Collapse, IconButton } from '@mui/material';
+import { Paper, Typography, TextField, Button, MenuItem, Grid, Collapse, IconButton, Box } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useTheme } from '@mui/material';
@@ -38,6 +38,9 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
   const [success, setSuccess] = useState(false);
   const [openNotes, setOpenNotes] = useState(false); // State for collapse/expand
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const accentColor = '#8b5cf6';
+  const accentDark = '#7c3aed';
 
   const getAuthToken = () => {
     return (
@@ -119,25 +122,25 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
   };
 
   return (
-    <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: openNotes ? '16px' : 0 }}>
-        <Typography variant="h6" color={theme.palette.mode === 'dark' ? 'rgb(16, 51, 167)' : "#1F2C61"} sx={{ fontWeight: 600 }}>
+    <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: openNotes ? 2 : 0 }}>
+        <Typography variant="body2" sx={{ fontWeight: 700, color: isDark ? '#a78bfa' : accentDark, fontSize: '0.9rem' }}>
           Notas
         </Typography>
         <IconButton
           onClick={() => setOpenNotes(!openNotes)}
           aria-expanded={openNotes}
           aria-label="mostrar notas"
+          size="small"
           sx={{
             transform: openNotes ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: (theme) => theme.transitions.create('transform', {
-              duration: theme.transitions.duration.shortest,
-            }),
+            transition: 'transform 0.2s',
+            color: isDark ? '#a78bfa' : accentDark,
           }}
         >
-          <ExpandMoreIcon />
+          <ExpandMoreIcon fontSize="small" />
         </IconButton>
-      </div>
+      </Box>
       <Collapse in={openNotes} timeout="auto" unmountOnExit>
         <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
@@ -150,10 +153,13 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               onChange={(e) => setMotivo(e.target.value)}
               variant="outlined"
               required
+              size="small"
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
+                  borderRadius: 2,
+                  '&.Mui-focused fieldset': { borderColor: accentColor },
                 },
+                '& .MuiInputLabel-root.Mui-focused': { color: accentColor },
               }}
             />
           </Grid>
@@ -172,10 +178,13 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               onChange={(e) => setContenido(e.target.value)}
               variant="outlined"
               required
+              size="small"
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
+                  borderRadius: 2,
+                  '&.Mui-focused fieldset': { borderColor: accentColor },
                 },
+                '& .MuiInputLabel-root.Mui-focused': { color: accentColor },
               }}
             />
           </Grid>
@@ -193,11 +202,14 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               value={estado}
               onChange={(e) => setEstado(e.target.value)}
               variant="outlined"
+              size="small"
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: '48px',
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : '#f5f5f5',
+                  borderRadius: 2,
+                  bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                  '&.Mui-focused fieldset': { borderColor: accentColor },
                 },
+                '& .MuiInputLabel-root.Mui-focused': { color: accentColor },
               }}
             >
               {estados.map((option) => (
@@ -215,11 +227,14 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               value={prioridad}
               onChange={(e) => setPrioridad(e.target.value)}
               variant="outlined"
+              size="small"
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: '48px',
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : '#f5f5f5',
+                  borderRadius: 2,
+                  bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                  '&.Mui-focused fieldset': { borderColor: accentColor },
                 },
+                '& .MuiInputLabel-root.Mui-focused': { color: accentColor },
               }}
             >
               {prioridades.map((option) => (
@@ -237,12 +252,14 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
               variant="outlined"
+              size="small"
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: '48px',
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.09)' : '#f5f5f5',
-                 
+                  borderRadius: 2,
+                  bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                  '&.Mui-focused fieldset': { borderColor: accentColor },
                 },
+                '& .MuiInputLabel-root.Mui-focused': { color: accentColor },
               }}
             >
               {tipos.map((option) => (
@@ -262,6 +279,14 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               multiline
               minRows={2}
               maxRows={5}
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '&.Mui-focused fieldset': { borderColor: accentColor },
+                },
+                '& .MuiInputLabel-root.Mui-focused': { color: accentColor },
+              }}
             />
           </Grid>
 
@@ -270,7 +295,14 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
               component="label"
               variant="outlined"
               disabled={loading}
-              sx={{ borderRadius: '8px' }}
+              size="small"
+              sx={{
+                borderRadius: 2.5,
+                textTransform: 'none',
+                borderColor: isDark ? 'rgba(167,139,250,0.4)' : 'rgba(139,92,246,0.3)',
+                color: isDark ? '#a78bfa' : accentDark,
+                '&:hover': { borderColor: accentColor, bgcolor: isDark ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.04)' },
+              }}
             >
               Seleccionar imágenes
               <input
@@ -292,14 +324,18 @@ const NotaContratoForm = ({ idContrato, onSuccess }) => {
         <Button
           type="submit"
           variant="contained"
-          startIcon={<SaveIcon />}
+          startIcon={<SaveIcon sx={{ fontSize: 16 }} />}
           disabled={loading}
+          size="small"
           sx={{
-            borderRadius: '8px',
-            backgroundColor: '#1F2C61',
+            borderRadius: 2.5,
+            textTransform: 'none',
+            fontWeight: 600,
             mt: 2,
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+            boxShadow: 'none',
             '&:hover': {
-              backgroundColor: '#151e40',
+              boxShadow: '0 4px 12px rgba(139,92,246,0.4)',
             },
           }}
         >

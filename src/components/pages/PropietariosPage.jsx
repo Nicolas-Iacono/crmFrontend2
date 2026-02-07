@@ -53,11 +53,13 @@ import EmailIcon from '@mui/icons-material/Email';
 import OwnersTour from '../common/tour/OwnersTour';
 import EditarPropietarioModal from '../common/modals/EditarPropietarioModal';
 import http from '../api/http';
-import { showSuccess, showError, showWarning } from '../alertas/showAlert';
+import { showSuccess, showError, showWarning, showConfirm } from '../alertas/showAlert';
 import CreateOwnerProfileModal from '../common/modals/CreateOwnerProfileModal.jsx';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DescriptionIcon from '@mui/icons-material/Description';
 import EditIcon from '@mui/icons-material/Edit';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import DocumentManagerModal from '../common/DocumentManagerModal';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -382,15 +384,10 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
   };
 
   const confirmDeletePropietario = (propietarioId) => {
-    Swal.fire({
+    showConfirm({
       title: '¿Estás seguro?',
-      text: "No podrás revertir esta acción",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      text: 'No podrás revertir esta acción',
+      confirmText: 'Sí, eliminar',
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
@@ -406,15 +403,10 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
 
   const handleDelete = () => {
     handleMenuClose();
-    Swal.fire({
+    showConfirm({
       title: '¿Estás seguro?',
-      text: "No podrás revertir esta acción",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      text: 'No podrás revertir esta acción',
+      confirmText: 'Sí, eliminar',
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
@@ -611,20 +603,19 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
       <>
         <OwnersTour />
         <Box sx={{
-          width: { xs: '100%', sm: '100%', md: '90vw' },
+          width: '100vw',
           minHeight: '100vh',
-          pt: { xs: 3, sm: 4 },
-          pb: { xs: 12, sm: 4 },
-          pl: { xs: 0, sm: 5 },
-          pr: { xs: 0, sm: 2 },
+          pt: { xs: 0, sm: 4, md: 2 },
+          pb: { xs: 14, sm: 12 },
+          pl: { xs: 2, sm: 3, md: '16rem' },
+          pr: { xs: 2, sm: 4, md: 3 },
           display: 'flex',
           flexDirection: 'column',
-          alignItems: { xs: 'center', md: 'flex-start' },
           bgcolor: 'background.default',
-          marginLeft: { md: '15rem' }
+          boxSizing: 'border-box',
         }}>
           <Box sx={{
-            width: { xs: '90%', sm: '80%' },
+            width: '100%',
             mt: { xs: '4rem', sm: 0 },
             display: 'flex',
             flexDirection: 'column',
@@ -661,12 +652,18 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
                 </Typography>
               </Box>
               <Tooltip title="Añadir propietario">
+                
                 <Fab
                   color="primary"
                   aria-label="add"
                   size="small"
                   data-tour="owners-add"
                   onClick={() => navigate('/nuevo-propietario')}
+                  sx={{ 
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+            color: '#fff',
+            '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' },
+          }}
                 >
                   <AddIcon />
                 </Fab>
@@ -757,29 +754,60 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
     );
   }
 
+  const totalPropietarios = filteredPropietarios.length;
+  const propietariosConCuenta = filteredPropietarios.filter(p => p.usuarioCuentaPropietarioId != null).length;
+  const propietariosSinCuenta = totalPropietarios - propietariosConCuenta;
+
+  const StatCard = ({ icon, value, label, gradient }) => (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        borderRadius: 3,
+        background: gradient,
+        color: 'white',
+        minWidth: { xs: 100, sm: 140 },
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 0.5,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+        transition: 'transform 0.2s ease',
+        '&:hover': { transform: 'translateY(-2px)' },
+      }}
+    >
+      {icon}
+      <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1 }}>
+        {value}
+      </Typography>
+      <Typography variant="caption" sx={{ opacity: 0.9, textAlign: 'center', fontSize: '0.7rem' }}>
+        {label}
+      </Typography>
+    </Paper>
+  );
+
   return (
     <>
     <OwnersTour />
       <Box sx={{ 
-        width: { xs: '100%', sm: '100%', md: '90vw' }, 
+        width: '100vw',
         minHeight: "100vh",
-        pt: { xs: 3, sm: 4 },
-        pb: { xs: 12, sm: 4 },
-        pl: { xs: 0, sm: 5 },
-        pr: { xs: 0, sm: 2 },
+        pt: { xs: 0, sm: 4, md: 2 },
+        pb: { xs: 14, sm: 12 },
+        pl: { xs: 2, sm: 3, md: '16rem' },
+        pr: { xs: 2, sm: 4, md: 3 },
         display: 'flex',
         flexDirection: 'column',
-        alignItems: { xs: 'center', md: 'flex-start' },
         bgcolor: 'background.default',
-        marginLeft: { md: '15rem' }
+        boxSizing: 'border-box',
       }}>
         <Box 
           sx={{ 
-            width: { xs: "90%", sm: "80%" },
+            width: '100%',
             mt: { xs: '4rem', sm: 0 },
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center'
           }}
         >
         <Box 
@@ -788,10 +816,8 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
             width: '100%',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginTop:{xs:0,md:"2rem"},
-            mb: { xs: 2, sm: 3 },
-            
-            
+            marginTop:{xs:"0rem",sm:"2rem"},
+            mb: { xs: 2, sm: 2 },
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -806,16 +832,22 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
             >
               <ArrowBackIcon />
             </IconButton>
-            <Typography 
-              data-tour="owners-title"
-              variant="h5" 
-              sx={{ 
-                fontWeight: 600,
-                color: 'text.primary'
-              }}
-            >
-              Propietarios
-            </Typography>
+            <Box>
+              <Typography 
+                data-tour="owners-title"
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: 'text.primary',
+                  lineHeight: 1.2,
+                }}
+              >
+                Propietarios
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                Gestiona tus propietarios y sus cuentas
+              </Typography>
+            </Box>
           </Box>
           <Tooltip title="Añadir propietario">
             <Fab 
@@ -824,15 +856,47 @@ const totalPaginas = Math.ceil(filteredPropietarios.length / tarjetasPorPagina);
               size="small"
               data-tour="owners-add"
               onClick={() => navigate('/nuevo-propietario')}
+                sx={{ 
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+            color: '#fff',
+            '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' },
+          }}
             >
               <AddIcon />
             </Fab>
           </Tooltip>
         </Box>
+
+        <Box sx={{ 
+          display: { xs: 'none', sm: 'flex' }, 
+          gap: 1.5, 
+          width: '100%', 
+          mb: 2.5,
+          flexWrap: 'wrap',
+        }}>
+          <StatCard 
+            icon={<HomeIcon sx={{ fontSize: 24, opacity: 0.9 }} />}
+            value={totalPropietarios}
+            label="Total"
+            gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+          />
+          <StatCard 
+            icon={<CheckCircleIcon sx={{ fontSize: 24, opacity: 0.9 }} />}
+            value={propietariosConCuenta}
+            label="Con cuenta"
+            gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
+          />
+          <StatCard 
+            icon={<PersonAddAlt1Icon sx={{ fontSize: 24, opacity: 0.9 }} />}
+            value={propietariosSinCuenta}
+            label="Sin cuenta"
+            gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+          />
+        </Box>
         
         <TextField
           data-tour="owners-search"
-          placeholder="Buscar por nombre, apellido, email..."
+          placeholder="Buscar por nombre, apellido, email, DNI..."
           variant="outlined"
           fullWidth
           value={searchTerm}

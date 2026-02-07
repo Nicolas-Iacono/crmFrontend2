@@ -24,6 +24,7 @@ const API_URL = (import.meta.env?.VITE_API_URL || 'https://crminmobiliario-app-p
 
 const EditorWithChatModal = ({ open, onClose, contrato, onSaved }) => {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const { token } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -180,9 +181,9 @@ const EditorWithChatModal = ({ open, onClose, contrato, onSaved }) => {
     canvas.style.height = `${contentHeight}px`;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = theme.palette.mode === 'dark' ? '#111318' : '#ffffff';
+    ctx.fillStyle = isDark ? '#0c0a14' : '#f8f7fc';
     ctx.fillRect(0, 0, width, contentHeight);
-    ctx.fillStyle = theme.palette.mode === 'dark' ? 'rgb(230,220,255)' : 'rgb(51,32,100)';
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)';
     ctx.font = font;
     let y = padding;
     lines.forEach((line) => {
@@ -217,8 +218,8 @@ const EditorWithChatModal = ({ open, onClose, contrato, onSaved }) => {
   }, [open, contrato?.id]);
 
   return (
-    <Modal open={open} onClose={onClose} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 300 }}>
-      <Slide direction="up" in={open} timeout={200}>
+    <Modal open={open} onClose={onClose} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 300, sx: { backdropFilter: 'blur(4px)' } }}>
+      <Slide direction="up" in={open} timeout={250}>
         <Box sx={{
           position: 'fixed',
           bottom: 0,
@@ -227,26 +228,41 @@ const EditorWithChatModal = ({ open, onClose, contrato, onSaved }) => {
           width: { xs: '100vw', md: '84vw' },
           display: 'flex',
           flexDirection: 'column',
-          background: theme.palette.mode === 'dark'
-            ? 'linear-gradient(180deg, #0f0b1d 0%, #1b1142 50%, #2a1770 100%)'
-            : 'linear-gradient(95deg, #8f6bffff 0%, #7244ddff 14%, #a388ffff 28%, #3b1299ff 100%)',
-          boxShadow: { xs: '0 -6px 24px rgba(0,0,0,0.25)', md: '0 12px 36px rgba(0,0,0,0.28)' },
-          borderRadius: { xs: '18px 18px 0 0', md: '40px 0px 0 0' },
+          bgcolor: isDark ? '#0c0a14' : '#f8f7fc',
+          boxShadow: { xs: '0 -6px 32px rgba(0,0,0,0.3)', md: '-12px 0 48px rgba(0,0,0,0.2)' },
+          borderRadius: { xs: '20px 20px 0 0', md: '24px 0 0 0' },
           overflow: 'hidden',
           zIndex: 1300,
           mx: 'auto',
           maxWidth: { md: 1400 },
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderBottom: `1px solid ${theme.palette.divider}`}}>
-            <Typography variant="h6" sx={{ fontWeight: 600 , color:"white"}}>Asistente de Contrato</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              
-              <IconButton onClick={onClose}>
-                <CloseIcon />
-              </IconButton>
+          {/* Header */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2.5,
+            py: 1.5,
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+          }}>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>
+                Asistente de Contrato
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem' }}>
+                {contrato?.nombreContrato || 'Editor de cláusulas'}
+              </Typography>
             </Box>
+            <IconButton
+              onClick={onClose}
+              size="small"
+              sx={{ color: 'rgba(255,255,255,0.85)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
-   
+
+          {/* Content */}
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <TextEditor contrato={contrato} embed isOpen={true} onClose={() => {}} onSaved={onSaved} />
           </Box>

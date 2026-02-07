@@ -1,28 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Button,
   Grid,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Paper,
-  Divider,
   CircularProgress,
   Switch,
   FormControlLabel,
   Chip,
   Autocomplete,
+  Tooltip,
+  useMediaQuery,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
 import PersonIcon from '@mui/icons-material/Person';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
@@ -34,7 +30,8 @@ import GrassIcon from '@mui/icons-material/Grass';
 import PoolIcon from '@mui/icons-material/Pool';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import AddIcon from '@mui/icons-material/Add';
+import PlaceIcon from '@mui/icons-material/Place';
+import HomeIcon from '@mui/icons-material/Home';
 import { showWarning } from '../alertas/showAlert';
 
 const zonas = [
@@ -160,114 +157,177 @@ const ProspectoForm = ({
     await onSubmit(payload);
   };
 
+  const isDark = theme.palette.mode === 'dark';
+
+  const inputSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2.5,
+      bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+      '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
+      '&.Mui-focused': { bgcolor: isDark ? 'rgba(255,255,255,0.08)' : '#fff' },
+    },
+  };
+
+  const sectionTitle = (icon, text) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 1 }}>
+      <Box sx={{
+        width: 32, height: 32, borderRadius: 1.5,
+        bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {React.cloneElement(icon, { sx: { fontSize: 18, color: '#8b5cf6' } })}
+      </Box>
+      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+        {text}
+      </Typography>
+    </Box>
+  );
+
+  const switchCard = (checked, name, icon, label) => (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2, borderRadius: 2.5,
+        border: `1px solid ${checked
+          ? (isDark ? 'rgba(139,92,246,0.4)' : 'rgba(139,92,246,0.3)')
+          : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)')
+        }`,
+        bgcolor: checked
+          ? (isDark ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.05)')
+          : 'transparent',
+        transition: 'all 0.2s ease',
+      }}
+    >
+      <FormControlLabel
+        control={
+          <Switch
+            checked={checked}
+            onChange={handleChange}
+            name={name}
+            sx={{
+              '& .MuiSwitch-switchBase.Mui-checked': { color: '#8b5cf6' },
+              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#8b5cf6' },
+            }}
+          />
+        }
+        label={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {React.cloneElement(icon, { sx: { fontSize: 20, color: checked ? '#8b5cf6' : 'text.secondary' } })}
+            <Typography variant="body2" sx={{ fontWeight: checked ? 600 : 400 }}>
+              {label}
+            </Typography>
+          </Box>
+        }
+      />
+    </Paper>
+  );
+
   return (
     <Box
       sx={{
+        width: '100vw',
         minHeight: '100vh',
         bgcolor: 'background.default',
-        pt: { xs: 5, sm: 3 },
-        pb: { xs: 8, sm: 4 },
-        px: { xs: 2, sm: 3 },
+        pt: { xs: 2, sm: 3, md: 2 },
+        pb: { xs: 14, sm: 12 },
+        pl: { xs: 2, sm: 3, md: '2rem' },
+        pr: { xs: 2, sm: 4, md: 3 },
+        boxSizing: 'border-box',
       }}
     >
-      <Card
-        sx={{
-          maxWidth: { xs: '100%', md: '800px' },
-          mx: 'auto',
-          borderRadius: { xs: 2, md: 3 },
-          boxShadow: theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.1)',
-        }}
-      >
-        <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
+      <Box sx={{ mt: { xs: '4rem', sm: 0 }, maxWidth: '100%', pl: { xs: 0, sm: 6, md: '16rem' }, pr: { xs: 0, sm: 1, md: 3 } }}>
+        {/* Header */}
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 3,
+          gap: 1,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconButton
               onClick={onCancel}
+              size="small"
               sx={{
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-                '&:hover': {
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
-                },
+                bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
               }}
             >
-              <ArrowBackIcon />
+              <ArrowBackIcon fontSize="small" />
             </IconButton>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PersonIcon sx={{ color: 'primary.main' }} />
-              <Typography variant="h5" sx={{ fontWeight: 600 }}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                <PeopleAltIcon sx={{ color: isDark ? '#a78bfa' : '#7c3aed', fontSize: { xs: 20, sm: 24 } }} />
                 {title}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                Completa los datos del prospecto
               </Typography>
             </Box>
           </Box>
+        </Box>
 
-          <Divider sx={{ mb: 3 }} />
-
-          <form onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
-                  Información Básica
-                </Typography>
-              </Grid>
-
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          {/* Section: Info Básica */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderRadius: 3,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              mb: 2.5,
+            }}
+          >
+            {sectionTitle(<PersonIcon />, 'Información Personal')}
+            <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <TextField
-                  fullWidth
+                  fullWidth size="small"
                   label="Nombre *"
                   name="nombre"
                   value={formData.nombre}
                   onChange={handleChange}
                   error={!!errors.nombre}
                   helperText={errors.nombre}
-                  InputProps={{
-                    startAdornment: <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
+                  sx={inputSx}
                 />
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <TextField
-                  fullWidth
+                  fullWidth size="small"
                   label="Apellido *"
                   name="apellido"
                   value={formData.apellido}
                   onChange={handleChange}
                   error={!!errors.apellido}
                   helperText={errors.apellido}
-                  InputProps={{
-                    startAdornment: <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
+                  sx={inputSx}
                 />
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <TextField
-                  fullWidth
+                  fullWidth size="small"
                   label="Teléfono"
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleChange}
-                  InputProps={{
-                    startAdornment: <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
+                  sx={inputSx}
                 />
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <TextField
-                  fullWidth
+                  fullWidth size="small"
                   label="Email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  InputProps={{
-                    startAdornment: <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
+                  sx={inputSx}
                 />
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <TextField
-                  fullWidth
+                  fullWidth size="small"
                   label="Cantidad de Personas"
                   name="cantidadPersonas"
                   type="number"
@@ -275,16 +335,13 @@ const ProspectoForm = ({
                   onChange={handleChange}
                   error={!!errors.cantidadPersonas}
                   helperText={errors.cantidadPersonas}
-                  InputProps={{
-                    startAdornment: <PeopleIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
                   inputProps={{ min: 1 }}
+                  sx={inputSx}
                 />
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <TextField
-                  fullWidth
+                  fullWidth size="small"
                   label="Cantidad de Ambientes"
                   name="cantidadAmbientes"
                   type="number"
@@ -292,23 +349,26 @@ const ProspectoForm = ({
                   onChange={handleChange}
                   error={!!errors.cantidadAmbientes}
                   helperText={errors.cantidadAmbientes}
-                  InputProps={{
-                    startAdornment: <BedIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
                   inputProps={{ min: 1 }}
+                  sx={inputSx}
                 />
               </Grid>
+            </Grid>
+          </Paper>
 
+          {/* Section: Ubicación y Precio */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderRadius: 3,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              mb: 2.5,
+            }}
+          >
+            {sectionTitle(<PlaceIcon />, 'Ubicación y Presupuesto')}
+            <Grid container spacing={2}>
               <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mb: 2, mt: 2, color: 'primary.main' }}>
-                  Preferencias de Ubicación y Precio
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
-                  Zonas de Preferencia
-                </Typography>
                 <Autocomplete
                   multiple
                   freeSolo
@@ -321,44 +381,45 @@ const ProspectoForm = ({
                         label={option}
                         {...getTagProps({ index })}
                         onDelete={() => handleDeleteZona(option)}
-                        color="primary"
                         size="small"
-                        sx={{ margin: '4px' }}
+                        sx={{
+                          margin: '2px',
+                          bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+                          color: isDark ? '#a78bfa' : '#7c3aed',
+                          '& .MuiChip-deleteIcon': { color: isDark ? '#a78bfa' : '#7c3aed' },
+                        }}
                       />
                     ))
                   }
                   renderInput={(params) => (
                     <TextField
                       {...params}
+                      size="small"
                       variant="outlined"
-                      label="Selecciona o escribe zonas"
-                      placeholder="Ej: CENTRO, NORTE, SUR..."
-                      helperText={errors.zonaPreferencia || "Puedes seleccionar de la lista o escribir zonas personalizadas"}
+                      label="Zonas de preferencia"
+                      placeholder="Ej: CENTRO, NORTE..."
+                      helperText={errors.zonaPreferencia || "Selecciona o escribe zonas personalizadas"}
                       error={!!errors.zonaPreferencia}
+                      sx={inputSx}
                     />
                   )}
-                  sx={{ mt: 1 }}
                 />
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <TextField
-                  fullWidth
+                  fullWidth size="small"
                   label="Precio Mínimo"
                   name="rangoPrecioMin"
                   type="number"
                   value={formData.rangoPrecioMin}
                   onChange={handleChange}
-                  InputProps={{
-                    startAdornment: <AttachMoneyIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
                   inputProps={{ min: 0, step: 1000 }}
+                  sx={inputSx}
                 />
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <TextField
-                  fullWidth
+                  fullWidth size="small"
                   label="Precio Máximo"
                   name="rangoPrecioMax"
                   type="number"
@@ -366,117 +427,132 @@ const ProspectoForm = ({
                   onChange={handleChange}
                   error={!!errors.rangoPrecioMax}
                   helperText={errors.rangoPrecioMax}
-                  InputProps={{
-                    startAdornment: <AttachMoneyIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
                   inputProps={{ min: 0, step: 1000 }}
+                  sx={inputSx}
                 />
               </Grid>
+            </Grid>
+          </Paper>
 
-              <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mb: 2, mt: 2, color: 'primary.main' }}>
-                  Características Deseadas
-                </Typography>
+          {/* Section: Características */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderRadius: 3,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              mb: 2.5,
+            }}
+          >
+            {sectionTitle(<HomeIcon />, 'Características Deseadas')}
+            <Grid container spacing={1.5}>
+              <Grid item xs={6} sm={6}>
+                {switchCard(formData.cochera, 'cochera', <GarageIcon />, 'Cochera')}
               </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Paper sx={{ p: 2, borderRadius: 2 }}>
-                  <FormControlLabel
-                    control={<Switch checked={formData.cochera} onChange={handleChange} name="cochera" color="primary" />}
-                    label={(
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <GarageIcon />
-                        <Typography>Cochera</Typography>
-                      </Box>
-                    )}
-                  />
-                </Paper>
+              <Grid item xs={6} sm={6}>
+                {switchCard(formData.patio, 'patio', <YardIcon />, 'Patio')}
               </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Paper sx={{ p: 2, borderRadius: 2 }}>
-                  <FormControlLabel
-                    control={<Switch checked={formData.patio} onChange={handleChange} name="patio" color="primary" />}
-                    label={(
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <YardIcon />
-                        <Typography>Patio</Typography>
-                      </Box>
-                    )}
-                  />
-                </Paper>
+              <Grid item xs={6} sm={6}>
+                {switchCard(formData.jardin, 'jardin', <GrassIcon />, 'Jardín')}
               </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Paper sx={{ p: 2, borderRadius: 2 }}>
-                  <FormControlLabel
-                    control={<Switch checked={formData.jardin} onChange={handleChange} name="jardin" color="primary" />}
-                    label={(
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <GrassIcon />
-                        <Typography>Jardín</Typography>
-                      </Box>
-                    )}
-                  />
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Paper sx={{ p: 2, borderRadius: 2 }}>
-                  <FormControlLabel
-                    control={<Switch checked={formData.pileta} onChange={handleChange} name="pileta" color="primary" />}
-                    label={(
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PoolIcon />
-                        <Typography>Pileta</Typography>
-                      </Box>
-                    )}
-                  />
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mb: 2, mt: 2, color: 'primary.main' }}>
-                  Visibilidad
-                </Typography>
-                <Paper sx={{ p: 2, borderRadius: 2 }}>
-                  <FormControlLabel
-                    control={<Switch checked={formData.visibilidadPublico} onChange={handleChange} name="visibilidadPublico" color="primary" />}
-                    label={(
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {formData.visibilidadPublico ? <VisibilityIcon /> : <VisibilityOffIcon />}
-                        <Typography>{formData.visibilidadPublico ? 'Visible públicamente' : 'Solo visible para mí'}</Typography>
-                      </Box>
-                    )}
-                  />
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'stretch', sm: 'flex-end' }, mt: 3 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={onCancel}
-                    disabled={isSubmitting}
-                    sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { sm: '120px' } }}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={isSubmitting}
-                    startIcon={isSubmitting ? <CircularProgress size={20} /> : <SaveIcon />}
-                    sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { sm: '120px' } }}
-                  >
-                    {isSubmitting ? 'Guardando...' : submitLabel}
-                  </Button>
-                </Box>
+              <Grid item xs={6} sm={6}>
+                {switchCard(formData.pileta, 'pileta', <PoolIcon />, 'Pileta')}
               </Grid>
             </Grid>
-          </form>
-        </CardContent>
-      </Card>
+          </Paper>
+
+          {/* Section: Visibilidad */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderRadius: 3,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              mb: 3,
+            }}
+          >
+            {sectionTitle(formData.visibilidadPublico ? <VisibilityIcon /> : <VisibilityOffIcon />, 'Visibilidad')}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2, borderRadius: 2.5,
+                border: `1px solid ${formData.visibilidadPublico
+                  ? (isDark ? 'rgba(34,197,94,0.3)' : 'rgba(34,197,94,0.2)')
+                  : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)')
+                }`,
+                bgcolor: formData.visibilidadPublico
+                  ? (isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.05)')
+                  : 'transparent',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.visibilidadPublico}
+                    onChange={handleChange}
+                    name="visibilidadPublico"
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': { color: '#22c55e' },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#22c55e' },
+                    }}
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {formData.visibilidadPublico
+                      ? <VisibilityIcon sx={{ fontSize: 20, color: '#22c55e' }} />
+                      : <VisibilityOffIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                    }
+                    <Typography variant="body2" sx={{ fontWeight: formData.visibilidadPublico ? 600 : 400 }}>
+                      {formData.visibilidadPublico ? 'Visible públicamente' : 'Solo visible para mí'}
+                    </Typography>
+                  </Box>
+                }
+              />
+            </Paper>
+          </Paper>
+
+          {/* Action Buttons */}
+          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: { xs: 'stretch', sm: 'flex-end' } }}>
+            <Button
+              variant="outlined"
+              onClick={onCancel}
+              disabled={isSubmitting}
+              sx={{
+                flex: { xs: 1, sm: 'none' },
+                minWidth: { sm: 120 },
+                borderRadius: 2.5,
+                borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                color: 'text.primary',
+                '&:hover': { borderColor: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)' },
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isSubmitting}
+              startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
+              sx={{
+                flex: { xs: 1, sm: 'none' },
+                minWidth: { sm: 160 },
+                borderRadius: 2.5,
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                boxShadow: 'none',
+                fontWeight: 600,
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                  boxShadow: '0 4px 12px rgba(139,92,246,0.4)',
+                },
+              }}
+            >
+              {isSubmitting ? 'Guardando...' : submitLabel}
+            </Button>
+          </Box>
+        </form>
+      </Box>
     </Box>
   );
 };

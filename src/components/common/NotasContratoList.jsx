@@ -27,6 +27,9 @@ function formatFecha(fechaStr) {
 
 const NotasContratoList = ({ idContrato, contrato }) => {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const accentColor = '#8b5cf6';
+  const accentDark = '#7c3aed';
   const [modalOpen, setModalOpen] = useState(false);
   const [notaSeleccionada, setNotaSeleccionada] = useState(null);
   const [notas, setNotas] = useState([]);
@@ -82,13 +85,8 @@ const NotasContratoList = ({ idContrato, contrato }) => {
 
   return (
     <>
-    <Paper elevation={1}  sx={(theme) => ({
-    bgcolor: theme.palette.mode === 'dark' ? 'rgb(31, 31, 31)' : 'rgb(253, 253, 253)',
-    p: 2,
-    borderRadius: 2,
-    mt: 2,
-  })}>
-      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: theme.palette.mode === 'dark' ? 'white' : '#1F2C61' }}>
+    <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, mt: 2, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+      <Typography variant="body2" sx={{ mb: 2, fontWeight: 700, color: isDark ? '#a78bfa' : accentDark, fontSize: '0.9rem' }}>
         Historial de notas
       </Typography>
       {loading ? (
@@ -106,32 +104,35 @@ const NotasContratoList = ({ idContrato, contrato }) => {
             <Box
               key={nota.id || idx}
               onClick={() => { setNotaSeleccionada(nota); setModalOpen(true); }}
-              sx={(theme) => ({
-                bgcolor: theme.palette.mode === 'dark' ? 'rgb(31, 31, 31)' : 'rgb(253, 253, 253)',
+              sx={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                gap: { xs: 1, sm: 2 },
-                borderRadius: 2,
-                p: { xs: 1.2, sm: 2 },
-                boxShadow: 1,
-                flexDirection: 'row',
-                width: '90%',
+                gap: { xs: 1, sm: 1.5 },
+                borderRadius: 2.5,
+                p: { xs: 1.5, sm: 2 },
+                width: '100%',
                 minWidth: 0,
                 cursor: 'pointer',
-                transition: 'box-shadow 0.2s',
-                '&:hover': { boxShadow: 4, bgcolor: theme.palette.mode === 'dark' ? 'rgb(31, 31, 31)' : 'rgb(253, 253, 253)' },
-              })}
+                transition: 'all 0.2s',
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'}`,
+                bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
+                '&:hover': {
+                  borderColor: accentColor,
+                  bgcolor: isDark ? 'rgba(139,92,246,0.06)' : 'rgba(139,92,246,0.03)',
+                },
+              }}
             >
               <Avatar
                 sx={{
-                  bgcolor: '#1F2C61',
-                  width: { xs: 32, sm: 36 },
-                  height: { xs: 32, sm: 36 },
-                  mt: { xs: 0.5, sm: 0 },
+                  bgcolor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)',
+                  color: accentColor,
+                  width: { xs: 30, sm: 34 },
+                  height: { xs: 30, sm: 34 },
+                  mt: 0.25,
                   flexShrink: 0,
                 }}
               >
-                <ChatBubbleOutlineIcon fontSize="small" />
+                <ChatBubbleOutlineIcon sx={{ fontSize: 16 }} />
               </Avatar>
               <Box sx={{ flex: 1, flexDirection: 'column', width: '100%', minWidth: 0 }}>
                 <Typography
@@ -153,9 +154,9 @@ const NotasContratoList = ({ idContrato, contrato }) => {
                     mb: 0.5,
                   }}
                 >
-                  <Chip size="small" label={nota.estado} color={estadoColor[nota.estado] || 'default'} sx={{ fontSize: { xs: 10, sm: 12 } }} />
-                  <Chip size="small" label={nota.prioridad} variant="outlined" sx={{ fontSize: { xs: 10, sm: 12 } }} />
-                  <Chip size="small" label={nota.tipo} variant="outlined" sx={{ fontSize: { xs: 10, sm: 12 } }} />
+                  <Chip size="small" label={nota.estado} color={estadoColor[nota.estado] || 'default'} sx={{ fontSize: { xs: 9, sm: 11 }, height: 20, fontWeight: 600 }} />
+                  <Chip size="small" label={nota.prioridad} variant="outlined" sx={{ fontSize: { xs: 9, sm: 11 }, height: 20 }} />
+                  <Chip size="small" label={nota.tipo} variant="outlined" sx={{ fontSize: { xs: 9, sm: 11 }, height: 20 }} />
                 </Box>
         
               
@@ -170,14 +171,14 @@ const NotasContratoList = ({ idContrato, contrato }) => {
           ))}
         </Stack>
         {/* Controles de paginación */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, gap: 2 }}>
-          <IconButton onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
-            <NavigateBeforeIcon />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, gap: 1.5 }}>
+          <IconButton onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} size="small" sx={{ color: isDark ? '#a78bfa' : accentDark }}>
+            <NavigateBeforeIcon fontSize="small" />
           </IconButton>
-          <Typography variant="body2" sx={{ minWidth: 32, textAlign: 'center', fontSize: { xs: 12, sm: 14 }, fontWeight: 600,
-            color: '#f9fafe', backgroundColor: '#1F2C61', borderRadius: 2, padding: 1 }}>{page}</Typography>
-          <IconButton onClick={() => setPage(p => Math.min(Math.ceil(notas.length / notasPorPagina), p + 1))} disabled={page === Math.ceil(notas.length / notasPorPagina) || notas.length === 0}>
-            <NavigateNextIcon />
+          <Typography variant="caption" sx={{ minWidth: 28, textAlign: 'center', fontWeight: 700,
+            color: '#fff', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', borderRadius: 1.5, py: 0.5, px: 1, fontSize: '0.7rem' }}>{page}</Typography>
+          <IconButton onClick={() => setPage(p => Math.min(Math.ceil(notas.length / notasPorPagina), p + 1))} disabled={page === Math.ceil(notas.length / notasPorPagina) || notas.length === 0} size="small" sx={{ color: isDark ? '#a78bfa' : accentDark }}>
+            <NavigateNextIcon fontSize="small" />
           </IconButton>
         </Box>
         </>

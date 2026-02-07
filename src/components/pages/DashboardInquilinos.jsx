@@ -10,8 +10,8 @@ import {
   Grid2,
   Chip,
   Button,
-  AppBar,
-  Toolbar,
+  // AppBar,
+  // Toolbar,
   IconButton,
   CircularProgress,
   Alert,
@@ -73,6 +73,7 @@ import ModalNotas from '../common/popUps/ModalNotas';
 
 const DashboardInquilinos = () => {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_URL;
@@ -241,9 +242,9 @@ const DashboardInquilinos = () => {
         return;
       }
 
-      const amountNumber = Number(yaPagueAmount);
+      const amountNumber = Number(calcularMontoTotal(selectedReciboToPay));
       if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
-        showSnackbar('Ingresá un monto válido.', 'warning');
+        showSnackbar('No se pudo determinar el monto total del recibo.', 'warning');
         return;
       }
 
@@ -252,18 +253,34 @@ const DashboardInquilinos = () => {
         reference: yaPagueReference?.trim() || null,
       };
 
-      await axios.post(
-        `${apiRoot}/recibo/${reciboId}/pagar/transferencia/notificar`,
-        payload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const url = `${apiRoot}/recibo/${reciboId}/pagar/transferencia/notificar`;
+      console.log('[DashboardInquilinos][YaPague] POST', url, payload);
 
-      showSnackbar('Aviso enviado. La inmobiliaria verificará el pago.', 'success');
+      const res = await axios.post(url, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 60000,
+      });
+
+      console.log('[DashboardInquilinos][YaPague] OK', res?.status, res?.data);
+
       handleCloseYaPagueModal();
       handleClosePayModal();
+
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Gracias!',
+        text: 'Recibimos tu aviso de pago. La inmobiliaria lo verificará a la brevedad.',
+        confirmButtonText: 'Aceptar',
+      });
     } catch (error) {
       console.error('Error notificando pago por transferencia:', error);
+
+      const isTimeout =
+        error?.code === 'ECONNABORTED' ||
+        String(error?.message || '').toLowerCase().includes('timeout');
+
       const msg =
+        (isTimeout ? 'La solicitud tardó demasiado. Probá nuevamente en unos segundos o revisá tu conexión.' : null) ||
         error?.response?.data?.detalle ||
         error?.response?.data?.error ||
         error?.response?.data?.message ||
@@ -1276,37 +1293,71 @@ console.log(reciboNormalizado)
     return text;
   };
 
+  const accentColor = '#8b5cf6';
+  const accentDark = '#7c3aed';
+  const accentDarker = '#6d28d9';
+
   if (loading) {
     return (
       <Box sx={{ 
         display: 'flex', 
+        flexDirection: 'column',
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
-        backgroundColor: '#f5f5f5'
+        bgcolor: isDark ? '#0f0f17' : '#f8f7fc',
+        gap: 2,
       }}>
-        <CircularProgress size={60} />
+        <CircularProgress size={48} sx={{ color: accentColor }} />
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          Cargando tu portal...
+        </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: isDark ? '#0f0f17' : '#f8f7fc' }}>
       {/* Header */}
-      <AppBar position="static" sx={{ backgroundColor: 'rgb(86, 23, 164)' }}>
-        <Toolbar>
-        
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Portal de Inquilinos
-          </Typography>
-        
-          <IconButton color="inherit" onClick={handleLogout}>
-            <LogoutIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+      <Box sx={{
+        background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+        color: 'white',
+        px: { xs: 2, md: 3 },
+        pt: { xs: 2.5, md: 3 },
+        pb: { xs: 3, md: 3.5 },
+        borderBottomLeftRadius: { xs: 20, md: 24 },
+        borderBottomRightRadius: { xs: 20, md: 24 },
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Decorative circles */}
+        <Box sx={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.08)' }} />
+        <Box sx={{ position: 'absolute', bottom: -20, left: '30%', width: 80, height: 80, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.05)' }} />
 
-      <Box sx={{ p: { xs: 2, md: 4 }, pb: { xs: 10, md: 12 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+          <Box>
+            <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 500, letterSpacing: 0.5 }}>
+              Portal de Inquilinos
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.25 }}>
+              Hola, {username || 'Inquilino'}
+            </Typography>
+          </Box>
+          <IconButton 
+            onClick={handleLogout}
+            sx={{ 
+              color: 'white', 
+              bgcolor: 'rgba(255,255,255,0.12)',
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' },
+            }}
+            size="small"
+          >
+            <LogoutIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Box>
+      </Box>
+
+      <Box sx={{ p: { xs: 2, md: 3 }, pb: { xs: 12, md: 14 } }}>
         <Modal
           open={payModalOpen}
           onClose={handleClosePayModal}
@@ -1557,232 +1608,152 @@ console.log(reciboNormalizado)
 
         {/* Contenido según la sección activa */}
         {activeSection === 'home' && (
-          <Box>
-            <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: '#1a237e' }}>
-              Mi Información de Contrato
-            </Typography>
-            
+          <Box sx={{ maxWidth: 700, mx: 'auto' }}>
             {loadingContrato ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                <CircularProgress />
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}>
+                <CircularProgress sx={{ color: accentColor }} />
               </Box>
             ) : contratoInfo ? (
-              <Box>
-                {/* Información básica del contrato */}
-                <Paper sx={{ p: 3, mb: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1a237e' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Info card */}
+                <Paper elevation={0} sx={{
+                  p: 2.5, borderRadius: 3,
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: isDark ? '#a78bfa' : accentDark }}>
                     Información General
                   </Typography>
-                  <Grid2 container spacing={3}>
-
-                    <Box sx={{ display: 'flex',flexDirection: 'column', justifyContent: 'space-between', alignItems: 'start' }}>
-
-                      
-                    <Grid2 item xs={12} md={6}>
-
-                    <Grid2 item xs={12} md={6}>
-                      <Typography variant="body2" color="textSecondary">
-                        Titular alquiler
-                      </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 2 ,color:"black"}}>
-                   {`${contratoInfo.nombreInquilino || ''} ${contratoInfo.apellidoInquilino || ''}`}
-                    </Typography>
-                    </Grid2>
-
-
-                      <Typography variant="body2" color="textSecondary">
-                        Nombre del Contrato
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                        {contratoInfo.nombreContrato}
-                      </Typography>
-                    </Grid2>
-                    
-                    <Grid2 item xs={12} md={6}>
-                      <Typography variant="body2" color="textSecondary">
-                        Dirección de la Propiedad
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                        {contratoInfo.direccionPropiedad}
-                      </Typography>
-                    </Grid2>
-
-                    </Box>
-                    <Box sx={{ display: 'flex',flexDirection: 'row', justifyContent: 'space-between', alignItems: 'start', gap: 3 }}>
-                    <Grid2 item xs={12} md={6}>
-                      <Typography variant="body2" color="textSecondary">
-                        Fecha de Inicio
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                        {formatFecha(contratoInfo.fechaInicio)}
-                      </Typography>
-                    </Grid2>
-                    <Grid2 item xs={12} md={6}>
-                      <Typography variant="body2" color="textSecondary">
-                        Fecha de Fin
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                        {formatFecha(contratoInfo.fechaFin)}
-                      </Typography>
-                    </Grid2>
-                    </Box>
-                  </Grid2>
-                </Paper>
-
-                {/* Estado del contrato */}
-              
-
-                {/* Duración del contrato */}
-                <Paper sx={{ p: 3, mb: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1a237e' }}>
-                    Duración del Contrato
-                  </Typography>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box sx={{ textAlign: 'center', flex: 1 }}>
-                     <Typography variant="h4" sx={{ color: '#1a237e', fontWeight: 'bold' }}>
-                      {mesesTotales}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Meses totales
-                    </Typography>
-                    </Box>
-                    <Divider orientation="vertical" flexItem />
-                    <Box sx={{ textAlign: 'center', flex: 1 }}>
-                     <Typography variant="h4" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
-                      {Math.max(0, mesesTranscurridos)}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Meses transcurridos
-                    </Typography>
-                    </Box>
-                    <Divider orientation="vertical" flexItem />
-                    <Box sx={{ textAlign: 'center', flex: 1 }}>
-                   <Typography variant="h4" sx={{ color: '#ff9800', fontWeight: 'bold' }}>
-                      {mesesRestantes}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Meses restantes
-                    </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    {[
+                      { label: 'Titular', value: `${contratoInfo.nombreInquilino || ''} ${contratoInfo.apellidoInquilino || ''}`.trim() || 'N/A' },
+                      { label: 'Contrato', value: contratoInfo.nombreContrato },
+                      { label: 'Dirección', value: contratoInfo.direccionPropiedad },
+                    ].map((item) => (
+                      <Box key={item.label}>
+                        <Typography variant="caption" color="text.secondary">{item.label}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.value}</Typography>
+                      </Box>
+                    ))}
+                    <Box sx={{ display: 'flex', gap: 3, mt: 0.5 }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Inicio</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatFecha(contratoInfo.fechaInicio)}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Fin</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatFecha(contratoInfo.fechaFin)}</Typography>
+                      </Box>
                     </Box>
                   </Box>
                 </Paper>
 
-                {/* Accesos rápidos */}
-                <Paper sx={{ p: 3, mb: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1a237e' }}>
-                    Accesos Rápidos
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<ReceiptIcon />}
-                      onClick={() => setActiveSection('recibos')}
-                      sx={{ color: '#1a237e', borderColor: '#1a237e' }}
-                    >
-                      Ver Recibos
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<MessageIcon />}
-                      onClick={() => setActiveSection('comunicaciones')}
-                      sx={{ color: '#1a237e', borderColor: '#1a237e' }}
-                    >
-                      Comunicaciones
-                    </Button>
-                  </Box>
-                </Paper>
+                {/* Duration stats */}
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  {[
+                    { value: mesesTotales, label: 'Totales', color: isDark ? '#a78bfa' : accentDark, bg: isDark ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.06)' },
+                    { value: Math.max(0, mesesTranscurridos), label: 'Transcurridos', color: '#22c55e', bg: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.06)' },
+                    { value: mesesRestantes, label: 'Restantes', color: '#f59e0b', bg: isDark ? 'rgba(245,158,11,0.12)' : 'rgba(245,158,11,0.06)' },
+                  ].map((stat) => (
+                    <Paper key={stat.label} elevation={0} sx={{
+                      flex: 1, p: 2, borderRadius: 3, textAlign: 'center',
+                      bgcolor: stat.bg,
+                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'transparent'}`,
+                    }}>
+                      <Typography variant="h4" sx={{ fontWeight: 800, color: stat.color, lineHeight: 1.1 }}>
+                        {stat.value}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.65rem' }}>
+                        {stat.label}
+                      </Typography>
+                    </Paper>
+                  ))}
+                </Box>
 
-                {/* Miniatura del Contrato */}
+                {/* Quick actions */}
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Paper elevation={0} onClick={() => setActiveSection('recibos')} sx={{
+                    flex: 1, p: 2, borderRadius: 3, cursor: 'pointer',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                    transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 1.5,
+                    '&:hover': { borderColor: accentColor, transform: 'translateY(-2px)', boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.08)' },
+                  }}>
+                    <Box sx={{ width: 40, height: 40, borderRadius: 2.5, bgcolor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ReceiptIcon sx={{ fontSize: 20, color: accentColor }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>Recibos</Typography>
+                      <Typography variant="caption" color="text.secondary">Ver mis pagos</Typography>
+                    </Box>
+                  </Paper>
+                  <Paper elevation={0} onClick={() => setActiveSection('comunicaciones')} sx={{
+                    flex: 1, p: 2, borderRadius: 3, cursor: 'pointer',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                    transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 1.5,
+                    '&:hover': { borderColor: accentColor, transform: 'translateY(-2px)', boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.08)' },
+                  }}>
+                    <Box sx={{ width: 40, height: 40, borderRadius: 2.5, bgcolor: isDark ? 'rgba(236,72,153,0.15)' : 'rgba(236,72,153,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ReportProblemIcon sx={{ fontSize: 20, color: '#ec4899' }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>Reportes</Typography>
+                      <Typography variant="caption" color="text.secondary">Reparaciones</Typography>
+                    </Box>
+                  </Paper>
+                </Box>
+
+                {/* Contract PDF preview */}
                 {contratoInfo?.contratoPdf && (
-                  <Paper sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1a237e' }}>
-                      Mi Contrato
-                    </Typography>
-                    <Card 
-                      sx={{ 
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: 4
-                        }
-                      }}
-                      onClick={() => setOpenContractModal(true)}
-                    >
-                      <CardContent sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                          <PdfIcon sx={{ fontSize: 40, color: '#d32f2f' }} />
-                          <Box>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                              Contrato de Alquiler
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary">
-                              Haz clic para ver el contrato completo
-                            </Typography>
-                          </Box>
-                          <Box sx={{ ml: 'auto' }}>
-                            <ViewIcon sx={{ color: '#1a237e' }} />
-                          </Box>
-                        </Box>
-                        
-                        {/* Vista previa del contenido */}
-                        <Box sx={{ 
-                          backgroundColor: '#f8f9fa',
-                          p: 2,
-                          borderRadius: 1,
-                          maxHeight: 100,
-                          overflow: 'hidden',
-                          position: 'relative'
-                        }}>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              fontSize: '0.8rem',
-                              lineHeight: 1.4,
-                              color: '#666'
-                            }}
-                          >
-                            {formatContractText(contratoInfo.contratoPdf).substring(0, 200)}...
-                          </Typography>
-                          <Box sx={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            height: 30,
-                            background: 'linear-gradient(transparent, #f8f9fa)'
-                          }} />
-                        </Box>
-                      </CardContent>
-                    </Card>
+                  <Paper elevation={0} sx={{
+                    borderRadius: 3, overflow: 'hidden', cursor: 'pointer',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                    transition: 'all 0.2s',
+                    '&:hover': { borderColor: accentColor, boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.08)' },
+                  }} onClick={() => setOpenContractModal(true)}>
+                    <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <PdfIcon sx={{ fontSize: 24, color: '#ef4444' }} />
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>Contrato de Alquiler</Typography>
+                        <Typography variant="caption" color="text.secondary">Toca para ver el contrato completo</Typography>
+                      </Box>
+                      <ViewIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                    </Box>
+                    <Box sx={{
+                      mx: 2.5, mb: 2, p: 2, borderRadius: 2,
+                      bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8f7fc',
+                      maxHeight: 70, overflow: 'hidden', position: 'relative',
+                    }}>
+                      <Typography variant="caption" sx={{ lineHeight: 1.5, color: 'text.secondary' }}>
+                        {formatContractText(contratoInfo.contratoPdf).substring(0, 180)}...
+                      </Typography>
+                      <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 24, background: isDark ? 'linear-gradient(transparent, #1e1e2e)' : 'linear-gradient(transparent, #f8f7fc)' }} />
+                    </Box>
                   </Paper>
                 )}
               </Box>
             ) : (
-              <Paper sx={{ p: 4, textAlign: 'center' }}>
-                <HomeIcon sx={{ fontSize: 60, color: '#ccc', mb: 2 }} />
-                <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
-                  No se encontró información del contrato
+              <Paper elevation={0} sx={{
+                p: 5, textAlign: 'center', borderRadius: 3,
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                <Box sx={{ width: 56, height: 56, borderRadius: 3, mx: 'auto', mb: 2, bgcolor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <HomeIcon sx={{ fontSize: 28, color: accentColor }} />
+                </Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Sin información de contrato
                 </Typography>
-                <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   No hay información de contrato disponible para tu usuario.
                 </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<ReceiptIcon />}
-                    onClick={() => setActiveSection('recibos')}
-                    sx={{ color: '#1a237e', borderColor: '#1a237e' }}
-                  >
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                  <Button variant="outlined" startIcon={<ReceiptIcon />} onClick={() => setActiveSection('recibos')}
+                    sx={{ borderRadius: 2.5, textTransform: 'none', fontWeight: 600, borderColor: accentColor, color: accentColor }}>
                     Ver Recibos
                   </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<MessageIcon />}
-                    onClick={() => setActiveSection('comunicaciones')}
-                    sx={{ color: '#1a237e', borderColor: '#1a237e' }}
-                  >
-                    Comunicaciones
+                  <Button variant="outlined" startIcon={<MessageIcon />} onClick={() => setActiveSection('comunicaciones')}
+                    sx={{ borderRadius: 2.5, textTransform: 'none', fontWeight: 600, borderColor: accentColor, color: accentColor }}>
+                    Reportes
                   </Button>
                 </Box>
               </Paper>
@@ -1791,15 +1762,12 @@ console.log(reciboNormalizado)
         )}
 
         {activeSection === 'comunicaciones' && (
-          <Box>
-            <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: '#1a237e' }}>
-              Comunicaciones
-            </Typography>
-
-            
-
-            <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
-              <Box sx={{ px: 2, pt: 1.5, bgcolor: 'rgba(243, 240, 248, 0.41)' }}>
+          <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+            <Paper elevation={0} sx={{
+              borderRadius: 3, overflow: 'hidden',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+            }}>
+              <Box sx={{ px: 2, pt: 1.5, bgcolor: isDark ? 'rgba(139,92,246,0.06)' : 'rgba(139,92,246,0.03)' }}>
                 <Tabs
                   value={commTab}
                   onChange={(_, v) => {
@@ -1809,10 +1777,12 @@ console.log(reciboNormalizado)
                   variant={isMobile ? 'scrollable' : 'standard'}
                   scrollButtons={isMobile ? 'auto' : false}
                   sx={{
-                    '& .MuiTab-root': { textTransform: 'none', fontWeight: 800 },
+                    '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, fontSize: '0.85rem' },
+                    '& .Mui-selected': { color: `${accentColor} !important` },
+                    '& .MuiTabs-indicator': { bgcolor: accentColor },
                   }}
                 >
-                  <Tab icon={<ReportProblemIcon />} iconPosition="start" label="Reportar / Reparaciones" />
+                  <Tab icon={<ReportProblemIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Reportar / Reparaciones" />
                 </Tabs>
               </Box>
 
@@ -2119,241 +2089,160 @@ console.log(reciboNormalizado)
         )}
 
         {activeSection === 'recibos' && (
-          <Box>
-            <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: '#1a237e' }}>
-              Mis Recibos
-            </Typography>
-
+          <Box sx={{ maxWidth: 700, mx: 'auto' }}>
             {/* Filtros de fecha */}
-            <Paper sx={{  mb: 3, borderRadius: 4 }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', padding:"1rem 1rem 0rem 1rem"}}>
-                Filtrar por fecha
-              </Typography>
-              <Grid2 container spacing={2} alignItems="center" sx={{ backgroundColor:"rgba(243, 240, 248, 0.41)",
-                borderRadius: "0 0 10px 10px",
-                p: 2,
-                
-              }}>
-                <Grid2 item xs={12} sm={4}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Año</InputLabel>
-                    <Select
-                      value={selectedYear}
-                      label="Año"
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      sx={{
-                          width:"7rem"
-                      }}
-                    >
-                      <MenuItem value="">
-                        <em>Todos los años</em>
+            <Paper elevation={0} sx={{
+              mb: 2.5, borderRadius: 3, p: 2,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Filtrar</Typography>
+                <Chip label={`${filteredRecibos.length}`} size="small"
+                  sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700, bgcolor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.08)', color: isDark ? '#a78bfa' : accentDark }} />
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>Año</InputLabel>
+                  <Select value={selectedYear} label="Año" onChange={(e) => setSelectedYear(e.target.value)}
+                    sx={{ borderRadius: 2, fontSize: '0.85rem' }}>
+                    <MenuItem value=""><em>Todos</em></MenuItem>
+                    {getAvailableYears().map(year => (
+                      <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>Mes</InputLabel>
+                  <Select value={selectedMonth} label="Mes" onChange={(e) => setSelectedMonth(e.target.value)}
+                    disabled={!selectedYear && recibos.length > 12}
+                    sx={{ borderRadius: 2, fontSize: '0.85rem' }}>
+                    <MenuItem value=""><em>Todos</em></MenuItem>
+                    {getAvailableMonths().map(month => (
+                      <MenuItem key={month} value={month.toString()}>
+                        {new Date(2024, month - 1).toLocaleString('es-ES', { month: 'long' })}
                       </MenuItem>
-                      {getAvailableYears().map(year => (
-                        <MenuItem key={year} value={year.toString()}>
-                          {year}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid2>
-                
-                <Grid2 item xs={12} sm={4}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Mes</InputLabel>
-                    <Select
-                      value={selectedMonth}
-                      label="Mes"
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      disabled={!selectedYear && recibos.length > 12} // Deshabilitar si hay muchos recibos y no hay año
-                      sx={{
-                          width:"7rem"
-                      }}
-                    >
-                      <MenuItem value="">
-                        <em>Todos los meses</em>
-                      </MenuItem>
-                      {getAvailableMonths().map(month => (
-                        <MenuItem key={month} value={month.toString()}>
-                          {new Date(2024, month - 1).toLocaleString('es-ES', { month: 'long' })}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid2>
-                
-                <Grid2 item xs={12} sm={4}>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="outlined"
-                      onClick={clearFilters}
-                      disabled={!selectedMonth && !selectedYear}
-                      size="small"
-                    >
-                      Limpiar filtros
-                    </Button>
-                    <Chip
-                      label={`${filteredRecibos.length} recibos`}
-                      color="primary"
-                      variant="outlined"
-                    />
-                  </Box>
-                </Grid2>
-              </Grid2>
+                    ))}
+                  </Select>
+                </FormControl>
+                {(selectedMonth || selectedYear) && (
+                  <Button size="small" onClick={clearFilters}
+                    sx={{ textTransform: 'none', fontWeight: 600, color: accentColor, fontSize: '0.8rem' }}>
+                    Limpiar
+                  </Button>
+                )}
+              </Box>
             </Paper>
 
             {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
+              <Alert severity="error" sx={{ mb: 2, borderRadius: 2.5 }}>{error}</Alert>
             )}
 
             {!Array.isArray(filteredRecibos) || filteredRecibos.length === 0 ? (
-          <Paper sx={{ p: 4, textAlign: 'center' }}>
-            <ReceiptIcon sx={{ fontSize: 60, color: '#ccc', mb: 2 }} />
-            <Typography variant="h6" color="textSecondary">
-              {!Array.isArray(recibos) || recibos.length === 0 
-                ? 'No hay recibos disponibles' 
-                : 'No hay recibos que coincidan con los filtros seleccionados'}
-            </Typography>
-            {(selectedMonth || selectedYear) && (
-              <Button 
-                variant="outlined" 
-                onClick={clearFilters} 
-                sx={{ mt: 2 }}
-              >
-                Limpiar filtros
-              </Button>
-            )}
-          </Paper>
-        ) : (
-          <Grid2 container spacing={3}  sx={{ display: 'flex', flexDirection: 'column', alignItems: 'start' }}>
-            {filteredRecibos.map((recibo) => (
-              <Grid2 item xs={12} key={recibo.id}  sx={{ width:{xs: "100%", sm: "100%", md: "80%", lg: "80%", xl: "80%"}}}>
-                <Card elevation={3} sx={{ borderRadius: 5 ,paddingBottom:4}}>
-                  <CardContent>
-                    {/* Header del recibo */}
-                    <Box sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'flex-start',
-                      mb: 2,
-                      flexDirection: { xs: 'column', sm: 'row' },
-                      gap: { xs: 2, sm: 0 }
-                    }}>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1a237e' }}>
-                          {recibo.nombreContrato}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                          Recibo #{recibo.numeroRecibo} - {recibo.periodo} 
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Paper elevation={0} sx={{
+                p: 5, textAlign: 'center', borderRadius: 3,
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                <Box sx={{ width: 56, height: 56, borderRadius: 3, mx: 'auto', mb: 2, bgcolor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ReceiptIcon sx={{ fontSize: 28, color: accentColor }} />
+                </Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {!Array.isArray(recibos) || recibos.length === 0 ? 'No hay recibos disponibles' : 'Sin resultados'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {!Array.isArray(recibos) || recibos.length === 0 ? 'Aún no tenés recibos emitidos' : 'Probá con otros filtros'}
+                </Typography>
+                {(selectedMonth || selectedYear) && (
+                  <Button variant="outlined" onClick={clearFilters} sx={{ mt: 2, borderRadius: 2.5, textTransform: 'none', fontWeight: 600, borderColor: accentColor, color: accentColor }}>
+                    Limpiar filtros
+                  </Button>
+                )}
+              </Paper>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {filteredRecibos.map((recibo) => (
+                  <Paper key={recibo.id} elevation={0} sx={{
+                    borderRadius: 3, overflow: 'hidden',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                  }}>
+                    {/* Status accent bar */}
+                    <Box sx={{ height: 3, background: recibo.estado ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #f59e0b, #ef4444)' }} />
+
+                    <Box sx={{ p: 2.5 }}>
+                      {/* Header */}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                            Recibo #{recibo.numeroRecibo} — {recibo.periodo}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">{recibo.concepto}</Typography>
+                        </Box>
                         <Chip
                           label={getEstadoText(recibo.estado)}
-                          color={getEstadoColor(recibo.estado)}
-                          variant="filled"
-                        />
-                        <Button
-                          variant="contained"
                           size="small"
-                          disabled={recibo.estado || payingReciboId === recibo.id}
-                          onClick={() => handleOpenPayModal(recibo)}
                           sx={{
-                            textTransform: 'none',
-                            backgroundColor: '#1a237e',
-                            '&:hover': {
-                              backgroundColor: '#0d47a1'
-                            }
+                            fontWeight: 700, fontSize: '0.7rem', height: 24,
+                            bgcolor: recibo.estado ? (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.1)') : (isDark ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.1)'),
+                            color: recibo.estado ? '#22c55e' : '#f59e0b',
                           }}
-                        >
-                          {payingReciboId === recibo.id ? 'Cargando...' : 'Pagar'}
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          size="small"
+                        />
+                      </Box>
+
+                      {/* Dates row */}
+                      <Box sx={{ display: 'flex', gap: 3, mb: 2 }}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">Emisión</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatFecha(recibo.fechaEmision)}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">Vencimiento</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatFecha(recibo.fechaVencimiento)}</Typography>
+                        </Box>
+                      </Box>
+
+                      {/* Monto Alquiler */}
+                      <Box sx={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        p: 2, borderRadius: 2.5, mb: 2,
+                        bgcolor: isDark ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.04)',
+                      }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Alquiler</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: isDark ? '#a78bfa' : accentDark }}>
+                          {formatCurrency(recibo.montoTotal)}
+                        </Typography>
+                      </Box>
+
+                      {/* Actions row */}
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {!recibo.estado && (
+                          <Button size="small" variant="contained"
+                            disabled={payingReciboId === recibo.id}
+                            onClick={() => handleOpenPayModal(recibo)}
+                            sx={{
+                              textTransform: 'none', fontWeight: 700, borderRadius: 2, fontSize: '0.8rem',
+                              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', boxShadow: 'none',
+                              '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' },
+                            }}>
+                            {payingReciboId === recibo.id ? 'Cargando...' : 'Pagar'}
+                          </Button>
+                        )}
+                        <Button size="small" variant="outlined"
                           disabled={downloadingRecibo === recibo.id}
-                          startIcon={downloadingRecibo === recibo.id ? <CircularProgress size={16} /> : <DownloadIcon />}
+                          startIcon={downloadingRecibo === recibo.id ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon sx={{ fontSize: 16 }} />}
                           onClick={() => handleDownloadRecibo(recibo)}
                           sx={{
-                            '&:disabled': {
-                              opacity: 0.7
-                            }
-                          }}
-                        >
-                          {downloadingRecibo === recibo.id ? 'Descargando...' : 'Descargar'}
+                            textTransform: 'none', fontWeight: 600, borderRadius: 2, fontSize: '0.8rem',
+                            borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+                            color: 'text.primary',
+                          }}>
+                          {downloadingRecibo === recibo.id ? 'Descargando...' : 'PDF'}
+                        </Button>
+                        <Button size="small"
+                          onClick={() => toggleExpandRecibo(recibo.id)}
+                          endIcon={expandedRecibos.has(recibo.id) ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
+                          sx={{ ml: 'auto', textTransform: 'none', fontWeight: 600, fontSize: '0.8rem', color: accentColor }}>
+                          {expandedRecibos.has(recibo.id) ? 'Menos' : 'Detalle'}
                         </Button>
                       </Box>
-                    </Box>
-
-                    {/* Información del recibo */}
-                    <Grid2 container spacing={2} sx={{ mb: 2 }}>
-                      <Grid2 item xs={12} sm={6}>
-                        <Typography variant="body2" color="textSecondary">
-                          Fecha de Emisión
-                        </Typography>
-                        <Typography variant="body1">
-                          {formatFecha(recibo.fechaEmision)}
-                        </Typography>
-                      </Grid2>
-                      <Grid2 item xs={12} sm={6}>
-                        <Typography variant="body2" color="textSecondary">
-                          Fecha de Vencimiento
-                        </Typography>
-                        <Typography variant="body1">
-                          {formatFecha(recibo.fechaVencimiento)}
-                        </Typography>
-                      </Grid2>
-                    </Grid2>
-
-                    {/* Concepto */}
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="textSecondary">
-                        Concepto
-                      </Typography>
-                      <Typography variant="body1">
-                        {recibo.concepto}
-                      </Typography>
-                    </Box>
-
-                    {/* Monto Alquiler */}
-                    <Box sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center',
-                      mb: 2,
-                      p: 2,
-                      backgroundColor: '#f8f9fa',
-                      borderRadius: 1
-                    }}>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                        Monto Alquiler
-                      </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1a237e' }}>
-                        {formatCurrency(recibo.montoTotal)}
-                      </Typography>
-                    </Box>
-
-                    {/* Botón Expandir */}
-                    <Box sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'center', 
-                      mb: 2 
-                    }}>
-                      <Button
-                        onClick={() => toggleExpandRecibo(recibo.id)}
-                        startIcon={expandedRecibos.has(recibo.id) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        sx={{
-                          color: '#1a237e',
-                          fontWeight: 'bold',
-                          '&:hover': {
-                            backgroundColor: 'rgba(26, 35, 126, 0.1)'
-                          }
-                        }}
-                      >
-                        {expandedRecibos.has(recibo.id) ? 'Ver menos detalles' : 'Ver más detalles'}
-                      </Button>
-                    </Box>
 
                     {/* Contenido expandible */}
                     <Collapse in={expandedRecibos.has(recibo.id)} timeout={300}>
@@ -2534,148 +2423,79 @@ console.log(reciboNormalizado)
                         {/* Monto Total (Alquiler + Servicios) */}
                         <Box sx={{
                           display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-start',
-                          width: '90%',
-                          margin: "0 auto",
-                          mt: 3,
-                          height: "3rem",
-                        }}>
-                       
-                        </Box>
-                        <Box sx={{
-                          display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
-                          mb: 2,
+                          mt: 2,
                           p: 2,
-                          backgroundColor:"rgba(93, 93, 94, 0.05)",
-                          borderRadius: 4,
-                          width: '90%',
-                          margin: "0 auto",
-                          height: "3rem",
+                          borderRadius: 2.5,
+                          background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                          color: 'white',
                         }}>
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'rgb(45, 46, 45)' }}>
+                          <Typography variant="body1" sx={{ fontWeight: 700 }}>
                             Total
                           </Typography>
-                          <Typography variant="h5" sx={{ fontWeight: 'bold', color: ' #1a237e' }}>
+                          <Typography variant="h5" sx={{ fontWeight: 800 }}>
                             {formatCurrency(calcularMontoTotal(recibo))}
                           </Typography>
                         </Box>
                       </Box>
                     </Collapse>
-                  </CardContent>
-                </Card>
-              </Grid2>
-            ))}
-          </Grid2>
+                    </Box>
+                  </Paper>
+                ))}
+              </Box>
             )}
           </Box>
         )}
       </Box>
 
-      {/* Barra de navegación inferior fija */}
-      <Box sx={{ 
+      {/* Bottom Navigation */}
+      <Box sx={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'white', 
-        borderTop: '1px solid #e0e0e0',
-        boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+        bgcolor: isDark ? 'rgba(15,15,23,0.95)' : 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
         zIndex: 1000,
-        py: 1
+        py: 0.75,
+        px: 1,
       }}>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          maxWidth: '600px',
-          margin: '0 auto'
-        }}>
-          <Button
-            onClick={() => setActiveSection('home')}
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              color: activeSection === 'home' ? '#1a237e' : '#666',
-              minWidth: 'auto',
-              px: 2,
-              py: 1,
-              '&:hover': {
-                backgroundColor: 'rgba(26, 35, 126, 0.1)'
-              }
-            }}
-          >
-            <HomeIcon sx={{ 
-              fontSize: { xs: 24, md: 28 },
-              mb: 0.5,
-              color: activeSection === 'home' ? '#1a237e' : '#666'
-            }} />
-            <Typography variant="caption" sx={{ 
-              fontSize: { xs: '0.7rem', md: '0.75rem' },
-              fontWeight: activeSection === 'home' ? 'bold' : 'normal'
-            }}>
-              Home
-            </Typography>
-          </Button>
-
-          <Button
-            onClick={() => setActiveSection('recibos')}
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              color: activeSection === 'recibos' ? '#1a237e' : '#666',
-              minWidth: 'auto',
-              px: 2,
-              py: 1,
-              '&:hover': {
-                backgroundColor: 'rgba(26, 35, 126, 0.1)'
-              }
-            }}
-          >
-            <ReceiptIcon sx={{ 
-              fontSize: { xs: 24, md: 28 },
-              mb: 0.5,
-              color: activeSection === 'recibos' ? '#1a237e' : '#666'
-            }} />
-            <Typography variant="caption" sx={{ 
-              fontSize: { xs: '0.7rem', md: '0.75rem' },
-              fontWeight: activeSection === 'recibos' ? 'bold' : 'normal'
-            }}>
-              Recibos
-            </Typography>
-          </Button>
-
-          <Button
-            onClick={() => setActiveSection('comunicaciones')}
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              color: activeSection === 'comunicaciones' ? '#1a237e' : '#666',
-              minWidth: 'auto',
-              px: 2,
-              py: 1,
-              '&:hover': {
-                backgroundColor: 'rgba(26, 35, 126, 0.1)'
-              }
-            }}
-          >
-            <MessageIcon sx={{ 
-              fontSize: { xs: 24, md: 28 },
-              mb: 0.5,
-              color: activeSection === 'comunicaciones' ? '#1a237e' : '#666'
-            }} />
-            <Typography variant="caption" sx={{ 
-              fontSize: { xs: '0.7rem', md: '0.75rem' },
-              fontWeight: activeSection === 'comunicaciones' ? 'bold' : 'normal'
-            }}>
-              Reportes
-            </Typography>
-          </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: 400, mx: 'auto' }}>
+          {[
+            { key: 'home', icon: <HomeIcon />, label: 'Home' },
+            { key: 'recibos', icon: <ReceiptIcon />, label: 'Recibos' },
+            { key: 'comunicaciones', icon: <ReportProblemIcon />, label: 'Reportes' },
+          ].map((tab) => {
+            const isActive = activeSection === tab.key;
+            return (
+              <Button
+                key={tab.key}
+                onClick={() => setActiveSection(tab.key)}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  minWidth: 'auto',
+                  px: 2.5,
+                  py: 0.75,
+                  borderRadius: 3,
+                  color: isActive ? accentColor : (isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)'),
+                  bgcolor: isActive ? (isDark ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)') : 'transparent',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
+                  '& .MuiSvgIcon-root': { fontSize: 22, mb: 0.25 },
+                }}
+              >
+                {tab.icon}
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: isActive ? 700 : 500, lineHeight: 1 }}>
+                  {tab.label}
+                </Typography>
+              </Button>
+            );
+          })}
         </Box>
       </Box>
 
@@ -2703,20 +2523,22 @@ console.log(reciboNormalizado)
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center',
-          backgroundColor: 'rgb(61, 26, 126)',
-          color: 'white'
+          background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+          color: 'white',
+          py: 2,
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PdfIcon />
-            <Typography variant="body1">
-              Contrato de Alquiler - {contratoInfo?.nombreContrato}
+            <PdfIcon sx={{ fontSize: 20 }} />
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              Contrato — {contratoInfo?.nombreContrato}
             </Typography>
           </Box>
           <IconButton 
             onClick={() => setOpenContractModal(false)}
             sx={{ color: 'white' }}
+            size="small"
           >
-            <CloseIcon />
+            <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
         
@@ -2725,10 +2547,9 @@ console.log(reciboNormalizado)
             p: 2,
             height: '100%',
             overflow: 'auto',
-            backgroundColor: '#fafafa',
-            width: '80%'
+            bgcolor: isDark ? '#1a1a2e' : '#fafafa',
           }}>
-            <Paper sx={{ p: 4, minHeight: '100%', width: '90%', margin: '0 auto' }}>
+            <Paper elevation={0} sx={{ p: 4, minHeight: '100%', maxWidth: 700, mx: 'auto', borderRadius: 3 }}>
               <Typography 
                 component="pre"
                 sx={{ 
@@ -2766,28 +2587,29 @@ console.log(reciboNormalizado)
         }}
       >
         <DialogTitle sx={{ 
-          bgcolor: '#1a237e', 
+          background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
           color: 'white',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          py: 2
+          py: 1.5
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <PdfIcon sx={{ mr: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PdfIcon sx={{ fontSize: 20 }} />
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {currentPdfTitle}
             </Typography>
           </Box>
           <IconButton 
             onClick={handleClosePdfViewer}
             sx={{ color: 'white' }}
+            size="small"
           >
-            <CloseIcon />
+            <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
         
-        <DialogContent sx={{ p: 0, position: 'relative', backgroundColor: '#f5f5f5' }}>
+        <DialogContent sx={{ p: 0, position: 'relative', bgcolor: isDark ? '#1a1a2e' : '#f5f5f5' }}>
           {currentPdfUrl && (
             <iframe
               src={`https://docs.google.com/viewer?url=${encodeURIComponent(currentPdfUrl)}&embedded=true`}
@@ -2844,13 +2666,13 @@ console.log(reciboNormalizado)
               position: 'absolute',
               bottom: 16,
               right: 16,
-              backgroundColor: '#1a237e',
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
               color: 'white',
               '&:hover': {
-                backgroundColor: '#0d47a1',
+                background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
                 transform: 'scale(1.1)'
               },
-              boxShadow: 4,
+              boxShadow: '0 4px 16px rgba(139,92,246,0.4)',
               transition: 'all 0.2s ease',
               zIndex: 1000
             }}

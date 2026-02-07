@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import axios from 'axios';
-import { Button, TextField, Box, Grid2, Typography, FormControl, InputLabel, Select, MenuItem, useTheme, useMediaQuery } from '@mui/material';
+import { Button, TextField, Box, Grid, Typography, FormControl, InputLabel, Select, MenuItem, useTheme, useMediaQuery, Paper, IconButton, CircularProgress } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PersonIcon from '@mui/icons-material/Person';
+import BadgeIcon from '@mui/icons-material/Badge';
+import SaveIcon from '@mui/icons-material/Save';
 import InquilinosApi from '../api/inquilinosApi';
 import {SchemaValidation} from '../validation/SchemaValidation'
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/GlobalAuth';
 import PropietarioApi from '../api/propietarios';
 import { showAlert, showError, showInfo, showSuccess } from '../alertas/showAlert';
+import { useNavigate } from 'react-router-dom';
+
 const InquilinoForm = () => {
   const {logout, user} = useAuth();
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
 
   const [propietarios, setPropietarios] = useState([]);
   useEffect(() => {
@@ -87,323 +95,197 @@ const InquilinoForm = () => {
       setSubmitting(false);
     }
   };
-  
+
+  const inputSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2.5,
+      bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+      '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
+      '&.Mui-focused': { bgcolor: isDark ? 'rgba(255,255,255,0.08)' : '#fff' },
+    },
+  };
+
+  const sectionTitle = (icon, text) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 1 }}>
+      <Box sx={{
+        width: 32, height: 32, borderRadius: 1.5,
+        bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {React.cloneElement(icon, { sx: { fontSize: 18, color: '#8b5cf6' } })}
+      </Box>
+      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+        {text}
+      </Typography>
+    </Box>
+  );
 
   return (
-    <Box sx={{ 
-      bgcolor: 'background.default',
-      color: 'text.primary',
+    <Box sx={{
+      width: '100vw',
       minHeight: '100vh',
-      width: '100%',
+      bgcolor: 'background.default',
+      pt: { xs: 2, sm: 3, md: 2 },
+      pb: { xs: 14, sm: 12 },
+      pl: { xs: 2, sm: 3, md: '16rem' },
+      pr: { xs: 2, sm: 4, md: 3 },
+      boxSizing: 'border-box',
     }}>
-      <Typography 
-        variant="h4" 
-        component="h1" 
-        sx={{ 
-          mb: 3, 
-          textAlign: 'center',
-          color: 'text.primary',
-          fontWeight: 600
-        }}
-      >
-        Nuevo Inquilino
-      </Typography>
-
-      <Formik
-        initialValues={initialValues}
-        validationSchema={SchemaValidation.inquilinoValidation}
-        onSubmit={onSubmit}
-      >
-        {({ values, handleChange, handleBlur, setFieldValue }) => (
-          <Form style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Grid2 
-              container 
-              spacing={2}
+      <Box sx={{ mt: { xs: '4rem', sm: 0 }, maxWidth: 800, mx: 'auto' }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton
+              onClick={() => navigate('/inquilinos')}
+              size="small"
               sx={{
-                flexDirection: { xs: 'column', md: 'row' },
-                gap: { xs: 2, md: 4 },
-                width: '100%',
-                justifyContent: 'center'
+                bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
               }}
             >
-              <Grid2 xs={12} md={6}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: 2, 
-                  mt: { xs: 0, md: 3 },
-                  width: '100%',
-                  maxWidth: '500px',
-                  mx: 'auto',
-                  '& .MuiTextField-root': {
-                    bgcolor: 'transparent',
-                    borderRadius: 0,
-                    '& .MuiInputBase-input': { color: 'text.primary' },
-                    '& .MuiInputLabel-root': { color: 'text.secondary' },
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
-                    }
-                  },
-                  '& .MuiFormControl-root': {
-                    bgcolor: 'transparent',
-                    borderRadius: 0,
-                    '& .MuiInputBase-input': { color: 'text.primary' },
-                    '& .MuiInputLabel-root': { color: 'text.secondary' },
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
-                    }
-                  },
-                  '& .MuiOutlinedInput-root': { borderRadius: 6, overflow: 'hidden', backgroundColor: 'transparent !important' },
-                  '& .MuiOutlinedInput-root fieldset': { borderRadius: 6 },
-                  '& .MuiInputBase-root': { backgroundColor: 'transparent !important' },
-                  '& .MuiOutlinedInput-input': { backgroundColor: 'transparent !important' },
-                  '& .MuiSelect-select': { backgroundColor: 'transparent !important' },
-                  '& input': { backgroundColor: 'transparent !important', WebkitBoxShadow: '0 0 0px 1000px transparent inset' },
-                  '& input:-webkit-autofill': { WebkitBoxShadow: '0 0 0px 1000px transparent inset', WebkitTextFillColor: 'inherit' },
-                  '& .error-message': {
-                    color: theme.palette.error.main,
-                    mt: 0.5,
-                    fontSize: '0.75rem'
-                  }
-                }}>
-                  <Field name="pronombre">
-                    {({ field, form }) => (
-                      <FormControl fullWidth variant="outlined">
-                        <InputLabel id="pronombre-label">Pronombre</InputLabel>
-                        <Select
-                          labelId="pronombre-label"
-                          label="Pronombre"
-                          {...field}
-                          value={form.values.pronombre}
-                          onChange={(e) => {
-                            form.setFieldValue("pronombre", e.target.value);
-                          }}
-                          sx={{ borderRadius: 6, '& fieldset': { borderRadius: 6 } }}
-                        >
-                          {pronombres.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
-                              {option.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-                  </Field>
-
-                  <Field
-                    name="nombre"
-                    as={TextField}
-                    label="Nombre"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.nombre}
-                  />
-                  <ErrorMessage name="nombre" component="div" className="error-message" />
-
-                  <Field
-                    name="apellido"
-                    as={TextField}
-                    label="Apellido"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.apellido}
-                  />
-                  <ErrorMessage name="apellido" component="div" className="error-message" />
-
-                  <Field
-                    name="telefono"
-                    as={TextField}
-                    label="Teléfono"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.telefono}
-                  />
-                  <ErrorMessage name="telefono" component="div" className="error-message" />
-
-                  <Field
-                    name="email"
-                    as={TextField}
-                    label="Email"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.email}
-                  />
-                  <ErrorMessage name="email" component="div" className="error-message" />
-                </Box>
-              </Grid2>
-
-              <Grid2 xs={12} md={6}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: 2, 
-                  mt: { xs: 0, md: 3 },
-                  width: '100%',
-                  maxWidth: '500px',
-                  mx: 'auto',
-                  '& .MuiTextField-root': {
-                    bgcolor: 'transparent',
-                    borderRadius: 0,
-                    '& .MuiInputBase-input': { color: 'text.primary' },
-                    '& .MuiInputLabel-root': { color: 'text.secondary' },
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
-                    }
-                  },
-                  '& .MuiFormControl-root': {
-                    bgcolor: 'transparent',
-                    borderRadius: 0,
-                    '& .MuiInputBase-input': { color: 'text.primary' },
-                    '& .MuiInputLabel-root': { color: 'text.secondary' },
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'
-                    }
-                  },
-                  '& .MuiOutlinedInput-root': { borderRadius: 6, overflow: 'hidden', backgroundColor: 'transparent' },
-                  '& .MuiOutlinedInput-root fieldset': { borderRadius: 6 },
-                  '& .error-message': {
-                    color: theme.palette.error.main,
-                    mt: 0.5,
-                    fontSize: '0.75rem'
-                  }
-                }}>
-                  <Field
-                    name="dni"
-                    as={TextField}
-                    label="DNI"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.dni}
-                    sx={{
-                      borderRadius: 6,
-                      '& fieldset': { borderRadius: 6 },
-                      '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
-                    }}
-                  />
-                  <ErrorMessage name="dni" component="div" className="error-message" />
-
-                  <Field
-                    name="cuit"
-                    as={TextField}
-                    label="CUIT"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.cuit}
-                  sx={{
-                    borderRadius: 6,
-                    '& fieldset': { borderRadius: 6 },
-                    '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
-                  }}
-                  />
-                  <ErrorMessage name="cuit" component="div" className="error-message" />
-
-                  <Field
-                    name="nacionalidad"
-                    as={TextField}
-                    label="Nacionalidad"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.nacionalidad}
-                  sx={{
-                    borderRadius: 6,
-                    '& fieldset': { borderRadius: 6 },
-                    '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
-                  }}
-                  />
-                  <ErrorMessage name="nacionalidad" component="div" className="error-message" />
-
-                  <Field
-                    name="direccionResidencial"
-                    as={TextField}
-                    label="Dirección Residencial"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.direccionResidencial}
-                  sx={{
-                    borderRadius: 6,
-                    '& fieldset': { borderRadius: 6 },
-                    '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
-                  }}
-                  />
-                  <ErrorMessage name="direccionResidencial" component="div" className="error-message" />
-
-                  <Field name="estadoCivil">
-                    {({ field, form }) => (
-                      <FormControl fullWidth variant="outlined">
-                        <InputLabel id="estadoCivil-label">Estado Civil</InputLabel>
-                        <Select
-                          labelId="estadoCivil-label"
-                          label="Estado Civil"
-                          {...field}
-                          value={form.values.estadoCivil}
-                          onChange={(e) => {
-                            form.setFieldValue("estadoCivil", e.target.value);
-                          }}
-                          sx={{
-                            borderRadius: 6,
-                            '& fieldset': { borderRadius: 6 },
-                            '& .MuiOutlinedInput-root': { backgroundColor: 'transparent' }
-                          }}
-                        >
-                          {estadosCiviles.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
-                              {option.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-                  </Field>
-                </Box>
-              </Grid2>
-            </Grid2>
-
-            <Box sx={{ 
-              mt: 4, 
-              display: 'flex', 
-              justifyContent: 'center',
-              width: '100%',
-              maxWidth: '500px'
-            }}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                startIcon={<PersonAddIcon />}
-                sx={{
-                  minWidth: { xs: '100%', md: '200px' },
-                  py: 1.5,
-                  fontSize: '1rem',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-                  borderRadius: 6,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 6px 16px rgba(0,0,0,0.12)'
-                  }
-                }}
-              >
-                Crear Inquilino
-              </Button>
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                <PersonAddIcon sx={{ color: '#8b5cf6', fontSize: { xs: 20, sm: 24 } }} />
+                Nuevo Inquilino
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                Completa los datos del inquilino
+              </Typography>
             </Box>
-          </Form>
-        )}
-      </Formik>
+          </Box>
+        </Box>
+
+        {/* Form */}
+        <Formik
+          initialValues={initialValues}
+          validationSchema={SchemaValidation.inquilinoValidation}
+          onSubmit={onSubmit}
+        >
+          {({ values, handleChange, handleBlur, setFieldValue, isSubmitting }) => (
+            <Form>
+              {/* Datos Personales */}
+              <Paper elevation={0} sx={{
+                p: { xs: 2, sm: 3 }, borderRadius: 3, mb: 2.5,
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                {sectionTitle(<PersonIcon />, 'Datos Personales')}
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="pronombre">
+                      {({ field, form }) => (
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Pronombre</InputLabel>
+                          <Select
+                            label="Pronombre"
+                            {...field}
+                            value={form.values.pronombre}
+                            onChange={(e) => form.setFieldValue("pronombre", e.target.value)}
+                            sx={{ borderRadius: 2.5, bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}
+                          >
+                            {pronombres.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                          </Select>
+                        </FormControl>
+                      )}
+                    </Field>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="nombre" as={TextField} label="Nombre *" fullWidth size="small" onChange={handleChange} onBlur={handleBlur} value={values.nombre} sx={inputSx} />
+                    <ErrorMessage name="nombre" component="div" style={{ color: theme.palette.error.main, fontSize: '0.75rem', marginTop: 4 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="apellido" as={TextField} label="Apellido *" fullWidth size="small" onChange={handleChange} onBlur={handleBlur} value={values.apellido} sx={inputSx} />
+                    <ErrorMessage name="apellido" component="div" style={{ color: theme.palette.error.main, fontSize: '0.75rem', marginTop: 4 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="telefono" as={TextField} label="Teléfono" fullWidth size="small" onChange={handleChange} onBlur={handleBlur} value={values.telefono} sx={inputSx} />
+                    <ErrorMessage name="telefono" component="div" style={{ color: theme.palette.error.main, fontSize: '0.75rem', marginTop: 4 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="email" as={TextField} label="Email" fullWidth size="small" onChange={handleChange} onBlur={handleBlur} value={values.email} sx={inputSx} />
+                    <ErrorMessage name="email" component="div" style={{ color: theme.palette.error.main, fontSize: '0.75rem', marginTop: 4 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="estadoCivil">
+                      {({ field, form }) => (
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Estado Civil</InputLabel>
+                          <Select
+                            label="Estado Civil"
+                            {...field}
+                            value={form.values.estadoCivil}
+                            onChange={(e) => form.setFieldValue("estadoCivil", e.target.value)}
+                            sx={{ borderRadius: 2.5, bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}
+                          >
+                            {estadosCiviles.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                          </Select>
+                        </FormControl>
+                      )}
+                    </Field>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Documentación */}
+              <Paper elevation={0} sx={{
+                p: { xs: 2, sm: 3 }, borderRadius: 3, mb: 2.5,
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                {sectionTitle(<BadgeIcon />, 'Documentación y Dirección')}
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="dni" as={TextField} label="DNI" fullWidth size="small" onChange={handleChange} onBlur={handleBlur} value={values.dni} sx={inputSx} />
+                    <ErrorMessage name="dni" component="div" style={{ color: theme.palette.error.main, fontSize: '0.75rem', marginTop: 4 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="cuit" as={TextField} label="CUIT" fullWidth size="small" onChange={handleChange} onBlur={handleBlur} value={values.cuit} sx={inputSx} />
+                    <ErrorMessage name="cuit" component="div" style={{ color: theme.palette.error.main, fontSize: '0.75rem', marginTop: 4 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="nacionalidad" as={TextField} label="Nacionalidad" fullWidth size="small" onChange={handleChange} onBlur={handleBlur} value={values.nacionalidad} sx={inputSx} />
+                    <ErrorMessage name="nacionalidad" component="div" style={{ color: theme.palette.error.main, fontSize: '0.75rem', marginTop: 4 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="direccionResidencial" as={TextField} label="Dirección Residencial" fullWidth size="small" onChange={handleChange} onBlur={handleBlur} value={values.direccionResidencial} sx={inputSx} />
+                    <ErrorMessage name="direccionResidencial" component="div" style={{ color: theme.palette.error.main, fontSize: '0.75rem', marginTop: 4 }} />
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Actions */}
+              <Box sx={{ display: 'flex', gap: 1.5, justifyContent: { xs: 'stretch', sm: 'flex-end' } }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate('/inquilinos')}
+                  sx={{
+                    flex: { xs: 1, sm: 'none' }, minWidth: { sm: 120 }, borderRadius: 2.5,
+                    borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                    color: 'text.primary',
+                    '&:hover': { borderColor: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)' },
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={isSubmitting}
+                  startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
+                  sx={{
+                    flex: { xs: 1, sm: 'none' }, minWidth: { sm: 180 }, borderRadius: 2.5,
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                    boxShadow: 'none', fontWeight: 600,
+                    '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', boxShadow: '0 4px 12px rgba(139,92,246,0.4)' },
+                  }}
+                >
+                  {isSubmitting ? 'Creando...' : 'Crear Inquilino'}
+                </Button>
+              </Box>
+            </Form>
+          )}
+        </Formik>
+      </Box>
     </Box>
   );
 };

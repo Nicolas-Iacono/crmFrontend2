@@ -38,7 +38,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Swal from 'sweetalert2';
-import { showSuccess, showError } from '../alertas/showAlert';
+import { showSuccess, showError, showConfirm } from '../alertas/showAlert';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonIcon from '@mui/icons-material/Person';
@@ -54,12 +54,14 @@ import CloseIcon from '@mui/icons-material/Close';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import BusinessIcon from '@mui/icons-material/Business';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import ProspectosApi from '../api/prospectos';
 
 const ProspectosPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isDark = theme.palette.mode === 'dark';
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [prospectos, setProspectos] = useState([]);
@@ -108,7 +110,7 @@ const ProspectosPage = () => {
       `${p.nombre} ${p.apellido}`.toLowerCase().includes(t) ||
       (p.email ?? '').toLowerCase().includes(t) ||
       (p.telefono ?? '').toLowerCase().includes(t) ||
-      (p.zonaPreferencia ?? '').toLowerCase().includes(t)
+      (Array.isArray(p.zonaPreferencia) ? p.zonaPreferencia.join(' ') : (p.zonaPreferencia ?? '')).toLowerCase().includes(t)
     );
   });
 
@@ -199,15 +201,10 @@ const ProspectosPage = () => {
   };
 
   const confirmDeleteProspecto = (prospectoId) => {
-    Swal.fire({
+    showConfirm({
       title: '¿Estás seguro?',
-      text: "No podrás revertir esta acción",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      text: 'No podrás revertir esta acción',
+      confirmText: 'Sí, eliminar',
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
@@ -327,119 +324,157 @@ const ProspectosPage = () => {
 
   const renderMobileView = (prospectosFiltrados) => (
     <>
-      <Box sx={{ 
-        p: { xs: 1, sm: 2 }, 
-        width: "100%",
-        display: 'flex',
-        justifyContent: 'center'
-      }}>
+      <Box sx={{ width: '100%' }}>
         {prospectosFiltrados.length === 0 ? (
-          <Box sx={{ 
-            width:"100%",
-            textAlign: 'center', 
-            mt: 2,
-            p: 4,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-            borderRadius: 3,
-            maxWidth: {xs:400, md:"100vw"},
-            mx: 'auto',
-            boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 12px rgba(0,0,0,0.08)',
-          }}>
-            <Typography 
-              variant="body1" 
-              sx={{ 
-                color: 'text.secondary',
-                fontSize: { xs: '0.9375rem', sm: '1rem' }
-              }}
-            >
-              No se encontraron prospectos con los criterios de búsqueda.
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 4,
+              textAlign: 'center',
+              borderRadius: 3,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+            }}
+          >
+            <PeopleAltIcon sx={{ fontSize: 48, color: isDark ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.2)', mb: 1 }} />
+            <Typography variant="body1" color="text.secondary">
+              No se encontraron prospectos
             </Typography>
-          </Box>
+          </Paper>
         ) : (
-          <Box sx={{ width: '100%' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {prospectosFiltrados.map(prospecto => (
-              <Card key={prospecto.id} sx={{ mb: 2, borderRadius: 3, boxShadow: 1 }}>
-                <CardContent sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PersonIcon sx={{ color: 'primary.main' }} />
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {`${prospecto.nombre} ${prospecto.apellido}`.trim() || 'Sin nombre'}
-                      </Typography>
+              <Paper 
+                key={prospecto.id} 
+                elevation={0}
+                sx={{ 
+                  borderRadius: 3, 
+                  overflow: 'hidden',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Box sx={{ p: 2 }}>
+                  {/* Header: Avatar + Name + Menu */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                      <Avatar sx={{ 
+                        width: 40, height: 40, 
+                        bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+                        color: '#8b5cf6',
+                      }}>
+                        <PersonIcon sx={{ fontSize: 20 }} />
+                      </Avatar>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }} noWrap>
+                          {`${prospecto.nombre} ${prospecto.apellido}`.trim() || 'Sin nombre'}
+                        </Typography>
+                        {prospecto.telefono && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <PhoneIcon sx={{ fontSize: 12 }} />
+                            {prospecto.telefono}
+                          </Typography>
+                        )}
+                      </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      
-                      <IconButton size="small" onClick={(e) => handleMenuClick(e, prospecto.id)}>
-                        <MoreVertIcon />
-                      </IconButton>
-                    </Box>
+                    <IconButton size="small" onClick={(e) => handleMenuClick(e, prospecto.id)}>
+                      <MoreVertIcon fontSize="small" />
+                    </IconButton>
                   </Box>
 
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-                    {prospecto.email && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {prospecto.email}
-                        </Typography>
-                      </Box>
-                    )}
-                    {prospecto.telefono && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {prospecto.telefono}
-                        </Typography>
-                      </Box>
-                    )}
+                  {/* Contact Info */}
+                  {prospecto.email && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                      <EmailIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                      <Typography variant="caption" color="text.secondary" noWrap>
+                        {prospecto.email}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {/* Chips Row */}
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 }}>
                     {prospecto.zonaPreferencia && (
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Zona:</strong>{' '}
-                        {prospecto.zonaPreferencia && Array.isArray(prospecto.zonaPreferencia) && prospecto.zonaPreferencia.length > 0 ? (
+                      Array.isArray(prospecto.zonaPreferencia) && prospecto.zonaPreferencia.length > 0 ? (
                         prospecto.zonaPreferencia.map((zona, index) => (
                           <Chip
                             key={index}
                             label={zona}
-                            color="primary"
                             size="small"
-                            sx={{ margin: '2px' }}
+                            sx={{ 
+                              height: 22, fontSize: '0.7rem',
+                              bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+                              color: isDark ? '#a78bfa' : '#7c3aed',
+                            }}
                           />
                         ))
                       ) : (
                         <Chip
                           label={prospecto.zonaPreferencia || 'Sin zona'}
-                          color="primary"
                           size="small"
+                          sx={{ 
+                            height: 22, fontSize: '0.7rem',
+                            bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+                            color: isDark ? '#a78bfa' : '#7c3aed',
+                          }}
                         />
-                      )}
-                      </Typography>
+                      )
+                    )}
+                    {(prospecto.rangoPrecioMin || prospecto.rangoPrecioMax) && (
+                      <Chip
+                        icon={<AttachMoneyIcon sx={{ fontSize: '14px !important' }} />}
+                        label={`${prospecto.rangoPrecioMin || 0} - ${prospecto.rangoPrecioMax || '∞'}`}
+                        size="small"
+                        sx={{ 
+                          height: 22, fontSize: '0.7rem',
+                          bgcolor: isDark ? 'rgba(34,197,94,0.2)' : 'rgba(34,197,94,0.1)',
+                          color: isDark ? '#86efac' : '#16a34a',
+                        }}
+                      />
+                    )}
+                    {prospecto.cantidadAmbientes > 0 && (
+                      <Chip
+                        label={`${prospecto.cantidadAmbientes} amb`}
+                        size="small"
+                        sx={{ 
+                          height: 22, fontSize: '0.7rem',
+                          bgcolor: isDark ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.1)',
+                          color: isDark ? '#93c5fd' : '#2563eb',
+                        }}
+                      />
                     )}
                   </Box>
 
+                  {/* Expand/Collapse */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {prospecto.rangoPrecioMin || prospecto.rangoPrecioMax
-                        ? `Presupuesto: ${prospecto.rangoPrecioMin || 0} - ${prospecto.rangoPrecioMax || '∞'}`
-                        : 'Sin presupuesto'}
-                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      {[prospecto.cochera && 'Cochera', prospecto.patio && 'Patio', prospecto.jardin && 'Jardín', prospecto.pileta && 'Pileta']
+                        .filter(Boolean)
+                        .map((amenity, index) => (
+                          <Chip key={index} label={amenity} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />
+                        ))
+                      }
+                    </Box>
                     <IconButton 
                       size="small" 
                       onClick={() => handleToggleCard(prospecto.id)}
-                      sx={{ transform: expandedCards[prospecto.id] ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                      sx={{ 
+                        transform: expandedCards[prospecto.id] ? 'rotate(180deg)' : 'rotate(0deg)', 
+                        transition: 'transform 0.2s',
+                      }}
                     >
-                      <ExpandMoreIcon />
+                      <ExpandMoreIcon fontSize="small" />
                     </IconButton>
                   </Box>
 
                   <Collapse in={expandedCards[prospecto.id]} timeout="auto" unmountOnExit>
-                    <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        <strong>Personas:</strong> {prospecto.cantidadPersonas || '—'}
-                      </Typography>
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        <strong>Ambientes:</strong> {prospecto.cantidadAmbientes || '—'}
-                      </Typography>
-                      <Typography variant="body2">
+                    <Box sx={{ 
+                      mt: 1.5, pt: 1.5, 
+                      borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                      display: 'flex', flexDirection: 'column', gap: 0.5,
+                    }}>
+                      <Typography variant="caption"><strong>Personas:</strong> {prospecto.cantidadPersonas || '—'}</Typography>
+                      <Typography variant="caption"><strong>Ambientes:</strong> {prospecto.cantidadAmbientes || '—'}</Typography>
+                      <Typography variant="caption">
                         <strong>Amenities:</strong>{' '}
                         {[prospecto.cochera && 'Cochera', prospecto.patio && 'Patio', prospecto.jardin && 'Jardín', prospecto.pileta && 'Pileta']
                           .filter(Boolean)
@@ -597,8 +632,8 @@ const ProspectosPage = () => {
                       )}
                     </Collapse>
                   </Box>
-                </CardContent>
-              </Card>
+                </Box>
+              </Paper>
             ))}
           </Box>
         )}
@@ -613,53 +648,55 @@ const ProspectosPage = () => {
         .map((prospecto) => {
           const nombreCompleto = `${prospecto.nombre || ''} ${prospecto.apellido || ''}`.trim();
           const zonas = Array.isArray(prospecto.zonaPreferencia) 
-            ? prospecto.zonaPreferencia.join(', ') 
-            : prospecto.zonaPreferencia || '—';
+            ? prospecto.zonaPreferencia 
+            : prospecto.zonaPreferencia ? [prospecto.zonaPreferencia] : [];
           const presupuesto = prospecto.rangoPrecioMin || prospecto.rangoPrecioMax
             ? `$${prospecto.rangoPrecioMin || 0} - $${prospecto.rangoPrecioMax || '∞'}`
             : '—';
           
           return (
-            <Card 
+            <Paper 
               key={prospecto.id} 
+              elevation={0}
               sx={{ 
                 mb: 2, 
                 borderRadius: 3, 
-                boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-                transition: 'transform 0.2s, box-shadow 0.2s',
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                transition: 'all 0.2s ease',
+                overflow: 'hidden',
                 '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
+                  borderColor: isDark ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.2)',
+                  boxShadow: isDark ? '0 4px 20px rgba(139,92,246,0.1)' : '0 4px 20px rgba(0,0,0,0.08)',
                 },
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white'
               }}
             >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  {/* Información principal */}
-                  <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-                    {/* Avatar */}
-                    <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
-                      <PersonIcon sx={{ fontSize: 28 }} />
+              <Box sx={{ p: 2.5 }}>
+                {/* Row 1: Avatar + Name + Actions */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+                    <Avatar sx={{ 
+                      width: 48, height: 48, 
+                      bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+                      color: '#8b5cf6',
+                    }}>
+                      <PersonIcon />
                     </Avatar>
-                    
-                    {/* Nombre y contacto básico */}
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>
                         {nombreCompleto || 'Sin nombre'}
                       </Typography>
-                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                      <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap' }}>
                         {prospecto.email && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                            <Typography variant="body2" color="text.secondary">
+                            <EmailIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                            <Typography variant="body2" color="text.secondary" noWrap>
                               {prospecto.email}
                             </Typography>
                           </Box>
                         )}
                         {prospecto.telefono && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <PhoneIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                             <Typography variant="body2" color="text.secondary">
                               {prospecto.telefono}
                             </Typography>
@@ -669,131 +706,121 @@ const ProspectosPage = () => {
                     </Box>
                   </Box>
 
-                  {/* Acciones */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleEdit(prospecto.id)} 
-                      sx={{ 
-                        bgcolor: 'primary.main', 
-                        color: 'white',
-                        '&:hover': { bgcolor: 'primary.dark' }
-                      }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => confirmDeleteProspecto(prospecto.id)} 
-                      color="error"
-                      sx={{ 
-                        bgcolor: 'error.main', 
-                        color: 'white',
-                        '&:hover': { bgcolor: 'error.dark' }
-                      }}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Tooltip title="Editar">
+                      <IconButton 
+                        size="small" 
+                        onClick={() => handleEdit(prospecto.id)} 
+                        sx={{ 
+                          bgcolor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)',
+                          color: '#8b5cf6',
+                          '&:hover': { bgcolor: isDark ? 'rgba(139,92,246,0.25)' : 'rgba(139,92,246,0.2)' },
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Eliminar">
+                      <IconButton 
+                        size="small" 
+                        onClick={() => confirmDeleteProspecto(prospecto.id)} 
+                        sx={{ 
+                          bgcolor: isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.1)',
+                          color: '#ef4444',
+                          '&:hover': { bgcolor: isDark ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.2)' },
+                        }}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 </Box>
 
-                {/* Información detallada en grid */}
-                <Box sx={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                  gap: 2,
-                  mb: 2
-                }}>
-                  {/* Zona preferida */}
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                      <PlaceIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
-                      Zona preferida
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {zonas}
-                    </Typography>
-                  </Box>
-
-                  {/* Presupuesto */}
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                      <AttachMoneyIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
-                      Presupuesto
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {presupuesto}
-                    </Typography>
-                  </Box>
-
-                  {/* Ambientes */}
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                      <HomeIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
-                      Ambientes
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {prospecto.cantidadAmbientes || '—'}
-                    </Typography>
-                  </Box>
-
-                  {/* Tipo de propiedad */}
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                      <ApartmentIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
-                      Tipo
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {prospecto.tipoPropiedad || '—'}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* Amenities */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Amenities:
-                  </Typography>
-                  {[
-                    prospecto.cochera && 'Cochera', 
-                    prospecto.patio && 'Patio', 
-                    prospecto.jardin && 'Jardín', 
-                    prospecto.pileta && 'Pileta'
-                  ]
+                {/* Row 2: Chips */}
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
+                  {zonas.map((zona, index) => (
+                    <Chip
+                      key={index}
+                      icon={<PlaceIcon sx={{ fontSize: '14px !important' }} />}
+                      label={zona}
+                      size="small"
+                      sx={{ 
+                        height: 26, fontSize: '0.75rem',
+                        bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+                        color: isDark ? '#a78bfa' : '#7c3aed',
+                      }}
+                    />
+                  ))}
+                  {presupuesto !== '—' && (
+                    <Chip
+                      icon={<AttachMoneyIcon sx={{ fontSize: '14px !important' }} />}
+                      label={presupuesto}
+                      size="small"
+                      sx={{ 
+                        height: 26, fontSize: '0.75rem',
+                        bgcolor: isDark ? 'rgba(34,197,94,0.2)' : 'rgba(34,197,94,0.1)',
+                        color: isDark ? '#86efac' : '#16a34a',
+                      }}
+                    />
+                  )}
+                  {prospecto.cantidadAmbientes > 0 && (
+                    <Chip
+                      icon={<HomeIcon sx={{ fontSize: '14px !important' }} />}
+                      label={`${prospecto.cantidadAmbientes} ambientes`}
+                      size="small"
+                      sx={{ 
+                        height: 26, fontSize: '0.75rem',
+                        bgcolor: isDark ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.1)',
+                        color: isDark ? '#93c5fd' : '#2563eb',
+                      }}
+                    />
+                  )}
+                  {prospecto.cantidadPersonas > 0 && (
+                    <Chip
+                      icon={<PeopleAltIcon sx={{ fontSize: '14px !important' }} />}
+                      label={`${prospecto.cantidadPersonas} personas`}
+                      size="small"
+                      sx={{ 
+                        height: 26, fontSize: '0.75rem',
+                        bgcolor: isDark ? 'rgba(251,146,60,0.2)' : 'rgba(251,146,60,0.1)',
+                        color: isDark ? '#fdba74' : '#ea580c',
+                      }}
+                    />
+                  )}
+                  {[prospecto.cochera && 'Cochera', prospecto.patio && 'Patio', prospecto.jardin && 'Jardín', prospecto.pileta && 'Pileta']
                     .filter(Boolean)
                     .map((amenity, index) => (
                       <Chip 
-                        key={index} 
+                        key={`a-${index}`} 
                         label={amenity} 
                         size="small" 
                         variant="outlined"
-                        sx={{ fontSize: '0.75rem' }}
+                        sx={{ height: 26, fontSize: '0.75rem' }}
                       />
-                    )) || (
-                    <Typography variant="body2" color="text.secondary">
-                      Sin preferencias
-                    </Typography>
-                  )}
+                    ))
+                  }
                 </Box>
 
-                {/* Información del propietario (si existe) */}
+                {/* Owner info */}
                 {(prospecto.ownerName || prospecto.ownerTel) && (
-                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      Información de contacto adicional:
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      {prospecto.ownerName && (
-                        <Typography variant="body2">
-                          <strong>Nombre:</strong> {prospecto.ownerName}
-                        </Typography>
-                      )}
-                      {prospecto.ownerTel && (
-                        <Typography variant="body2">
-                          <strong>Tel:</strong> {prospecto.ownerTel}
-                        </Typography>
-                      )}
-                    </Box>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    gap: 2, 
+                    alignItems: 'center', 
+                    pt: 1.5, 
+                    borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                  }}>
+                    <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    {prospecto.ownerName && (
+                      <Typography variant="caption" color="text.secondary">
+                        {prospecto.ownerName}
+                      </Typography>
+                    )}
+                    {prospecto.ownerTel && (
+                      <Typography variant="caption" color="text.secondary">
+                        {prospecto.ownerTel}
+                      </Typography>
+                    )}
                   </Box>
                 )}
 
@@ -946,8 +973,8 @@ const ProspectosPage = () => {
                     )}
                   </Collapse>
                 </Box>
-              </CardContent>
-            </Card>
+              </Box>
+            </Paper>
           );
         })}
       
@@ -971,104 +998,130 @@ const ProspectosPage = () => {
     </Box>
   );
 
+  // Reusable header component
+  const renderHeader = () => (
+    <Box sx={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between',
+      mb: 3,
+      gap: 1,
+       pt: { xs: 2, sm: 3, md: 2 },
+        pl: { xs: 2, sm: 3, md: '2rem' },
+    }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <IconButton 
+          onClick={() => navigate(-1)} 
+          size="small"
+          sx={{ 
+            bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+            '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
+          }}
+        >
+          <ArrowBackIcon fontSize="small" />
+        </IconButton>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+            <PeopleAltIcon sx={{ color: isDark ? '#a78bfa' : '#7c3aed', fontSize: { xs: 20, sm: 24 } }} />
+            Prospectos
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+            Gestiona tus prospectos y encuentra propiedades compatibles
+          </Typography>
+        </Box>
+      </Box>
+      <Tooltip title="Nuevo prospecto">
+        <IconButton 
+          onClick={() => navigate('/nuevo-prospecto')}
+          sx={{ 
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+            color: '#fff',
+            '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' },
+          }}
+        >
+          <AddIcon />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+
+  // Reusable search bar component
+  const renderSearchBar = () => (
+    <TextField
+      placeholder="Buscar por nombre, email, zona..."
+      variant="outlined"
+      fullWidth
+      size="small"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      sx={{ 
+        mb: 3,
+        '& .MuiOutlinedInput-root': {
+          borderRadius: 3,
+          bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+          '& fieldset': { border: 'none' },
+          '&:hover': {
+            bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+          },
+          '&.Mui-focused': {
+            bgcolor: isDark ? 'rgba(255,255,255,0.08)' : '#fff',
+            border: `1px solid ${isDark ? '#8b5cf6' : '#7c3aed'}`,
+          },
+        }
+      }}
+      InputProps={{
+        startAdornment: (
+          <InputAdornment position="start">
+            <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+          </InputAdornment>
+        ),
+      }}
+    />
+  );
+
+  // Main layout wrapper
+  const pageContainer = {
+    width: '100vw',
+    minHeight: '100vh',
+    pt: { xs: 2, sm: 3, md: 2 },
+    pb: { xs: 14, sm: 12 },
+    pl: { xs: 2, sm: 3, md: '16rem' },
+    pr: { xs: 2, sm: 4, md: 3 },
+    display: 'flex',
+    flexDirection: 'column',
+    bgcolor: 'background.default',
+    boxSizing: 'border-box',
+  };
+
   if (isLoading) {
     return (
-      <Box sx={{
-        width: { xs: '100%', sm: '100%', md: '90vw' },
-        minHeight: '100vh',
-        pt: { xs: 3, sm: 4 },
-        pb: { xs: 12, sm: 4 },
-        pl: { xs: 0, sm: 5 },
-        pr: { xs: 0, sm: 2 },
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: { xs: 'center', md: 'flex-start' },
-        bgcolor: 'background.default',
-        marginLeft: { md: '15rem' }
-      }}>
-        <Box sx={{
-          width: { xs: '90%', sm: '80%' },
-          mt: { xs: '4rem', sm: 0 },
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}>
-          <Box
-            sx={{
-              display: 'flex',
-              width: '100%',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: { xs: 0, md: '2rem' },
-              mb: { xs: 2, sm: 3 },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <IconButton
-                onClick={() => navigate(-1)}
-                sx={{
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-                  '&:hover': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
-                  }
+      <Box sx={pageContainer}>
+        <Box sx={{ mt: { xs: '4rem', sm: 0 } }}>
+          {renderHeader()}
+          {renderSearchBar()}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <Paper 
+                key={idx} 
+                elevation={0}
+                sx={{ 
+                  p: 2.5, 
+                  borderRadius: 3, 
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
                 }}
               >
-                <ArrowBackIcon />
-              </IconButton>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: 600, color: 'text.primary' }}
-              >
-                Prospectos
-              </Typography>
-            </Box>
-            <Tooltip title="Añadir prospecto">
-              <Fab
-                color="primary"
-                aria-label="add"
-                size="small"
-                onClick={() => navigate('/nuevo-prospecto')}
-              >
-                <AddIcon />
-              </Fab>
-            </Tooltip>
-          </Box>
-
-          <TextField
-          placeholder="Buscar por nombre, apellido, email o zona..."
-            variant="outlined"
-            fullWidth
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{
-              mb: 3,
-              width: { xs: '100%', sm: '100%' },
-              borderRadius: 6, '& fieldset': { borderRadius: 6 },
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '8px',
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'divider'
-                }
-              }
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: 'text.secondary' }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <Box sx={{ width: '100%' }}>
-            {Array.from({ length: 6 }).map((_, idx) => (
-              <Paper key={idx} sx={{ mb: 1.2, p: 2, borderRadius: 3, boxShadow: 1 }}>
-                <Skeleton variant="text" width="70%" />
-                <Skeleton variant="text" width="45%" />
-                <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
-                  <Skeleton variant="rounded" width={72} height={28} />
-                  <Skeleton variant="rounded" width={72} height={28} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Skeleton variant="circular" width={48} height={48} />
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton variant="text" width="60%" height={24} />
+                    <Skeleton variant="text" width="40%" height={18} />
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Skeleton variant="rounded" width={80} height={26} sx={{ borderRadius: 2 }} />
+                  <Skeleton variant="rounded" width={100} height={26} sx={{ borderRadius: 2 }} />
+                  <Skeleton variant="rounded" width={70} height={26} sx={{ borderRadius: 2 }} />
                 </Box>
               </Paper>
             ))}
@@ -1080,162 +1133,144 @@ const ProspectosPage = () => {
 
   if (error) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Typography variant="h6" color="error">
-          Error al cargar los prospectos: {error.message || "Desconocido"}
-        </Typography>
+      <Box sx={pageContainer}>
+        <Box sx={{ mt: { xs: '4rem', sm: 0 } }}>
+          {renderHeader()}
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 4, 
+              borderRadius: 3, 
+              textAlign: 'center',
+              border: `1px solid ${isDark ? 'rgba(244,67,54,0.3)' : 'rgba(244,67,54,0.2)'}`,
+              bgcolor: isDark ? 'rgba(244,67,54,0.1)' : 'rgba(244,67,54,0.05)',
+            }}
+          >
+            <Typography color="error" sx={{ fontWeight: 600 }}>
+              Error al cargar los prospectos
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {error.message || "Error desconocido"}
+            </Typography>
+          </Paper>
+        </Box>
       </Box>
     );
   }
 
   if (!prospectos || prospectos.length === 0) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '80vh',
-        gap: 2
-      }}>
-        <Typography variant="h6" color="textSecondary">
-          No hay prospectos disponibles
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Agregue nuevos prospectos para verlos aquí
-        </Typography>
-        <Fab 
-          color="primary" 
-          aria-label="add"
-          onClick={() => navigate('/nuevo-prospecto')}
-          sx={{ mt: 2 }}
-        >
-          <AddIcon />
-        </Fab>
+      <Box sx={pageContainer}>
+        <Box sx={{ mt: { xs: '4rem', sm: 0 } }}>
+          {renderHeader()}
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 6, 
+              borderRadius: 4, 
+              textAlign: 'center',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+            }}
+          >
+            <PeopleAltIcon sx={{ fontSize: 64, color: isDark ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.2)', mb: 2 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              No hay prospectos
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Agregá nuevos prospectos para comenzar a gestionar
+            </Typography>
+            <IconButton
+              onClick={() => navigate('/nuevo-prospecto')}
+              sx={{ 
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                color: '#fff',
+                width: 56,
+                height: 56,
+                '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' },
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+          </Paper>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ 
-      width: { xs: '100%', sm: '100%', md: '90vw' }, 
-      minHeight: "100vh",
-      pt: { xs: 3, sm: 4 },
-      pb: { xs: 12, sm: 4 },
-      pl: { xs: 0, sm: 5 },
-      pr: { xs: 0, sm: 2 },
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: { xs: 'center', md: 'flex-start' },
-      bgcolor: 'background.default',
-      marginLeft: { md: '15rem' }
-    }}>
-      <Box 
-        sx={{ 
-          width: { xs: "90%", sm: "80%" },
-          mt: { xs: '4rem', sm: 0 },
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}
-      >
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            width: '100%',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginTop:{xs:0,md:"2rem"},
-            mb: { xs: 2, sm: 3 },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <IconButton 
-              onClick={() => navigate(-1)} 
-              sx={{ 
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-                '&:hover': {
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
-                }
-              }}
-            >
-              <ArrowBackIcon />
-            </IconButton>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                fontWeight: 600,
-                color: 'text.primary'
-              }}
-            >
-              Prospectos
-            </Typography>
-          </Box>
-          <Tooltip title="Añadir prospecto">
-            <Fab 
-              color="primary" 
-              aria-label="add" 
-              size="small"
-              onClick={() => navigate('/nuevo-prospecto')}
-            >
-              <AddIcon />
-            </Fab>
-          </Tooltip>
-        </Box>
-        
-        <TextField
-          placeholder="Buscar por nombre, apellido, email, zona..."
-          variant="outlined"
-          fullWidth
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ 
-            mb: 3,
-            width: { xs: '100%', sm: '100%' },
-            borderRadius: 6, '& fieldset': { borderRadius: 6 },
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '8px',
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'divider'
-              }
-            }
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: 'text.secondary' }} />
-              </InputAdornment>
-            ),
-          }}
-        />
+    <Box sx={pageContainer}>
+      <Box sx={{ mt: { xs: '4rem', sm: 0 } }}>
+        {renderHeader()}
 
-        {isLoading ? (
-          <Box sx={{ 
-            textAlign: "center", 
-            padding: 4,
-            width: '100%',
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 2,
-          }}>
-            <CircularProgress />
-            <Typography>Cargando prospectos...</Typography>
-          </Box>
-        ) : error ? (
-          <Box sx={{ 
-            padding: 3, 
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 87, 87, 0.15)' : 'rgba(255, 0, 0, 0.05)', 
-            borderRadius: 2,
-            color: 'error.main',
-            width: '100%', 
-          }}>
-            <Typography>Error al cargar los prospectos: {error}</Typography>
-          </Box>
-        ) : (
-          isMobile ? renderMobileView(prospectosPaginados) : renderDesktopView(filteredProspectos)
-        )}
+        {/* Stats Row */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          mb: 3, 
+          flexWrap: 'wrap',
+        }}>
+          <Paper 
+            elevation={0}
+            sx={{ 
+              px: 2.5, 
+              py: 1.5, 
+              borderRadius: 3,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              flex: '1 1 auto',
+              minWidth: 140,
+            }}
+          >
+            <Box sx={{ 
+              width: 40, height: 40, borderRadius: 2, 
+              bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <PeopleAltIcon sx={{ color: '#8b5cf6', fontSize: 22 }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                {prospectos.length}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">Total</Typography>
+            </Box>
+          </Paper>
+          <Paper 
+            elevation={0}
+            sx={{ 
+              px: 2.5, 
+              py: 1.5, 
+              borderRadius: 3,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              flex: '1 1 auto',
+              minWidth: 140,
+            }}
+          >
+            <Box sx={{ 
+              width: 40, height: 40, borderRadius: 2, 
+              bgcolor: isDark ? 'rgba(34,197,94,0.2)' : 'rgba(34,197,94,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <SearchIcon sx={{ color: '#22c55e', fontSize: 22 }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                {filteredProspectos.length}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">Filtrados</Typography>
+            </Box>
+          </Paper>
+        </Box>
+
+        {renderSearchBar()}
+
+        {isMobile ? renderMobileView(prospectosPaginados) : renderDesktopView(filteredProspectos)}
+
         <Menu
           id="simple-menu"
           anchorEl={anchorEl}

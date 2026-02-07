@@ -18,7 +18,14 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import rrulePlugin from '@fullcalendar/rrule';
 import esLocale from '@fullcalendar/core/locales/es';
-import { Box, Typography, useTheme, alpha, useMediaQuery, Modal, List, ListItem, ListItemText, Card, CardContent, CardHeader, IconButton, CircularProgress, Fab, TextField, Button, CardActions, Grid, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Box, Typography, useTheme, alpha, useMediaQuery, Modal, List, ListItem, ListItemText, Card, CardContent, CardHeader, IconButton, CircularProgress, Fab, TextField, Button, CardActions, Grid, ToggleButtonGroup, ToggleButton, Paper, Chip } from '@mui/material';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import EventIcon from '@mui/icons-material/Event';
+import TodayIcon from '@mui/icons-material/Today';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { useNavigate } from 'react-router-dom';
 import '../styles/Calendar.css';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
@@ -65,13 +72,17 @@ const mapContractEvents = (events) =>
 const CalendarioPage = () => {
   const { setHasCalendarEvents } = useAuth();
   const theme = useTheme();
+  const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isDark = theme.palette.mode === 'dark';
   const [viewMode, setViewMode] = useState('calendar');
   const [selectedYear, setSelectedYear] = useState(() => dayjs().year());
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [monthModalOpen, setMonthModalOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(null);
   const [startModalOpen, setStartModalOpen] = useState(false);
   const [endModalOpen, setEndModalOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -216,343 +227,463 @@ const CalendarioPage = () => {
     setNewEvent({ ...newEvent, [e.target.name]: e.target.value });
   };
 
-  // const handleNewEventDateChange = (name, value) => {
-  //   setNewEvent(prev => ({ ...prev, [name]: value }));
-  // };
+  const handleNewEventDateChange = (name, value) => {
+    setNewEvent(prev => ({ ...prev, [name]: value }));
+  };
 
-  //   const handleCreateEvent = async (withEndTime = true) => {
-  //   if (!newEvent.title || !newEvent.startDate || !newEvent.startTime) {
-  //     showInfo('El título, la fecha y la hora de inicio son obligatorios.');
-  //     return;
-  //   }
+  const handleCreateEvent = async (withEndTime = true) => {
+    if (!newEvent.title || !newEvent.startDate || !newEvent.startTime) {
+      showInfo('El título, la fecha y la hora de inicio son obligatorios.');
+      return;
+    }
 
-  //   try {
-  //     const tz = dayjs.tz.guess();
-
-  //     const startDateTime = newEvent.startDate.hour(newEvent.startTime.hour()).minute(newEvent.startTime.minute());
+    try {
+      const startDateTime = newEvent.startDate.hour(newEvent.startTime.hour()).minute(newEvent.startTime.minute());
       
-  //     let endDateTime;
-  //         if (withEndTime && newEvent.endDate && newEvent.endTime) {
-  //       endDateTime = newEvent.endDate.hour(newEvent.endTime.hour()).minute(newEvent.endTime.minute());
-  //     } else if (newEvent.endDate) {
-  //       endDateTime = newEvent.endDate.hour(startDateTime.hour()).minute(startDateTime.minute());
-  //     } else {
-  //       endDateTime = startDateTime.clone().add(1, 'hour'); // Default to 1 hour event if no end time
-  //     }
+      let endDateTime;
+      if (withEndTime && newEvent.endDate && newEvent.endTime) {
+        endDateTime = newEvent.endDate.hour(newEvent.endTime.hour()).minute(newEvent.endTime.minute());
+      } else if (newEvent.endDate) {
+        endDateTime = newEvent.endDate.hour(startDateTime.hour()).minute(startDateTime.minute());
+      } else {
+        endDateTime = startDateTime.clone().add(1, 'hour');
+      }
 
-  //           const eventData = {
-  //       summary: newEvent.title,
-  //       start: { dateTime: startDateTime.format() }, // format() includes timezone offset
-  //       end: { dateTime: endDateTime.format() }
-  //     };
+      const eventData = {
+        summary: newEvent.title,
+        start: { dateTime: startDateTime.format() },
+        end: { dateTime: endDateTime.format() }
+      };
 
-  //     await calendarApi.createEvent(eventData);
+      await calendarApi.createEvent(eventData);
 
-  //     showSuccess('El evento ha sido creado en Google Calendar.');
-  //     handleCloseEndModal();
-  //     setRefetchTrigger(c => c + 1);
+      showSuccess('El evento ha sido creado en Google Calendar.');
+      handleCloseEndModal();
+      setRefetchTrigger(c => c + 1);
 
-  //   } catch (error) {
-  //     console.error('Error creating event:', error);
-  //     showError('No se pudo crear el evento. Asegúrate de que tu cuenta de Google esté vinculada.');
-  //   }
-  // };
+    } catch (error) {
+      console.error('Error creating event:', error);
+      showError('No se pudo crear el evento. Asegúrate de que tu cuenta de Google esté vinculada.');
+    }
+  };
 
   return (
     <Box sx={{
-      p: { xs:0, sm: 4 },
-      bgcolor: 'background.default',
+      width: '100vw',
       minHeight: '100vh',
-      color: 'text.primary',
-      width: { xs: '100vw', sm: '100%', md: 'calc(100vw - 20rem)' },
+      pt: { xs: 2, sm: 3, md: 2 },
+      pb: { xs: 14, sm: 12 },
+      pl: { xs: 2, sm: 3, md: '16rem' },
+      pr: { xs: 2, sm: 3, md: 3 },
       display: 'flex',
-      flexDirection: { xs: 'column', sm: 'column', md: 'row' },
-      justifyContent:{xs:"center", sm:"center", md:"space-around"},
-      alignItems: { xs: 'center', md: 'center', sm:"center"},
-      marginLeft: { md: '15rem' },
+      flexDirection: 'column',
+      bgcolor: 'background.default',
       boxSizing: 'border-box',
-      gap:"2rem"
-
     }}>
-      <Box sx={{ width: '100%', maxWidth: 1200, mt:2}}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end',pr:2, mb: 2, gap: 2, flexWrap: 'wrap' ,  widht:"100%",
-              position:"relative", height:"5rem"}}>
+      {/* Header Section */}
+      <Box sx={{ 
+        width: '100%',
+        mt: { xs: '4rem', sm: 0 },
+        mb: 3,
+      }}>
+        {/* Title Row */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          mb: 2,
+          gap: 1,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton 
+              onClick={() => navigate(-1)}
+              size="small"
+              sx={{ 
+                bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
+              }}
+            >
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                <CalendarMonthIcon sx={{ color: isDark ? '#a78bfa' : '#7c3aed', fontSize: { xs: 20, sm: 24 } }} />
+                Calendario
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                Gestiona tus eventos y vencimientos
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Toggle Buttons */}
           <ToggleButtonGroup
             value={viewMode}
             exclusive
             onChange={handleChangeViewMode}
-            size={isMobile ? 'small' : 'medium'}
+            size="small"
             sx={{ 
-             widht:"100%",
-                backgroundColor: 'rgba(138, 94, 241, 1)',
-                  backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(103, 51, 224, 1) 40%, rgba(88, 44, 200, 1) 100%)',
-                  '&:hover': { backgroundColor: 'rgba(122, 15, 228, 1)' },
-             position:"absolute",
-             top:0,
-             right:4,
-             zIndex:1200,
-             borderRadius:5,
-             border: 'none',
-             boxShadow: 'none',
-             '& .MuiToggleButtonGroup-grouped': {
-               border: 'none',
-               '&:not(:first-of-type)': {
-                 border: 'none',
-               },
-             },
-             '& .MuiToggleButton-root': {
-               border: 'none',
-               color: '#fff',
-               '&:hover': {
-                 border: 'none',
-               },
-               '&.Mui-selected': {
-                 border: 'none',
-                 color: '#fff',
-                    backgroundColor: 'rgba(138, 94, 241, 1)',
-                  backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(84, 38, 192, 1) 40%, rgba(88, 44, 200, 1) 100%)',
-                  '&:hover': { backgroundColor: 'rgba(122, 15, 228, 1)' },
-                 '&:hover': {
-                   backgroundColor: 'rgba(122, 15, 228, 1)',
-                 },
-               },
-             },
-            
+              backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)',
+              borderRadius: 2,
+              p: 0.3,
+              '& .MuiToggleButtonGroup-grouped': {
+                border: 'none',
+                borderRadius: '8px !important',
+                px: { xs: 1, sm: 2 },
+                py: 0.5,
+              },
+              '& .MuiToggleButton-root': {
+                color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                textTransform: 'none',
+                fontWeight: 500,
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                '&.Mui-selected': {
+                  color: '#fff',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                  },
+                },
+              },
             }}
           >
-            <ToggleButton value="calendar">Calendario</ToggleButton>
-            <ToggleButton value="year">Anual</ToggleButton>
+            <ToggleButton value="calendar">
+              <TodayIcon sx={{ mr: 0.5, fontSize: { xs: 14, sm: 18 } }} /> Mensual
+            </ToggleButton>
+            <ToggleButton value="year">
+              <EventIcon sx={{ mr: 0.5, fontSize: { xs: 14, sm: 18 } }} /> Anual
+            </ToggleButton>
           </ToggleButtonGroup>
-
-          {viewMode === 'year' && (
-            <Box sx={{ display: 'flex', alignItems: 'center', position:"absolute", bottom:-9, right:4 }}>
-              <Button
-                variant="contained"
-                sx={{
-                  borderRadius: 25,
-                  minWidth: '40px',
-                  height: '40px',
-                  backgroundColor: 'rgba(138, 94, 241, 1)',
-                  backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(103, 51, 224, 1) 40%, rgba(88, 44, 200, 1) 100%)',
-                  '&:hover': { backgroundColor: 'rgba(122, 15, 228, 1)' },
-                }}
-                onClick={() => setSelectedYear((y) => y - 1)}
-              >
-                {'‹'}
-              </Button>
-              <Typography variant="h6" sx={{ minWidth: 90, textAlign: 'center' }}>{selectedYear}</Typography>
-              <Button
-                variant="contained"
-                sx={{
-                  borderRadius: 25,
-                  minWidth: '40px',
-                  height: '40px',
-                   backgroundColor: 'rgba(138, 94, 241, 1)',
-                  backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(103, 51, 224, 1) 40%, rgba(88, 44, 200, 1) 100%)',
-                  '&:hover': { backgroundColor: 'rgba(122, 15, 228, 1)' },
-                }}
-                onClick={() => setSelectedYear((y) => y + 1)}
-              >
-                {'›'}
-              </Button>
-            </Box>
-          )}
         </Box>
 
-        {viewMode === 'calendar' && (
-          <Box className="calendar-container" sx={{ 
-        position: 'relative',
-        '.fc': {
-          '--fc-border-color': theme.palette.divider,
-          '--fc-today-bg-color': theme.palette.action.hover,
-          '--fc-button-bg-color': 'rgba(138, 94, 241, 1)',
-          '--fc-button-border-color': 'rgba(138, 94, 241, 1)',
-          '--fc-button-hover-bg-color': 'rgba(122, 15, 228, 1)',
-          '--fc-button-hover-border-color': 'rgba(122, 15, 228, 1)',
-          '--fc-button-active-bg-color': 'rgba(122, 15, 228, 1)',
-          '--fc-button-active-border-color': 'rgba(122, 15, 228, 1)',
-          '--fc-event-bg-color': theme.palette.secondary.main,
-          '--fc-event-border-color': theme.palette.secondary.main,
-          color: theme.palette.text.primary,
-          backgroundColor: theme.palette.background.paper,
-          borderRadius: '8px',
-          p: 2,
-          height:"95vh",
-          width:{ xs:"100vw", sm:"100%", md:"100%" },
-          maxWidth: "1200px",
-        },
-        '.fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number': {
-          color: theme.palette.text.secondary,
-        },
-        '.fc .fc-toolbar-title': {
-          color: theme.palette.text.primary,
-        },
-        '.fc .fc-button-primary': {
-          backgroundColor: 'rgba(138, 94, 241, 1) !important',
-          borderColor: 'rgba(138, 94, 241, 1) !important',
-        },
-        '.fc .fc-button-primary:hover': {
-          backgroundColor: 'rgba(122, 15, 228, 1) !important',
-          borderColor: 'rgba(122, 15, 228, 1) !important',
-        },
-        '.fc .fc-button-primary:focus': {
-          boxShadow: 'none',
-        },
-        '@media (max-width:600px)': {
-          '.fc .fc-header-toolbar': {
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'flex-start',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            marginTop:{xs:"-4.5rem", md:"1rem"},
-
-            position:"relative"
-          },
-          '.fc .fc-toolbar-chunk': {
-            display: 'flex',
-            alignItems: 'center',
-            minWidth: 0,
-           
-
-
-          },
-          '.fc .fc-toolbar-chunk:first-of-type': {
-            flex: '1 1 auto',
-            minWidth: 0,
-           
-
-          },
-          '.fc .fc-toolbar-chunk:last-of-type': {
-            flex: '0 0 auto',
-            gap: '20px',
-            
-
-          },
-          '.fc .fc-button.fc-prev-button, .fc .fc-button.fc-next-button': {
-            width: '44px',
-            height: '44px',
-            minWidth: '44px',
-            padding: '0 !important',
-            borderRadius: '999px !important',
-            display: 'inline-flex',
-            alignItems: 'center',
+        {/* Year Navigation (only in year view) */}
+        {viewMode === 'year' && (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
             justifyContent: 'center',
-            backgroundColor: 'rgba(138, 94, 241, 1) !important',
-          },
-          '.fc .fc-button-primary.fc-prev-button, .fc .fc-button-primary.fc-next-button': {
-            borderRadius: '999px !important',
-            
-            
-          },
-          '.fc .fc-prev-button .fc-icon, .fc .fc-next-button .fc-icon': {
-            fontSize: '1.2em',
-            
-          },
-          '.fc .fc-toolbar-title': {
-            textAlign: 'left',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            paddingLeft: '0px',
-            position:"absolute",
-            right: 0,
-            width: "100%", 
-            
-          },
-        },
-        '.fc .fc-daygrid-day.fc-day-today': {
-            backgroundColor: alpha(theme.palette.primary.main, 0.1),
-        }
-      }}>
-        {loading && (
-          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 10,  }}>
-            <CircularProgress />
+            gap: 2,
+            mb: 2,
+          }}>
+            <IconButton
+              onClick={() => setSelectedYear((y) => y - 1)}
+              sx={{
+                bgcolor: isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.1)',
+                '&:hover': { bgcolor: isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)' },
+              }}
+            >
+              <ChevronLeftIcon />
+            </IconButton>
+            <Typography variant="h4" sx={{ fontWeight: 700, minWidth: 100, textAlign: 'center' }}>
+              {selectedYear}
+            </Typography>
+            <IconButton
+              onClick={() => setSelectedYear((y) => y + 1)}
+              sx={{
+                bgcolor: isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.1)',
+                '&:hover': { bgcolor: isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)' },
+              }}
+            >
+              <ChevronRightIcon />
+            </IconButton>
           </Box>
         )}
-        <div className="my-calendar">
-                        <FullCalendar
-          datesSet={handleDatesSet}
-          ref={calendarRef}
-          locales={[esLocale]}
-          locale="es"
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin,multiMonthPlugin]}
-          initialView="dayGridMonth"
-          headerToolbar={isMobile ? {
-            left: 'title',
-            center: '',
-            right: 'prev,next'
-          } : {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
-          }}
-          events={events}
-          dateClick={handleDateClick}
-          editable={false}
-          selectable={true}
-          dayMaxEvents={true}
-          timeZone="local"
-          
-        />
-      </div>
       </Box>
+
+        {viewMode === 'calendar' && (
+          <Paper 
+            elevation={0}
+            className="calendar-container" 
+            sx={{ 
+              position: 'relative',
+              borderRadius: 4,
+              overflow: 'hidden',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              '.fc': {
+                '--fc-border-color': isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                '--fc-today-bg-color': isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.08)',
+                '--fc-button-bg-color': '#8b5cf6',
+                '--fc-button-border-color': '#8b5cf6',
+                '--fc-button-hover-bg-color': '#7c3aed',
+                '--fc-button-hover-border-color': '#7c3aed',
+                '--fc-button-active-bg-color': '#6d28d9',
+                '--fc-button-active-border-color': '#6d28d9',
+                '--fc-event-bg-color': '#8b5cf6',
+                '--fc-event-border-color': '#8b5cf6',
+                color: theme.palette.text.primary,
+                backgroundColor: theme.palette.background.paper,
+                p: 2,
+                minHeight: { xs: '70vh', md: '75vh' },
+              },
+              '.fc .fc-col-header-cell-cushion': {
+                color: theme.palette.text.secondary,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                fontSize: '0.75rem',
+                py: 1,
+              },
+              '.fc .fc-daygrid-day-number': {
+                color: theme.palette.text.primary,
+                fontWeight: 500,
+                padding: '8px',
+              },
+              '.fc .fc-toolbar-title': {
+                color: theme.palette.text.primary,
+                fontWeight: 700,
+                fontSize: { xs: '1.1rem', md: '1.25rem' },
+                textTransform: 'capitalize',
+              },
+              '.fc .fc-button-primary': {
+                backgroundColor: '#8b5cf6 !important',
+                borderColor: '#8b5cf6 !important',
+                borderRadius: '8px !important',
+                fontWeight: 500,
+                textTransform: 'capitalize',
+              },
+              '.fc .fc-button-primary:hover': {
+                backgroundColor: '#7c3aed !important',
+                borderColor: '#7c3aed !important',
+              },
+              '.fc .fc-button-primary:focus': {
+                boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.3) !important',
+              },
+              '.fc .fc-button-primary:disabled': {
+                backgroundColor: isDark ? 'rgba(139, 92, 246, 0.3) !important' : 'rgba(139, 92, 246, 0.5) !important',
+              },
+              '.fc-event': {
+                borderRadius: '6px !important',
+                fontWeight: 500,
+                fontSize: '0.8rem',
+              },
+              '.fc .fc-daygrid-day.fc-day-today': {
+                backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.08)',
+              },
+              '.fc .fc-daygrid-day:hover': {
+                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              },
+              '@media (max-width:600px)': {
+                '.fc .fc-header-toolbar': {
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '8px',
+                },
+                '.fc .fc-toolbar-chunk': {
+                  display: 'flex',
+                  alignItems: 'center',
+                },
+                '.fc .fc-toolbar-title': {
+                  fontSize: '1rem !important',
+                },
+                '.fc .fc-button': {
+                  padding: '6px 10px !important',
+                },
+              },
+            }}
+          >
+            {loading && (
+              <Box sx={{ 
+                position: 'absolute', 
+                top: '50%', 
+                left: '50%', 
+                transform: 'translate(-50%, -50%)', 
+                zIndex: 10,
+                bgcolor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.8)',
+                borderRadius: 2,
+                p: 3,
+              }}>
+                <CircularProgress sx={{ color: '#8b5cf6' }} />
+              </Box>
+            )}
+            <FullCalendar
+              datesSet={handleDatesSet}
+              ref={calendarRef}
+              locales={[esLocale]}
+              locale="es"
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin, multiMonthPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={isMobile ? {
+                left: 'prev,next',
+                center: 'title',
+                right: ''
+              } : {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+              }}
+              events={events}
+              dateClick={handleDateClick}
+              editable={false}
+              selectable={true}
+              dayMaxEvents={3}
+              timeZone="local"
+            />
+          </Paper>
         )}
 
         {viewMode === 'year' && (
           <Box sx={{ position: 'relative' }}>
             {loading && (
-              <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
-                <CircularProgress size={24} />
+              <Box sx={{ 
+                position: 'absolute', 
+                top: '50%', 
+                left: '50%', 
+                transform: 'translate(-50%, -50%)', 
+                zIndex: 10,
+                bgcolor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.8)',
+                borderRadius: 2,
+                p: 3,
+              }}>
+                <CircularProgress sx={{ color: '#8b5cf6' }} />
               </Box>
             )}
 
-            <Grid container spacing={2} sx={{ mb: 13 }}>
+            <Grid container spacing={2} sx={{ pb: 4 }}>
               {Array.from({ length: 12 }).map((_, monthIndex) => {
                 const monthName = dayjs().year(selectedYear).month(monthIndex).format('MMMM');
                 const monthEvents = monthlyEvents.get(monthIndex) || [];
-                const tintOpacity = getMonthCardTintOpacity(monthEvents.length);
+                const hasEvents = monthEvents.length > 0;
+                const isCurrentMonth = dayjs().year() === selectedYear && dayjs().month() === monthIndex;
+                
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={`${selectedYear}-${monthIndex}`} >
-                    <Card sx={{ height: '100%',width:"90%", boxSizing: 'border-box', borderRadius:"20px", boxShadow: '0 4px 8px rgba(0,0,0,0.1)', margin:"0 auto", backgroundColor: monthEvents.length === 0 ? theme.palette.background.paper : alpha('rgb(122, 15, 228)', tintOpacity) }}>
-                      <CardHeader
-                        title={monthName}
-                        subheader={`${monthEvents.length} evento${monthEvents.length === 1 ? '' : 's'}`}
-                      />
-                      <CardContent sx={{ pt: 0,  }}>
-                        {monthEvents.length > 0 ? (
-                          <List dense sx={{ py: 0 }}>
-                            {monthEvents.slice(0, 8).map((e, idx) => (
-                              <ListItem key={e.id || `${monthIndex}-${idx}`} disableGutters sx={{ py: 0.25 }}>
-                                <ListItemText
-                                  primaryTypographyProps={{ variant: 'body2' }}
-                                  primary={e.title}
+                  <Grid item xs={6} sm={4} md={3} key={`${selectedYear}-${monthIndex}`}>
+                    <Paper
+                      elevation={0}
+                      onClick={() => {
+                        if (hasEvents) {
+                          setSelectedMonth({ index: monthIndex, name: monthName, events: monthEvents });
+                          setMonthModalOpen(true);
+                        }
+                      }}
+                      sx={{ 
+                        height: '100%',
+                        minHeight: 180,
+                        borderRadius: 3,
+                        cursor: hasEvents ? 'pointer' : 'default',
+                        border: isCurrentMonth 
+                          ? '2px solid #8b5cf6' 
+                          : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                        background: hasEvents 
+                          ? `linear-gradient(135deg, ${isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.08)'} 0%, ${isDark ? 'rgba(124, 58, 237, 0.15)' : 'rgba(124, 58, 237, 0.05)'} 100%)`
+                          : theme.palette.background.paper,
+                        overflow: 'hidden',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          transform: hasEvents ? 'translateY(-4px)' : 'none',
+                          boxShadow: hasEvents 
+                            ? (isDark ? '0 8px 24px rgba(139, 92, 246, 0.2)' : '0 8px 24px rgba(0,0,0,0.1)')
+                            : 'none',
+                        },
+                      }}
+                    >
+                      {/* Month Header */}
+                      <Box sx={{ 
+                        p: 2, 
+                        borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}>
+                        <Typography 
+                          variant="subtitle1" 
+                          sx={{ 
+                            fontWeight: 700, 
+                            textTransform: 'capitalize',
+                            color: isCurrentMonth ? '#8b5cf6' : 'text.primary',
+                          }}
+                        >
+                          {monthName}
+                        </Typography>
+                        {hasEvents && (
+                          <Chip
+                            label={monthEvents.length}
+                            size="small"
+                            sx={{
+                              bgcolor: '#8b5cf6',
+                              color: '#fff',
+                              fontWeight: 600,
+                              height: 24,
+                              minWidth: 32,
+                            }}
+                          />
+                        )}
+                      </Box>
+
+                      {/* Events List */}
+                      <Box sx={{ p: 1.5 }}>
+                        {hasEvents ? (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            {monthEvents.slice(0, 4).map((e, idx) => (
+                              <Box
+                                key={e.id || `${monthIndex}-${idx}`}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                  py: 0.5,
+                                  px: 1,
+                                  borderRadius: 1,
+                                  bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 6,
+                                    height: 6,
+                                    borderRadius: '50%',
+                                    bgcolor: e.backgroundColor || '#8b5cf6',
+                                    flexShrink: 0,
+                                  }}
                                 />
-                              </ListItem>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {e.title}
+                                </Typography>
+                              </Box>
                             ))}
-                            {monthEvents.length > 8 && (
-                              <ListItem disableGutters sx={{ py: 0.25 }}>
-                                <ListItemText
-                                  primaryTypographyProps={{ variant: 'caption', color: 'text.secondary' }}
-                                  primary={`+${monthEvents.length - 8} más`}
-                                />
-                              </ListItem>
+                            {monthEvents.length > 4 && (
+                              <Typography
+                                variant="caption"
+                                sx={{ 
+                                  color: '#8b5cf6', 
+                                  fontWeight: 600,
+                                  pl: 1,
+                                  pt: 0.5,
+                                }}
+                              >
+                                +{monthEvents.length - 4} más
+                              </Typography>
                             )}
-                          </List>
+                          </Box>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary"
+                            sx={{ 
+                              textAlign: 'center', 
+                              py: 3,
+                              opacity: 0.6,
+                            }}
+                          >
                             Sin eventos
                           </Typography>
                         )}
-                      </CardContent>
-                    </Card>
+                      </Box>
+                    </Paper>
                   </Grid>
                 );
               })}
             </Grid>
           </Box>
         )}
-      </Box>
+
       <Modal
         open={modalOpen}
         onClose={handleCloseModal}
@@ -560,89 +691,243 @@ const CalendarioPage = () => {
         aria-describedby="modal-description"
         sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        <Card sx={{ minWidth: 300, maxWidth: 500, m: 2 ,borderRadius:"15px",
-           background: 'linear-gradient(135deg,rgb(53, 74, 168) 0%,rgb(122, 15, 228) 100%)'}}>
-          <CardHeader
-            sx={{color:"white"}}
-            title={`Eventos del ${selectedDate?.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}`}
-            action={
-              <IconButton onClick={handleCloseModal} sx={{color:"white"}}>
-                <CloseIcon />
-              </IconButton>
-            }
-          />
-          <CardContent sx={{display:"flex",flexDirection:"column",justifyContent:"start",alignItems:"start", borderRadius:"15px",
-
+        <Paper 
+          elevation={0}
+          sx={{ 
+            minWidth: 320, 
+            maxWidth: 480, 
+            m: 2,
+            borderRadius: 4,
+            overflow: 'hidden',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+            bgcolor: 'background.paper',
+          }}
+        >
+          {/* Modal Header */}
+          <Box sx={{ 
+            p: 2.5, 
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}>
-            <List sx={{ width: '100%' }}>
-              {selectedEvents.length > 0 ? (
-                selectedEvents.map((event, index) => (
-                  <ListItem
+            <Box>
+              <Typography variant="h6" sx={{ color: '#fff', fontWeight: 700 }}>
+                {selectedDate?.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                {selectedDate?.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric' })}
+              </Typography>
+            </Box>
+            <IconButton 
+              onClick={handleCloseModal} 
+              sx={{ 
+                color: '#fff',
+                bgcolor: 'rgba(255,255,255,0.1)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          {/* Events List */}
+          <Box sx={{ p: 2, maxHeight: 400, overflowY: 'auto' }}>
+            {selectedEvents.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {selectedEvents.map((event, index) => (
+                  <Box
                     key={event.id || index}
-                    disableGutters
                     sx={{
                       display: 'flex',
                       alignItems: 'flex-start',
-                      gap: 2,
-                      py: 1,
+                      gap: 1.5,
+                      p: 1.5,
+                      borderRadius: 2,
+                      bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                      },
                     }}
                   >
                     <Box
                       sx={{
-                        minWidth: 80,
-                        textAlign: 'right',
-                        color: 'white',
-                        opacity: 0.9,
-                        pt: '2px',
-                      }}
-                    >
-                      <Typography variant="body2" color="inherit">
-                        {event.start ? dayjs(event.start).format('h:mm A') : 'All Day'}
-                      </Typography>
-                    </Box>
-
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        mt: '6px',
-                        bgcolor: event.source === 'google' ? theme.palette.primary.main : theme.palette.grey[400],
+                        width: 4,
+                        minHeight: 40,
+                        borderRadius: 2,
+                        bgcolor: event.backgroundColor || '#8b5cf6',
                         flexShrink: 0,
                       }}
                     />
-
-                    <Box
-                      sx={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        backgroundColor: 'rgba(255, 255, 255, 0.26)',
-                        borderRadius: '15px',
-                        px: 2,
-                        py: 1,
-                      }}
-                    >
-                      <Typography variant="body1" component="span" sx={{color:"white"}}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ fontWeight: 600, mb: 0.5 }}
+                      >
                         {event.title}
                       </Typography>
-                      {event.extendedProps?.description &&
-                        <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {event.start ? dayjs(event.start).format('h:mm A') : 'Todo el día'}
+                      </Typography>
+                      {event.extendedProps?.description && (
+                        <Typography 
+                          variant="body2" 
+                          color="text.secondary"
+                          sx={{ mt: 0.5, fontSize: '0.8rem' }}
+                        >
                           {event.extendedProps.description}
                         </Typography>
-                      }
+                      )}
                     </Box>
-                  </ListItem>
-                ))
-              ) : (
-                <Typography sx={{ padding: 2 }}>No hay eventos para este dia.</Typography>
-              )}
-            </List>
-          </CardContent>
-        </Card>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box sx={{ 
+                textAlign: 'center', 
+                py: 4,
+                color: 'text.secondary',
+              }}>
+                <EventIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                <Typography>No hay eventos para este día</Typography>
+              </Box>
+            )}
+          </Box>
+        </Paper>
       </Modal>
 
-   
+      {/* Month Events Modal */}
+      <Modal
+        open={monthModalOpen}
+        onClose={() => setMonthModalOpen(false)}
+        aria-labelledby="month-modal-title"
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Paper 
+          elevation={0}
+          sx={{ 
+            width: '90%',
+            maxWidth: 500,
+            maxHeight: '80vh',
+            m: 2,
+            borderRadius: 4,
+            overflow: 'hidden',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+            bgcolor: 'background.paper',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {/* Modal Header */}
+          <Box sx={{ 
+            p: 2.5, 
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <Box>
+              <Typography variant="h6" sx={{ color: '#fff', fontWeight: 700, textTransform: 'capitalize' }}>
+                {selectedMonth?.name} {selectedYear}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                {selectedMonth?.events?.length || 0} evento{selectedMonth?.events?.length !== 1 ? 's' : ''}
+              </Typography>
+            </Box>
+            <IconButton 
+              onClick={() => setMonthModalOpen(false)} 
+              sx={{ 
+                color: '#fff',
+                bgcolor: 'rgba(255,255,255,0.1)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          {/* Events List */}
+          <Box sx={{ p: 2, overflowY: 'auto', flex: 1 }}>
+            {selectedMonth?.events?.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {selectedMonth.events.map((event, index) => (
+                  <Box
+                    key={event.id || index}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 1.5,
+                      p: 2,
+                      borderRadius: 2,
+                      bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 4,
+                        minHeight: 50,
+                        borderRadius: 2,
+                        bgcolor: event.backgroundColor || '#8b5cf6',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ fontWeight: 600, mb: 0.5 }}
+                      >
+                        {event.title}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip 
+                          label={dayjs(event.start).format('D MMM')}
+                          size="small"
+                          sx={{ 
+                            height: 22,
+                            fontSize: '0.7rem',
+                            bgcolor: isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.1)',
+                            color: isDark ? '#a78bfa' : '#7c3aed',
+                          }}
+                        />
+                        {event.start && (
+                          <Typography variant="caption" color="text.secondary">
+                            {dayjs(event.start).format('h:mm A')}
+                          </Typography>
+                        )}
+                      </Box>
+                      {event.type && (
+                        <Chip 
+                          label={event.type}
+                          size="small"
+                          sx={{ 
+                            mt: 1,
+                            height: 20,
+                            fontSize: '0.65rem',
+                            bgcolor: event.backgroundColor || '#8b5cf6',
+                            color: event.textColor || '#fff',
+                          }}
+                        />
+                      )}
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box sx={{ 
+                textAlign: 'center', 
+                py: 4,
+                color: 'text.secondary',
+              }}>
+                <EventIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                <Typography>No hay eventos para este mes</Typography>
+              </Box>
+            )}
+          </Box>
+        </Paper>
+      </Modal>
 
       <Modal
         open={startModalOpen}

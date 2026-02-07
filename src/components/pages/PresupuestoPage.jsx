@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Container,
   Typography,
   Button,
   Card,
@@ -13,6 +12,8 @@ import {
   Alert,
   CircularProgress,
   Chip,
+  Paper,
+  Tooltip,
   useTheme,
   useMediaQuery
 } from '@mui/material';
@@ -28,15 +29,19 @@ import {
   Visibility as VisibilityIcon,
   WhatsApp as WhatsAppIcon,
   ContentCopy as CopyIcon,
-  Business as BusinessIcon
+  Business as BusinessIcon,
+  ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/GlobalAuth';
+import { useNavigate } from 'react-router-dom';
 import presupuestoApi from '../api/presupuestoApi';
 import axios from 'axios';
 
 const PresupuestoPage = () => {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
   const { usuarioFetch } = useAuth();
   const [idUser, setIdUser] = useState(null);
   // Estados
@@ -331,528 +336,606 @@ ${selectedPresupuesto.gastosExtras > 0 ? `• Gastos Extras: ${formatCurrency(se
     setFormData(prev => ({ ...prev, monto: normalized }));
   };
 
+  const inputSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2.5,
+      bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+      '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
+      '&.Mui-focused': { bgcolor: isDark ? 'rgba(255,255,255,0.08)' : '#fff' },
+    },
+  };
+
   return (
-    <Container maxWidth={false} sx={{ 
-      py: 4,
-      width: { xs: '95%', sm: '100%', md: '84vw' },
+    <Box sx={{
+      width: '100vw',
       minHeight: '100vh',
-      marginLeft: { md: '15rem' }
+      bgcolor: 'background.default',
+      pt: { xs: 2, sm: 3, md: 2 },
+      pb: { xs: 14, sm: 12 },
+      pl: { xs: 2, sm: 3, md: '16rem' },
+      pr: { xs: 2, sm: 4, md: 3 },
+      boxSizing: 'border-box',
     }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginTop: 4 }}>
-          <Typography variant="h5" component="h1" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.main }}>
-            Presupuestos
-          </Typography>
-        </Box>
-        <IconButton
-          color="primary"
-          onClick={() => setOpenModal(true)}
-          sx={{
-            backgroundColor: theme.palette.primary.main,
-            color: 'white',
-            width: 56,
-            height: 56,
-            '&:hover': { backgroundColor: theme.palette.primary.dark, transform: 'scale(1.05)' },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <AddIcon sx={{ fontSize: 28 }} />
-        </IconButton>
-      </Box>
+      <Box sx={{ mt: { xs: '4rem', sm: 0 }, maxWidth: 1100, mx: 'auto' }}>
 
-      {/* Alerts */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
-          {success}
-        </Alert>
-      )}
-
-      {/* Lista */}
-      {loading && !openModal ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton
+              onClick={() => navigate(-1)}
+              size="small"
+              sx={{
+                bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
+              }}
+            >
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                <ReceiptIcon sx={{ color: isDark ? '#a78bfa' : '#7c3aed', fontSize: { xs: 20, sm: 24 } }} />
+                Presupuestos
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                Crea y gestiona presupuestos para tus clientes
+              </Typography>
+            </Box>
+          </Box>
+          <Tooltip title="Nuevo presupuesto">
+            <IconButton
+              onClick={() => setOpenModal(true)}
+              sx={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                color: '#fff',
+                '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' },
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+          </Tooltip>
         </Box>
-      ) : presupuestos.length === 0 ? (
-        <Card sx={{ textAlign: 'center', py: 6 }}>
-          <CardContent>
-            <ReceiptIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+
+        {/* Alerts */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2.5 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert severity="success" sx={{ mb: 2, borderRadius: 2.5 }} onClose={() => setSuccess(null)}>
+            {success}
+          </Alert>
+        )}
+
+        {/* Lista */}
+        {loading && !openModal ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress sx={{ color: '#8b5cf6' }} />
+          </Box>
+        ) : presupuestos.length === 0 ? (
+          <Paper elevation={0} sx={{
+            textAlign: 'center', py: 8, px: 3, borderRadius: 3,
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+          }}>
+            <Box sx={{
+              width: 64, height: 64, borderRadius: 3, mx: 'auto', mb: 2,
+              bgcolor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <ReceiptIcon sx={{ fontSize: 32, color: '#8b5cf6' }} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
               No hay presupuestos creados
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Crea tu primer presupuesto haciendo clic en "Nuevo Presupuesto"
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Crea tu primer presupuesto haciendo clic en el botón +
             </Typography>
-          </CardContent>
-        </Card>
-      ) : (
-        <Grid container spacing={3}>
-          {presupuestos.map((presupuesto) => (
-            <Grid item xs={12} sm={6} md={4} key={presupuesto.id}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: theme.shadows[8], borderColor: theme.palette.primary.main },
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 2
-                }}
-                onClick={() => handleViewPresupuesto(presupuesto)}
-              >
-                <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <ReceiptIcon color="primary" />
-                      <Typography variant="h6" component="h3" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                        {presupuesto.titulo}
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setOpenModal(true)}
+              sx={{
+                borderRadius: 2.5,
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                boxShadow: 'none', fontWeight: 600, textTransform: 'none',
+                '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', boxShadow: '0 4px 12px rgba(139,92,246,0.4)' },
+              }}
+            >
+              Nuevo Presupuesto
+            </Button>
+          </Paper>
+        ) : (
+          <Grid container spacing={2.5}>
+            {presupuestos.map((presupuesto) => (
+              <Grid item xs={12} sm={6} md={4} key={presupuesto.id}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    borderRadius: 3,
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                    transition: 'all 0.2s ease',
+                    overflow: 'hidden',
+                    '&:hover': {
+                      transform: 'translateY(-3px)',
+                      boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.3)' : '0 8px 24px rgba(0,0,0,0.1)',
+                      borderColor: '#8b5cf6',
+                    },
+                  }}
+                  onClick={() => handleViewPresupuesto(presupuesto)}
+                >
+                  {/* Card header accent */}
+                  <Box sx={{
+                    height: 4,
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  }} />
+
+                  <Box sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0 }}>
+                        <Box sx={{
+                          width: 36, height: 36, borderRadius: 2, flexShrink: 0,
+                          bgcolor: isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <ReceiptIcon sx={{ fontSize: 20, color: '#8b5cf6' }} />
+                        </Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {presupuesto.titulo}
+                        </Typography>
+                      </Box>
+                      <Tooltip title="Eliminar">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(presupuesto.id);
+                          }}
+                          disabled={loading}
+                          sx={{
+                            ml: 0.5,
+                            color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)',
+                            '&:hover': { color: '#ef4444', bgcolor: isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.08)' },
+                          }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Monto Base
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: isDark ? '#a78bfa' : '#7c3aed' }}>
+                        {formatCurrency(presupuesto.monto)}
                       </Typography>
                     </Box>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(presupuesto.id);
-                      }}
-                      disabled={loading}
-                      sx={{ '&:hover': { backgroundColor: 'error.light', color: 'white' } }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
 
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Monto Base
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                      {formatCurrency(presupuesto.monto)}
-                    </Typography>
-                  </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8, mb: 2 }}>
+                      {[
+                        { label: 'Honorarios', value: formatCurrency(presupuesto.honorarios) },
+                        { label: 'Sellado', value: formatCurrency(presupuesto.sellado) },
+                      ].map((item) => (
+                        <Box key={item.label} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>{item.label}</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>{item.value}</Typography>
+                        </Box>
+                      ))}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>Duración</Typography>
+                        <Chip
+                          icon={<CalendarIcon sx={{ fontSize: '14px !important' }} />}
+                          label={`${presupuesto.duracion} meses`}
+                          size="small"
+                          sx={{
+                            height: 22, fontSize: '0.7rem',
+                            bgcolor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.08)',
+                            color: isDark ? '#a78bfa' : '#7c3aed',
+                            '& .MuiChip-icon': { color: isDark ? '#a78bfa' : '#7c3aed' },
+                          }}
+                        />
+                      </Box>
+                    </Box>
 
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Honorarios:</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatCurrency(presupuesto.honorarios)}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Sellado:</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatCurrency(presupuesto.sellado)}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">Duración:</Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                        <Typography variant="body2">{presupuesto.duracion} meses</Typography>
+                    <Box sx={{
+                      mt: 'auto', pt: 1.5,
+                      borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                    }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Total</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#22c55e', fontSize: '1.1rem' }}>
+                          {formatCurrency(getPresupuestoTotal(presupuesto))}
+                        </Typography>
                       </Box>
                     </Box>
                   </Box>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        )}
 
-                  <Box sx={{ mt: 'auto', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">Total Estimado:</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: 'success.main' }}>
-                        {formatCurrency(getPresupuestoTotal(presupuesto))}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                    <Chip icon={<VisibilityIcon />} label="Toca para ver detalles" size="small" variant="outlined" color="primary" />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-
-      {/* Modal para Nuevo Presupuesto */}
-      <Modal open={openModal} onClose={handleCloseModal} aria-labelledby="modal-title">
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: isMobile ? '95%' : '600px',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            bgcolor: 'background.paper',
-            borderRadius: 6,
-            boxShadow: 24,
-            p: 0
-          }}
-        >
+        {/* Modal para Nuevo Presupuesto */}
+        <Modal open={openModal} onClose={handleCloseModal}>
           <Box
             sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              p: 3,
-              borderBottom: 1,
-              borderColor: 'divider',
-               background: 'linear-gradient(135deg,rgb(53, 74, 168) 0%,rgb(122, 15, 228) 100%)',
-              color: 'white',
-              borderRadius: '8px 8px 0 0'
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: isMobile ? '95%' : '600px',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              bgcolor: 'background.paper',
+              borderRadius: 3,
+              boxShadow: 24,
+              p: 0
             }}
           >
-            <Typography variant="h6" component="h2" sx={{ fontWeight: 400 }}>
-              Nuevo Presupuesto
-            </Typography>
-            <IconButton onClick={handleCloseModal} sx={{ color: 'white' }}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                p: 2.5,
+                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                color: 'white',
+                borderRadius: '12px 12px 0 0'
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ReceiptIcon sx={{ fontSize: 22 }} />
+                <Typography variant="h6" component="h2" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+                  Nuevo Presupuesto
+                </Typography>
+              </Box>
+              <IconButton onClick={handleCloseModal} sx={{ color: 'white' }} size="small">
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
 
-          <Box sx={{ p: 3 }}>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            <Box sx={{ p: 3 }}>
+              {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
 
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Título del Presupuesto"
-                    name="titulo"
-                    value={formData.titulo}
-                    onChange={handleInputChange}
-                    required
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
-                    InputProps={{ startAdornment: <DescriptionIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Monto Base"
-                    name="monto"
-                    type="text"
-                    value={formatMontoDisplay(formData.monto)}
-                    onChange={handleMontoChange}
-                    required
-                    inputProps={{ inputMode: 'decimal' }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
-                    InputProps={{ startAdornment: <MoneyIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Duración (meses)"
-                    name="duracion"
-                    type="number"
-                    value={formData.duracion}
-                    onChange={handleInputChange}
-                    required
-                    inputProps={{ min: 1 }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
-                    InputProps={{ startAdornment: <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="% Comisión Contrato"
-                    name="porcentajeContrato"
-                    value={formData.porcentajeContrato}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="ej: 3.5"
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="% Sello"
-                    name="porcentajeSello"
-                    value={formData.porcentajeSello}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="ej: 1.2"
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Gastos Extras (opcional)"
-                    name="gastosExtras"
-                    type="number"
-                    value={formData.gastosExtras}
-                    onChange={handleInputChange}
-                    inputProps={{ min: 0, step: 0.01 }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 }, '& fieldset': { borderRadius: 3 } }}
-                  />
-                </Grid>
-
-                {formData.monto && formData.porcentajeContrato && formData.porcentajeSello && formData.duracion && (
+              <form onSubmit={handleSubmit}>
+                <Grid container spacing={2}>
                   <Grid item xs={12}>
-                    <Card sx={{ backgroundColor: theme.palette.primary.light, color: 'white' }}>
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
+                    <TextField
+                      fullWidth size="small"
+                      label="Título del Presupuesto"
+                      name="titulo"
+                      value={formData.titulo}
+                      onChange={handleInputChange}
+                      required
+                      sx={inputSx}
+                      InputProps={{ startAdornment: <DescriptionIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} /> }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth size="small"
+                      label="Monto Base"
+                      name="monto"
+                      type="text"
+                      value={formatMontoDisplay(formData.monto)}
+                      onChange={handleMontoChange}
+                      required
+                      inputProps={{ inputMode: 'decimal' }}
+                      sx={inputSx}
+                      InputProps={{ startAdornment: <MoneyIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} /> }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth size="small"
+                      label="Duración (meses)"
+                      name="duracion"
+                      type="number"
+                      value={formData.duracion}
+                      onChange={handleInputChange}
+                      required
+                      inputProps={{ min: 1 }}
+                      sx={inputSx}
+                      InputProps={{ startAdornment: <CalendarIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} /> }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth size="small"
+                      label="% Comisión Contrato"
+                      name="porcentajeContrato"
+                      value={formData.porcentajeContrato}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="ej: 3.5"
+                      sx={inputSx}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth size="small"
+                      label="% Sello"
+                      name="porcentajeSello"
+                      value={formData.porcentajeSello}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="ej: 1.2"
+                      sx={inputSx}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth size="small"
+                      label="Gastos Extras (opcional)"
+                      name="gastosExtras"
+                      type="number"
+                      value={formData.gastosExtras}
+                      onChange={handleInputChange}
+                      inputProps={{ min: 0, step: 0.01 }}
+                      sx={inputSx}
+                    />
+                  </Grid>
+
+                  {formData.monto && formData.porcentajeContrato && formData.porcentajeSello && formData.duracion && (
+                    <Grid item xs={12}>
+                      <Paper elevation={0} sx={{
+                        p: 2.5, borderRadius: 2.5,
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                        color: 'white',
+                      }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
                           Total Estimado: {formatCurrency(calculateFormPreview(formData).total)}
                         </Typography>
-                        <Box component="ul" sx={{ m: 0, pl: 2, listStyle: 'none' }}>
-                          <Box component="li" sx={{ mb: 0.5 }}>
-                            <Typography variant="body2">
-                              • Primer Mes: {formatCurrency(calculateFormPreview(formData).primerMes)}
-                            </Typography>
-                          </Box>
-                          <Box component="li" sx={{ mb: 0.5 }}>
-                            <Typography variant="body2">
-                              • Depósito: {formatCurrency(calculateFormPreview(formData).deposito)}
-                            </Typography>
-                          </Box>
-                          <Box component="li" sx={{ mb: 0.5 }}>
-                            <Typography variant="body2">
-                              • Honorarios: {formatCurrency(calculateFormPreview(formData).comision)}
-                            </Typography>
-                          </Box>
-                          <Box component="li" sx={{ mb: 0.5 }}>
-                            <Typography variant="body2">
-                              • Sellado: {formatCurrency(calculateFormPreview(formData).sellado)}
-                            </Typography>
-                          </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          {[
+                            { label: 'Primer Mes', value: calculateFormPreview(formData).primerMes },
+                            { label: 'Depósito', value: calculateFormPreview(formData).deposito },
+                            { label: 'Honorarios', value: calculateFormPreview(formData).comision },
+                            { label: 'Sellado', value: calculateFormPreview(formData).sellado },
+                          ].map((item) => (
+                            <Box key={item.label} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" sx={{ opacity: 0.85 }}>• {item.label}</Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatCurrency(item.value)}</Typography>
+                            </Box>
+                          ))}
                           {formData.gastosExtras && (
-                            <Box component="li" sx={{ mb: 0.5 }}>
-                              <Typography variant="body2">
-                                • Extras: {formatCurrency(calculateFormPreview(formData).gastosExtras)}
-                              </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" sx={{ opacity: 0.85 }}>• Extras</Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatCurrency(calculateFormPreview(formData).gastosExtras)}</Typography>
                             </Box>
                           )}
                         </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                )}
-              </Grid>
+                      </Paper>
+                    </Grid>
+                  )}
+                </Grid>
 
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-                <Button variant="outlined" onClick={handleCloseModal} disabled={loading} sx={{ borderRadius: 4 }}>
-                  Cancelar
-                </Button>
-                <Button type="submit" variant="contained" disabled={loading} sx={{ borderRadius: 4, background: 'linear-gradient(135deg,rgb(53, 74, 168) 0%,rgb(122, 15, 228) 100%)'}} startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}>
-                  {loading ? 'Guardando...' : 'Guardar Presupuesto'}
-                </Button>
-              </Box>
-            </form>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 3 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleCloseModal}
+                    disabled={loading}
+                    sx={{
+                      borderRadius: 2.5,
+                      borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                      color: 'text.primary',
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={loading}
+                    startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
+                    sx={{
+                      borderRadius: 2.5,
+                      background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                      boxShadow: 'none', fontWeight: 600,
+                      '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', boxShadow: '0 4px 12px rgba(139,92,246,0.4)' },
+                    }}
+                  >
+                    {loading ? 'Guardando...' : 'Guardar'}
+                  </Button>
+                </Box>
+              </form>
+            </Box>
           </Box>
-        </Box>
-      </Modal>
+        </Modal>
 
-      {/* Modal de Detalles del Presupuesto */}
-      <Modal open={openDetailModal} onClose={handleCloseDetailModal} aria-labelledby="detail-modal-title">
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: isMobile ? '95%' : '500px',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            bgcolor: 'background.paper',
-            borderRadius: 3,
-            boxShadow: 24,
-            p: 0
-          }}
-        >
-          {selectedPresupuesto && (
-            <>
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  p: 4,
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                  color: 'white',
-                  borderRadius: '12px 12px 0 0',
-                  position: 'relative'
-                }}
-              >
-                <IconButton
-                  onClick={handleCloseDetailModal}
-                  sx={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    color: 'white',
-                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
-                  }}
-                >
-                  <CloseIcon />
-                </IconButton>
-
+        {/* Modal de Detalles del Presupuesto */}
+        <Modal open={openDetailModal} onClose={handleCloseDetailModal}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: isMobile ? '95%' : '500px',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              bgcolor: 'background.paper',
+              borderRadius: 3,
+              boxShadow: 24,
+              p: 0
+            }}
+          >
+            {selectedPresupuesto && (
+              <>
                 <Box
                   sx={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: '50%',
-                    backgroundColor: 'white',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    mb: 2,
-                    boxShadow: theme.shadows[4]
+                    p: 3.5,
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                    color: 'white',
+                    borderRadius: '12px 12px 0 0',
+                    position: 'relative'
                   }}
                 >
-                  {usuarioFetch?.logo ? (
-                    <img src={usuarioFetch.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '10px' }} />
-                  ) : (
-                    <BusinessIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
-                  )}
+                  <IconButton
+                    onClick={handleCloseDetailModal}
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      color: 'white',
+                      '&:hover': { backgroundColor: 'rgba(255,255,255,0.15)' }
+                    }}
+                    size="small"
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+
+                  <Box
+                    sx={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: '50%',
+                      backgroundColor: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 1.5,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {usuarioFetch?.logo ? (
+                      <img src={usuarioFetch.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <BusinessIcon sx={{ fontSize: 36, color: '#8b5cf6' }} />
+                    )}
+                  </Box>
+
+                  <Typography variant="h6" sx={{ fontWeight: 700, textAlign: 'center', mb: 0.5, fontSize: '1.1rem' }}>
+                    {usuarioFetch?.nombreNegocio || 'Inmobiliaria'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.8, textAlign: 'center' }}>
+                    Presupuesto Profesional
+                  </Typography>
                 </Box>
 
-                <Typography variant="h5" sx={{ fontWeight: 600, textAlign: 'center', mb: 1 }}>
-                  {usuarioFetch?.nombreNegocio || 'Inmobiliaria'}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9, textAlign: 'center' }}>
-                  Presupuesto Profesional
-                </Typography>
-              </Box>
+                <Box sx={{ p: 3 }}>
+                  <Box sx={{ textAlign: 'center', mb: 2.5 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: isDark ? '#a78bfa' : '#7c3aed', mb: 0.5 }}>
+                      {selectedPresupuesto.titulo}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Detalle de gastos para ingresar en la propiedad
+                    </Typography>
+                  </Box>
 
-              <Box sx={{ p: 4 }}>
-                <Box sx={{ textAlign: 'center', mb: 3 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}>
-                    {selectedPresupuesto.titulo}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Detalle de gastos para ingresar en la propiedad
-                  </Typography>
-                </Box>
-
-                <Card sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  <Paper elevation={0} sx={{
+                    mb: 2.5, p: 2.5, borderRadius: 2.5,
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                  }}>
+                    <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700 }}>
                       Desglose de Costos
                     </Typography>
 
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body1">Primer Mes:</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {formatCurrency(selectedPresupuesto.primerMes || selectedPresupuesto.monto)}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body1">Depósito:</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {formatCurrency(selectedPresupuesto.monto)}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body1">Honorarios:</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {formatCurrency(selectedPresupuesto.honorarios)}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body1">Sellado:</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {formatCurrency(selectedPresupuesto.sellado)}
-                        </Typography>
-                      </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {[
+                        { label: 'Primer Mes', value: selectedPresupuesto.primerMes || selectedPresupuesto.monto, bold: true },
+                        { label: 'Depósito', value: selectedPresupuesto.monto },
+                        { label: 'Honorarios', value: selectedPresupuesto.honorarios },
+                        { label: 'Sellado', value: selectedPresupuesto.sellado },
+                      ].map((item) => (
+                        <Box key={item.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="body2" color="text.secondary">{item.label}</Typography>
+                          <Typography variant={item.bold ? 'subtitle1' : 'body2'} sx={{ fontWeight: item.bold ? 700 : 500 }}>
+                            {formatCurrency(item.value)}
+                          </Typography>
+                        </Box>
+                      ))}
 
                       {selectedPresupuesto.gastosExtras > 0 && (
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body1">Gastos Extras:</Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          <Typography variant="body2" color="text.secondary">Gastos Extras</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {formatCurrency(selectedPresupuesto.gastosExtras)}
                           </Typography>
                         </Box>
                       )}
 
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                        <CalendarIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                        <Typography variant="body1">
-                          Duración del contrato: {selectedPresupuesto.duracion} meses
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                        <CalendarIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        <Typography variant="body2" color="text.secondary">
+                          Duración: <strong>{selectedPresupuesto.duracion} meses</strong>
                         </Typography>
                       </Box>
                     </Box>
-                  </CardContent>
-                </Card>
+                  </Paper>
 
-                <Card
-                  sx={{
-                    mb: 3,
-                    background: `linear-gradient(135deg, rgba(131, 32, 189, 0.92)  0%, rgb(89, 58, 175) 100%)`,
-                    color: 'white'
-                  }}
-                >
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      mb: 2.5, p: 2.5, borderRadius: 2.5,
+                      background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                      color: 'white', textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ opacity: 0.85, mb: 0.5 }}>
                       Total del Presupuesto
                     </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 800 }}>
                       {formatCurrency(getPresupuestoTotal(selectedPresupuesto))}
                     </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
+                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
                       Precio final incluye todos los conceptos
                     </Typography>
-                  </CardContent>
-                </Card>
+                  </Paper>
 
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<WhatsAppIcon />}
-                    onClick={handleSharePresupuesto}
-                    sx={{
-                      borderRadius: 3,
-                      px: 3,
-                      py: 1.5,
-                      fontSize: '1rem',
-                      textTransform: 'none',
-                      backgroundColor: '#25D366',
-                      color: 'white',
-                      '&:hover': { backgroundColor: '#128C7E' }
-                    }}
-                  >
-                    WhatsApp
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    startIcon={<CopyIcon />}
-                    onClick={handleCopyToClipboard}
-                    sx={{
-                      borderRadius: 3,
-                      px: 3,
-                      py: 1.5,
-                      fontSize: '1rem',
-                      textTransform: 'none',
-                      borderColor: theme.palette.primary.main,
-                      color: theme.palette.primary.main,
-                      '&:hover': { backgroundColor: theme.palette.primary.light, borderColor: theme.palette.primary.dark }
-                    }}
-                  >
-                    Copiar
-                  </Button>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<WhatsAppIcon />}
+                      onClick={handleSharePresupuesto}
+                      sx={{
+                        borderRadius: 2.5, px: 3, fontWeight: 600,
+                        textTransform: 'none',
+                        backgroundColor: '#25D366',
+                        color: 'white',
+                        boxShadow: 'none',
+                        '&:hover': { backgroundColor: '#128C7E', boxShadow: '0 4px 12px rgba(37,211,102,0.3)' }
+                      }}
+                    >
+                      WhatsApp
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<CopyIcon />}
+                      onClick={handleCopyToClipboard}
+                      sx={{
+                        borderRadius: 2.5, px: 3, fontWeight: 600,
+                        textTransform: 'none',
+                        borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                        color: 'text.primary',
+                        '&:hover': { borderColor: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)' },
+                      }}
+                    >
+                      Copiar
+                    </Button>
+                  </Box>
                 </Box>
-              </Box>
-            </>
-          )}
-        </Box>
-      </Modal>
-    </Container>
+              </>
+            )}
+          </Box>
+        </Modal>
+
+      </Box>
+    </Box>
   );
 };
 

@@ -26,6 +26,7 @@ const NotificationDetailModal = ({ open, onClose, notification }) => {
 
   if (!notification) return null;
 
+  const reciboData = notification.reciboData || null;
   const isContractAlert = notification.source === 'alerta';
   const isReciboAlert = notification.source === 'recibo-alerta';
   const isPaymentAlert = notification.type === 'payment' || isReciboAlert;
@@ -192,16 +193,17 @@ const NotificationDetailModal = ({ open, onClose, notification }) => {
           ) : (
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Recibo: <strong>{notification.reciboId ? `#${notification.reciboId}` : 'N/A'}</strong>
+                Recibo: <strong>{reciboData?.numeroRecibo ? `N°${reciboData.numeroRecibo}` : (notification.reciboId ? `#${notification.reciboId}` : 'N/A')}</strong>
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Contrato: <strong>{notification.contratoId || 'N/A'}</strong>
+                Contrato: <strong>{reciboData?.nombreContrato || 'N/A'}</strong>
               </Typography>
-              {notification.raw?.tipo && (
+              {reciboData?.periodo && (
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Tipo: <strong>{notification.raw?.tipo}</strong>
+                  Período: <strong>{reciboData.periodo}</strong>
                 </Typography>
               )}
+             
             </Box>
           )}
 

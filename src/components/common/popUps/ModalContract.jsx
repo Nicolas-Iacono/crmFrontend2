@@ -58,6 +58,9 @@ const navigate = useNavigate();
   const [updateAlert, setUpdateAlert] = useState({ show: false, type: '', message: '' });
 
     const theme = useTheme();
+   const isDark = theme.palette.mode === 'dark';
+   const accentColor = '#8b5cf6';
+   const accentDark = '#7c3aed';
    
    const actualizacion = async () => {
   try {
@@ -217,48 +220,44 @@ const navigate = useNavigate();
         TransitionComponent={Transition}
         PaperProps={{
           sx: {
-            borderRadius: "20px 20px 0 0",
-            backgroundColor: theme.palette.background.paper,
+            borderRadius: '20px 20px 0 0',
+            bgcolor: isDark ? '#0f0f17' : '#f8f7fc',
             width: '100vw',
-            maxWidth: {xs:'1400px',sm:'1500px',md:'2000px'},
+            maxWidth: { xs: '1400px', sm: '1500px', md: '2000px' },
             margin: 'auto',
-            position:"absolute",
-            bottom:"0"
+            position: 'absolute',
+            bottom: '0',
           }
         }}
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          bgcolor: ' ',
-          background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg,rgb(47, 51, 88) 0%,rgb(12, 12, 33) 100%)' : '#1F2C61',
-
-          color: 'white'
+        <DialogTitle sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+          color: 'white',
+          py: 2,
         }}>
-          <Typography variant="h6" component="div">
+          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
             {selectedContract.nombreContrato}
           </Typography>
-          <IconButton 
+          <IconButton
             onClick={handleCloseDetailModal}
-            sx={{ color: 'white' }}
+            sx={{ color: 'rgba(255,255,255,0.85)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
           >
-            <CloseIcon />
+            <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
-        
-        <DialogContent sx={{ 
-          py: 3,
-          background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg,rgb(47, 51, 88) 0%,rgb(12, 12, 33) 100%)' : '#1F2C61' }}>
+
+        <DialogContent sx={{ py: 3 }}>
        
         
         
 
 
-          <Box sx={{ mb: 3,  }}>
-            <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-              <Typography variant="h6" color={theme.palette.mode === 'dark' ? 'rgb(16, 51, 167)' : "#1F2C61"} sx={{ mb: 2, fontWeight: 600 }}>
+          <Box sx={{ mb: 3 }}>
+            <Paper elevation={0} sx={{ p: 2.5, mb: 2, borderRadius: 3, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 700, color: isDark ? '#a78bfa' : accentDark, fontSize: '0.9rem' }}>
                 Información del contrato
               </Typography>
               
@@ -289,8 +288,8 @@ const navigate = useNavigate();
                  
                 </Grid2>
                 {actualizacionData && (
-  <Box sx={{mb: 3, borderRadius: 2 }}>
-    <Typography variant="h6" color={theme.palette.mode === 'dark' ? 'rgb(16, 51, 167)' : "#1F2C61"} sx={{ mb: 2, fontWeight: 600 }}>
+  <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
+    <Typography variant="body2" sx={{ mb: 1.5, fontWeight: 700, color: isDark ? '#a78bfa' : accentDark, fontSize: '0.85rem' }}>
       Vigencia del contrato
     </Typography>
 
@@ -309,14 +308,10 @@ const navigate = useNavigate();
 
  <Typography variant="body2" sx={{ mb: 1 }}>
   <strong>Estado:</strong>{' '}
-  {selectedContract?.activo? (
-    <Box sx={{ display: 'inline-flex', flexWrap: 'wrap', gap: 0.75, ml: 1, verticalAlign: 'middle' }}>
-      <Chip label="ACTIVO" size="small" />
-    </Box>
+  {selectedContract?.activo ? (
+    <Chip label="ACTIVO" size="small" sx={{ ml: 1, fontWeight: 700, fontSize: '0.65rem', height: 22, bgcolor: isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.1)', color: '#22c55e' }} />
   ) : (
-    <Box sx={{ display: 'inline-flex', flexWrap: 'wrap', gap: 0.75, ml: 1, verticalAlign: 'middle' }}>
-      <Chip label="VENCIDO" size="small" />
-    </Box>
+    <Chip label="VENCIDO" size="small" sx={{ ml: 1, fontWeight: 700, fontSize: '0.65rem', height: 22, bgcolor: isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.1)', color: '#ef4444' }} />
   )}
 </Typography>
 
@@ -366,11 +361,13 @@ const navigate = useNavigate();
                   endIcon={showPercentageEdit ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                   sx={{
                     mb: 2,
-                    borderColor: theme.palette.mode === 'dark' ? "rgb(201, 201, 201)" : "rgb(34, 59, 121)",
-                    color: theme.palette.mode === 'dark' ? "rgb(201, 201, 201)" : "rgb(34, 59, 121)",
+                    borderColor: isDark ? 'rgba(167,139,250,0.4)' : 'rgba(139,92,246,0.3)',
+                    color: isDark ? '#a78bfa' : accentDark,
+                    borderRadius: 2.5,
+                    textTransform: 'none',
                     '&:hover': {
-                      borderColor: theme.palette.primary.dark,
-                      backgroundColor: theme.palette.action.hover,
+                      borderColor: accentColor,
+                      bgcolor: isDark ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.04)',
                     }
                   }}
                 >
@@ -525,12 +522,10 @@ const navigate = useNavigate();
                           textTransform: 'none',
                           fontWeight: 600,
                           px: 2.5,
-                          background: theme.palette.mode === 'dark' 
-                            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
                           boxShadow: 'none',
                           '&:hover': {
-                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+                            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)',
                             transform: 'translateY(-1px)'
                           },
                           '&:disabled': {
@@ -554,8 +549,8 @@ const navigate = useNavigate();
             </Paper>
             
             {/* Sección Propietario */}
-            <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-              <Typography variant="h6" color={theme.palette.mode === 'dark' ? 'rgb(16, 51, 167)' : "#1F2C61"} sx={{ mb: 2, fontWeight: 600 }}>
+            <Paper elevation={0} sx={{ p: 2.5, mb: 2, borderRadius: 3, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 700, color: isDark ? '#a78bfa' : accentDark, fontSize: '0.9rem' }}>
                 Propietario
               </Typography>
               
@@ -581,21 +576,21 @@ const navigate = useNavigate();
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
                   <Tooltip title="Contactar por WhatsApp">
                     <IconButton 
-                      color="success" 
                       onClick={() => handleWhatsAppClick(selectedContract.propietario?.telefono)}
-                      sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }}
+                      sx={{ bgcolor: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.08)', color: '#22c55e', '&:hover': { bgcolor: 'rgba(34,197,94,0.2)' } }}
+                      size="small"
                     >
-                      <WhatsAppIcon />
+                      <WhatsAppIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   
                   <Tooltip title="Enviar Email">
                     <IconButton 
-                      color="primary" 
                       onClick={() => handleEmailClick(selectedContract.propietario?.email)}
-                      sx={{ bgcolor: 'rgba(25, 118, 210, 0.1)' }}
+                      sx={{ bgcolor: isDark ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)', color: accentColor, '&:hover': { bgcolor: 'rgba(139,92,246,0.2)' } }}
+                      size="small"
                     >
-                      <EmailIcon />
+                      <EmailIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 </Box>
@@ -603,8 +598,8 @@ const navigate = useNavigate();
             </Paper>
             
             {/* Sección Inquilino */}
-            <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-              <Typography variant="h6" color={theme.palette.mode === 'dark' ? 'rgb(16, 51, 167)' : "#1F2C61"} sx={{ mb: 2, fontWeight: 600 }}>
+            <Paper elevation={0} sx={{ p: 2.5, mb: 2, borderRadius: 3, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 700, color: isDark ? '#a78bfa' : accentDark, fontSize: '0.9rem' }}>
                 Inquilino
               </Typography>
               
@@ -630,21 +625,21 @@ const navigate = useNavigate();
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
                   <Tooltip title="Contactar por WhatsApp">
                     <IconButton 
-                      color="success" 
                       onClick={() => handleWhatsAppClick(selectedContract.inquilino?.telefono)}
-                      sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }}
+                      sx={{ bgcolor: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.08)', color: '#22c55e', '&:hover': { bgcolor: 'rgba(34,197,94,0.2)' } }}
+                      size="small"
                     >
-                      <WhatsAppIcon />
+                      <WhatsAppIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   
                   <Tooltip title="Enviar Email">
                     <IconButton 
-                      color="primary" 
                       onClick={() => handleEmailClick(selectedContract.inquilino?.email)}
-                      sx={{ bgcolor: 'rgba(25, 118, 210, 0.1)' }}
+                      sx={{ bgcolor: isDark ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)', color: accentColor, '&:hover': { bgcolor: 'rgba(139,92,246,0.2)' } }}
+                      size="small"
                     >
-                      <EmailIcon />
+                      <EmailIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 </Box>
@@ -652,8 +647,8 @@ const navigate = useNavigate();
             </Paper>
             
             {/* Sección Garantes */}
-            <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-              <Typography variant="h6" color={theme.palette.mode === 'dark' ? 'rgb(16, 51, 167)' : "#1F2C61"} sx={{ mb: 2, fontWeight: 600 }}>
+            <Paper elevation={0} sx={{ p: 2.5, mb: 2, borderRadius: 3, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 700, color: isDark ? '#a78bfa' : accentDark, fontSize: '0.9rem' }}>
                 Garantes ({selectedContract.garantes?.length || 0})
               </Typography>
               
@@ -691,21 +686,21 @@ const navigate = useNavigate();
                     <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
                       <Tooltip title="Contactar por WhatsApp">
                         <IconButton 
-                          color="success" 
                           onClick={() => handleWhatsAppClick(garante.telefono)}
-                          sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }}
+                          sx={{ bgcolor: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.08)', color: '#22c55e', '&:hover': { bgcolor: 'rgba(34,197,94,0.2)' } }}
+                          size="small"
                         >
-                          <WhatsAppIcon />
+                          <WhatsAppIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       
                       <Tooltip title="Enviar Email">
                         <IconButton 
-                          color="primary" 
                           onClick={() => handleEmailClick(garante.email)}
-                          sx={{ bgcolor: 'rgba(25, 118, 210, 0.1)' }}
+                          sx={{ bgcolor: isDark ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)', color: accentColor, '&:hover': { bgcolor: 'rgba(139,92,246,0.2)' } }}
+                          size="small"
                         >
-                          <EmailIcon />
+                          <EmailIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     </Box>
@@ -724,17 +719,21 @@ const navigate = useNavigate();
           </Box>
         </DialogContent>
         
-        <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }}>
           <Button
             variant="contained"
             onClick={() => navigate(`/recibos-page/${selectedContract.id}`)}
-            startIcon={<ReceiptIcon />}
+            startIcon={<ReceiptIcon sx={{ fontSize: 18 }} />}
+            size="small"
             sx={{
               mr: 'auto',
-              borderRadius: '8px',
-              backgroundColor: '#C22961',
+              borderRadius: 2.5,
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+              textTransform: 'none',
+              fontWeight: 600,
+              boxShadow: 'none',
               '&:hover': {
-                backgroundColor: '#991f4d'
+                boxShadow: '0 4px 12px rgba(139,92,246,0.4)',
               }
             }}
           >
@@ -744,13 +743,16 @@ const navigate = useNavigate();
           <Button
             variant="outlined"
             onClick={handleCloseDetailModal}
+            size="small"
             sx={{
-              borderRadius: '8px',
-              borderColor: '#1F2C61',
-              color: '#1F2C61',
+              borderRadius: 2.5,
+              textTransform: 'none',
+              fontWeight: 600,
+              borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+              color: 'text.secondary',
               '&:hover': {
-                borderColor: '#1F2C61',
-                backgroundColor: 'rgba(31, 44, 97, 0.08)'
+                borderColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)',
+                bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
               }
             }}
           >

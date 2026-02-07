@@ -73,10 +73,11 @@ import { NumericFormat } from 'react-number-format';
 import "../styles/garantesPage.css";
 import PropertiesTour from '../common/tour/PropertiesTour';
 import http from '../api/http';
-import { showSuccess, showError, showWarning } from '../alertas/showAlert';
+import { showSuccess, showError, showWarning, showConfirm } from '../alertas/showAlert';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { PropiedadesApi } from '../api/propiedades';
+import MobilePropiedadCard from '../common/cards/MobilePropiedadCard';
 const PropiedadesPage = () => {
   // Estado para el modal de detalle de propiedad
   const [modalOpen, setModalOpen] = useState(false);
@@ -242,15 +243,10 @@ const PropiedadesPage = () => {
   };
 
   const eliminarPropiedad = async (id) => {
-    const result = await Swal.fire({
+    const result = await showConfirm({
       title: '¿Estás seguro?',
-      text: "¡No podrás revertir esto!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, ¡elimínala!',
-      cancelButtonText: 'Cancelar'
+      text: '¡No podrás revertir esto!',
+      confirmText: 'Sí, ¡elimínala!',
     });
 
     if (result.isConfirmed) {
@@ -562,34 +558,33 @@ useEffect(() => {
       )}
 
     <Box sx={{ 
-      width: { xs: '100%', sm: '100%', md: '84vw' }, 
+      width: { xs: '100%', md: 'calc(100% - 15rem)' },
       minHeight: "100vh",
-      pt: { xs: 3, sm: 6 },
-      pb: { xs: 8, sm: 4 },
+      pt: { xs: 3, sm: 4 },
+      pb: { xs: 14, sm: 12 },
+      px: { xs: 2, sm: 3, md: 4 },
       display: 'flex',
       flexDirection: 'column',
-      alignItems: { xs: 'center', md: 'flex-start' },
       bgcolor: 'background.default',
-      marginTop:{ xs: '0', sm: "0", md: "0" },
       marginLeft: { md: '15rem' },
+      boxSizing: 'border-box',
     }}>
       <Box 
         sx={{ 
-          width: { xs: "90%", sm: "85%", md: "100%" },
+          width: '100%',
+          maxWidth: { xs: '100%', md: 1200 },
           mt: { xs: '4rem', sm: 0 },
-
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center'
         }}
       >
         <Box 
           sx={{ 
             display: 'flex', 
-            width: {xs:'100%',sm:"100%", md:"80%"},
+            width: '100%',
             alignItems: 'center',
             justifyContent: 'space-between',
-            mb: { xs: 2, sm: 3 }
+            mb: { xs: 2, sm: 2 }
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -604,16 +599,22 @@ useEffect(() => {
             >
               <ArrowBackIcon />
             </IconButton>
-            <Typography 
-              data-tour="propiedades-title"
-              variant="h5" 
-              sx={{ 
-                fontWeight: 600,
-                color: 'text.primary'
-              }}
-            >
-              Propiedades
-            </Typography>
+            <Box>
+              <Typography 
+                data-tour="propiedades-title"
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: 'text.primary',
+                  lineHeight: 1.2,
+                }}
+              >
+                Propiedades
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                Gestiona tu cartera de propiedades
+              </Typography>
+            </Box>
           </Box>
           <Tooltip title="Añadir propiedad">
             <Fab 
@@ -622,10 +623,103 @@ useEffect(() => {
               size="small"
               data-tour="propiedades-add"
               onClick={() => navigate('/nueva-propiedad')}
+                sx={{ 
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+            color: '#fff',
+            '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' },
+          }}
             >
               <AddIcon />
             </Fab>
           </Tooltip>
+        </Box>
+
+        {/* Stats Cards */}
+        <Box sx={{ 
+          display: { xs: 'none', sm: 'flex' }, 
+          gap: 1.5, 
+          width: '100%', 
+          mb: 2.5,
+          flexWrap: 'wrap',
+        }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              minWidth: { xs: 100, sm: 140 },
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 0.5,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              transition: 'transform 0.2s ease',
+              '&:hover': { transform: 'translateY(-2px)' },
+            }}
+          >
+            <BusinessIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+            <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1 }}>
+              {propiedadesFiltradas.length}
+            </Typography>
+            <Typography variant="caption" sx={{ opacity: 0.9, textAlign: 'center', fontSize: '0.7rem' }}>
+              Total
+            </Typography>
+          </Paper>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+              color: 'white',
+              minWidth: { xs: 100, sm: 140 },
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 0.5,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              transition: 'transform 0.2s ease',
+              '&:hover': { transform: 'translateY(-2px)' },
+            }}
+          >
+            <CheckCircleIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+            <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1 }}>
+              {propiedadesFiltradas.filter(p => p.disponibilidad).length}
+            </Typography>
+            <Typography variant="caption" sx={{ opacity: 0.9, textAlign: 'center', fontSize: '0.7rem' }}>
+              Disponibles
+            </Typography>
+          </Paper>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              color: 'white',
+              minWidth: { xs: 100, sm: 140 },
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 0.5,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              transition: 'transform 0.2s ease',
+              '&:hover': { transform: 'translateY(-2px)' },
+            }}
+          >
+            <HomeIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+            <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1 }}>
+              {propiedadesFiltradas.filter(p => !p.disponibilidad).length}
+            </Typography>
+            <Typography variant="caption" sx={{ opacity: 0.9, textAlign: 'center', fontSize: '0.7rem' }}>
+              Alquiladas
+            </Typography>
+          </Paper>
         </Box>
         
         <TextField
@@ -637,7 +731,7 @@ useEffect(() => {
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ 
             mb: 2,
-            width: { xs: '100%', sm: '100%', md:"80%" },
+            width: '100%',
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
             borderRadius: 6, '& fieldset': { borderRadius: 6 },
             '& .MuiOutlinedInput-root': {
@@ -662,8 +756,8 @@ useEffect(() => {
           onChange={() => setShowFilters(!showFilters)}
           sx={{ 
             mb: 3, 
-            borderRadius:4,
-            width: { xs: '100%', sm: '100%', md:"80%" },
+            borderRadius: 4,
+            width: '100%',
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
             '&:before': { display: 'none' }
           }}
@@ -862,21 +956,12 @@ useEffect(() => {
                 </Grid2>
               </Box>
             ) : (
-              <TableContainer component={Box} sx={{
+              <Box sx={{
                 width: '100%',
-                overflowX: 'auto',
-                borderRadius: 2,
-                padding: "1rem 2rem",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center"
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                gap: 2,
               }}>
-                <Box sx={{
-                  width: { xs: "100%", sm: "100%", md: "80%" },
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                  gap: { xs: 2, md: 1 },
-                }}>
                   {Array.from({ length: itemsPerPage }).map((_, idx) => (
                     <Box key={idx} sx={{ width: { xs: "100%", sm: "100%", md: "100%" } }}>
                       <Card
@@ -924,8 +1009,7 @@ useEffect(() => {
                       </Card>
                     </Box>
                   ))}
-                </Box>
-              </TableContainer>
+              </Box>
             )}
           </Box>
         ) : error ? (
@@ -964,172 +1048,82 @@ useEffect(() => {
             ) : (
               <>
                 {isMobile ? (
-                  <Box sx={{ 
-                    width: "100%", 
-                    display: 'flex', 
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
-                    <Grid2 
-                      container 
-                      spacing={2} 
-                      sx={{ 
-                        justifyContent: { xs: 'center', sm: 'flex-start' },
-                        alignItems: { xs: 'center', sm: 'flex-start' },
-                        ml: { xs: 0, sm: -2 }
-                      }}
-                    >
+                  <Box sx={{ width: '100%' }}>
                       {propiedadesPaginadas.map((propiedad, index) => {
                         const isCompact = propiedadProspectosActiva === propiedad?.id;
                         const prospectos = prospectosCompatibles[propiedad?.id] || [];
                         const isLoadingProspectos = prospectosLoading[propiedad?.id];
                         const errorProspectos = prospectosError[propiedad?.id];
+                        
+                        const gradientColors = [
+                          'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                          'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                          'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                          'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                        ];
+                        const gradient = gradientColors[(propiedad?.id || 0) % gradientColors.length];
+                        const hasImage = Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl;
+                        
                         return (
-  <Grid2 item key={propiedad?.id || `fallback-${Math.random()}`} sx={{ display: 'flex', justifyContent: 'center' }}>  
-  <Box sx={{ width: { xs: '19rem', sm: '20rem' }, }}>
-    <Card
+  <Box key={propiedad?.id || `fallback-${Math.random()}`} sx={{ mb: 2 }}>
+    <Paper
       data-tour={index === 0 ? 'propiedades-card' : undefined}
-      sx={{
-          mb: 1,
-        width: { xs: '19rem', sm: '20rem' },
-       height: isCompact ? { sm: '14.5rem' } : { sm: '26rem' },
-                                  borderRadius: 3,
-                                  overflow: 'hidden',
-                                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-                                  boxShadow: theme.palette.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.08)',
-                                  transition: 'transform 0.2s, box-shadow 0.2s, height 0.3s ease',
-                                  '&:hover': {
-                                    transform: 'translateY(-4px)',
-                                    boxShadow: theme.palette.mode === 'dark' ? '0 8px 30px rgba(0,0,0,0.3)' : '0 12px 16px rgba(0,0,0,0.1)',
-                                  },
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        cursor: 'pointer',
-      }}
+      elevation={0}
       onClick={() => {
         setSelectedPropiedad(propiedad);
         setModalOpen(true);
       }}
+      sx={{
+        borderRadius: 3,
+        overflow: 'hidden',
+        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+        transition: 'all 0.3s ease',
+        cursor: 'pointer',
+        '&:hover': { 
+          boxShadow: theme.palette.mode === 'dark' 
+            ? '0 8px 32px rgba(0,0,0,0.3)' 
+            : '0 8px 32px rgba(0,0,0,0.12)',
+          transform: 'translateY(-4px)',
+        },
+        bgcolor: 'background.paper',
+        position: 'relative',
+      }}
     >
-      {/* Barra de estado */}
+      {/* Status indicator bar */}
       <Box
         sx={{
           position: 'absolute',
           left: 0,
           top: 0,
-          width: '8px',
+          width: 6,
           height: '100%',
           bgcolor: propiedad.disponibilidad ? 'success.main' : 'error.main',
+          zIndex: 1,
         }}
       />
-      {/* Imagen principal */}
-      <Box sx={{ width: '100%', height: 160, bgcolor: '#f8fafc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        {/* Botón eliminar propiedad */}
-        <Tooltip title="Eliminar propiedad">
-          <span>
-            <IconButton
-              data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
-              size="small"
-              sx={{
-                position: 'absolute',
-                top: 8,
-                left: 8,
-                bgcolor: 'rgba(255,255,255,0.7)',
-                boxShadow: 1,
-                zIndex: 2,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                eliminarPropiedad(propiedad.id);
-              }}
-            >
-              <DeleteForeverIcon color="error" fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
 
-        {/* Botón editar propiedad */}
-        <Tooltip title="Editar propiedad">
-          <span>
-            <IconButton
-              size="small"
-              sx={{
-                position: 'absolute',
-                top: 8,
-                left: 48,
-                bgcolor: 'rgba(255,255,255,0.7)',
-                boxShadow: 1,
-                zIndex: 2,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/propiedades/editar/${propiedad.id}`);
-              }}
-            >
-              <EditIcon color="primary" fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-
-        {/* Botón agregar imagen */}
-        <Tooltip title="Agregar imagen">
-          <span>
-            <IconButton
-              size="small"
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                bgcolor: 'rgba(255,255,255,0.7)',
-                boxShadow: 1,
-                zIndex: 2,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddImageClick(propiedad.id);
-              }}
-              disabled={uploadingId === propiedad.id}
-            >
-              <AddPhotoAlternateIcon color="primary" fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-
-        {/* Botón compartir propiedad */}
-        <Tooltip title="Compartir propiedad">
-          <span>
-            <IconButton
-              size="small"
-              sx={{
-                position: 'absolute',
-                bottom: 8,
-                right: 8,
-                bgcolor: 'rgba(255,255,255,0.7)',
-                boxShadow: 1,
-                zIndex: 2,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSharePropiedad(propiedad);
-              }}
-            >
-              <ShareIcon color="success" fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        {/* Input file oculto global */}
+      {/* Image section */}
+      <Box sx={{ 
+        position: 'relative', 
+        height: 140,
+        background: hasImage ? 'none' : gradient,
+      }}>
         {uploadingId === propiedad.id && (
-          <Box sx={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', bgcolor: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+          <Box sx={{ 
+            position: 'absolute', 
+            inset: 0, 
+            bgcolor: 'rgba(255,255,255,0.7)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 10 
+          }}>
             <CircularProgress size={32} />
           </Box>
         )}
-        {Array.isArray(propiedad.imagenes) && propiedad.imagenes.length > 0 && propiedad.imagenes[0]?.imageUrl ? (
+
+        {hasImage ? (
           <img
             src={propiedad.imagenes[0].imageUrl}
             alt={propiedad.direccion}
@@ -1142,86 +1136,156 @@ useEffect(() => {
             display: 'flex', 
             flexDirection: 'column',
             alignItems: 'center', 
-            justifyContent: 'center', 
-            bgcolor: '#e5e7eb',
-            color: '#6b7280'
+            justifyContent: 'center',
           }}>
-            <HomeIcon sx={{ fontSize: 48, mb: 1, color: '#9ca3af' }} />
-            <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
+            <HomeIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.8)', mb: 0.5 }} />
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
               Sin imagen
             </Typography>
           </Box>
         )}
-      </Box>
-           {/* Dirección visible en estado compacto */}
-                                <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-                                  <Typography
-                                    variant="body2"
-                                    sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-                                  >
-                                    <HomeIcon fontSize="small" />
-                                    {propiedad.direccion}
-                                  </Typography>
-                                </Box>
-                                <Collapse in={!isCompact} timeout="auto" unmountOnExit>
-      {/* Header con icono y tipo */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, ml: 2 }}>
-        <HomeIcon color="primary" sx={{ fontSize: 24, mr: 1 }} />
-        <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-          {propiedad.tipoPropiedad || propiedad.tipo}
-        </Typography>
+
+        {/* Action buttons on image */}
+        <Box sx={{ position: 'absolute', top: 8, left: 12, display: 'flex', gap: 0.75, zIndex: 2 }}>
+          <Tooltip title="Eliminar" arrow>
+            <IconButton
+              data-tour={index === 0 ? 'propiedades-card-delete' : undefined}
+              size="small"
+              onClick={(e) => { e.stopPropagation(); eliminarPropiedad(propiedad.id); }}
+              sx={{
+                width: 32, height: 32,
+                bgcolor: 'rgba(255,255,255,0.9)',
+                color: 'error.main',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                '&:hover': { bgcolor: 'white', transform: 'scale(1.1)' },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <DeleteForeverIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Editar" arrow>
+            <IconButton
+              size="small"
+              onClick={(e) => { e.stopPropagation(); navigate(`/propiedades/editar/${propiedad.id}`); }}
+              sx={{
+                width: 32, height: 32,
+                bgcolor: 'rgba(255,255,255,0.9)',
+                color: 'primary.main',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                '&:hover': { bgcolor: 'white', transform: 'scale(1.1)' },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <EditIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        <Box sx={{ position: 'absolute', top: 8, right: 12, display: 'flex', gap: 0.75, zIndex: 2 }}>
+          <Tooltip title="Agregar imagen" arrow>
+            <IconButton
+              size="small"
+              onClick={(e) => { e.stopPropagation(); handleAddImageClick(propiedad.id); }}
+              disabled={uploadingId === propiedad.id}
+              sx={{
+                width: 32, height: 32,
+                bgcolor: 'rgba(255,255,255,0.9)',
+                color: 'info.main',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                '&:hover': { bgcolor: 'white', transform: 'scale(1.1)' },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <AddPhotoAlternateIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Compartir" arrow>
+            <IconButton
+              size="small"
+              onClick={(e) => { e.stopPropagation(); handleSharePropiedad(propiedad); }}
+              sx={{
+                width: 32, height: 32,
+                bgcolor: 'rgba(255,255,255,0.9)',
+                color: 'success.main',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                '&:hover': { bgcolor: 'white', transform: 'scale(1.1)' },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <ShareIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Status chip */}
         <Chip
           icon={propiedad.disponibilidad ? <CheckCircleIcon /> : <CancelIcon />}
-          label={propiedad.disponibilidad ? 'libre' : 'Alquilado'}
-          color={propiedad.disponibilidad ? 'success' : 'warning'}
+          label={propiedad.disponibilidad ? 'Disponible' : 'Alquilado'}
           size="small"
-          sx={{ fontWeight: 500, ml: 2 }}
+          sx={{
+            position: 'absolute',
+            bottom: 8,
+            right: 12,
+            bgcolor: propiedad.disponibilidad ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)',
+            color: 'white',
+            fontWeight: 600,
+            fontSize: '0.7rem',
+            '& .MuiChip-icon': { color: 'white' },
+          }}
         />
       </Box>
-      <Divider sx={{ my: 1.5 }} />
-      {/* Info organizada con iconos */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, px: 2, pb: 2 }}>
-        {/* <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <HomeIcon fontSize="small" />
+
+      {/* Content section */}
+      <Box sx={{ p: 2, pl: 2.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1rem' }}>
+            {propiedad.tipoPropiedad || propiedad.tipo || 'Propiedad'}
+          </Typography>
+        </Box>
+
+        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <HomeIcon sx={{ fontSize: 16, color: 'primary.main' }} />
           {propiedad.direccion}
-        </Typography> */}
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <LocationOnIcon fontSize="small" />
-          {propiedad.localidad}
         </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.3 }}>
+            <LocationOnIcon sx={{ fontSize: 16, color: 'text.secondary', opacity: 0.7 }} />
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+              {propiedad.localidad}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.3 }}>
+            <MapIcon sx={{ fontSize: 16, color: 'text.secondary', opacity: 0.7 }} />
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+              {propiedad.partido}, {propiedad.provincia}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.3 }}>
+            <PersonIcon sx={{ fontSize: 16, color: 'text.secondary', opacity: 0.7 }} />
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+              {propiedad.usuarioDtoSalida?.username || 'Sin propietario'}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={(e) => handleBuscarProspectos(e, propiedad.id)}
+          sx={{ 
+            mt: 1.5, 
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 600,
+            fontSize: '0.75rem',
+          }}
         >
-          <MapIcon fontSize="small" />
-          {propiedad.partido}, {propiedad.provincia}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <PersonIcon fontSize="small" />
-          {propiedad.usuarioDtoSalida
-            ? `${propiedad.usuarioDtoSalida.username}`
-            : 'No asignado'}
-        </Typography>
-         <Button
-                                      variant="outlined"
-                                      size="small"
-                                      onClick={(e) => handleBuscarProspectos(e, propiedad.id)}
-                                      sx={{ alignSelf: 'flex-start', mt: 1 }}
-                                    >
-                                      Buscar prospectos compatibles
-                                    </Button>
-                                  </Box>
-                                </Collapse>
-                              </Card>
+          Buscar prospectos
+        </Button>
+      </Box>
+    </Paper>
                               <Collapse in={isCompact} timeout="auto" unmountOnExit>
                                 <Box sx={{
                                   mt: 1,
@@ -1353,27 +1417,16 @@ useEffect(() => {
                                 </Box>
                               </Collapse>
                             </Box>
-                          </Grid2>
                         );
                       })}
-                    </Grid2>
                   </Box>
                 ) : (
-                  <TableContainer component={Box} sx={{ 
+                  <Box sx={{ 
                     width: '100%',
-                    overflowX: 'auto',
-                    borderRadius: 2,
-                    padding:"1rem 2rem",
-                    display:"flex",
-                    justifyContent:"center",
-                    alignItems:"center"
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                    gap: 2,
                   }}>
-                    <Box sx={{ 
-                      width: {xs:"100%",sm:"100%",md:"80%"},
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                      gap: { xs: 2, md: 1 },
-                    }}>
                       {propiedadesPaginadas.map((propiedad, index) => {
                         const isCompact = propiedadProspectosActiva === propiedad?.id;
                         const prospectos = prospectosCompatibles[propiedad?.id] || [];
@@ -1693,8 +1746,7 @@ useEffect(() => {
                           </Box>
                         );
                       })}
-                    </Box>
-                </TableContainer>
+                  </Box>
                 )}
               </>
             )}

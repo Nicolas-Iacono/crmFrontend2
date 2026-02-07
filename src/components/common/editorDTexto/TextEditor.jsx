@@ -27,6 +27,7 @@ const TextEditor = ({ contrato, isOpen, onClose, onSaved, embed = false }) => {
   const [loading, setLoading] = useState(true);
   const [toolbarVisible, setToolbarVisible] = useState(true);
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { usuarioFetch } = useAuth();
 
@@ -327,24 +328,26 @@ const indexacion = (actualizacion) => {
     <Grid2 sx={{
       height: '100%',
       width: "100%",
-      p: { xs: "12px", sm: "24px" },
-      borderRadius: isMobile ? 0 : "8px",
-      boxShadow: isMobile ? "none" : "0 2px 4px rgba(0,0,0,0.1)",
+      p: { xs: 1.5, sm: 3 },
+      borderRadius: isMobile ? 0 : 3,
+      boxShadow: 'none',
       display: "flex",
       flexDirection: "column",
       gap: 2,
       position: 'relative',
-      backgroundColor: theme.palette ? theme.palette.background.default : "#f8fafc"
+      bgcolor: isDark ? '#0c0a14' : '#f8f7fc',
     }}>
       {loading && (
         <Box sx={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backgroundColor: 'rgba(248, 250, 252, 0.8)', zIndex: 10, backdropFilter: 'blur(2px)'
+          bgcolor: isDark ? 'rgba(12,10,20,0.85)' : 'rgba(248,247,252,0.85)',
+          zIndex: 10, backdropFilter: 'blur(4px)',
+          borderRadius: 'inherit',
         }}>
           <Box sx={{ textAlign: 'center' }}>
-            <CircularProgress size={40} sx={{ mb: 2 }} />
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            <CircularProgress size={36} sx={{ mb: 1.5, color: '#8b5cf6' }} />
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
               Cargando editor...
             </Typography>
           </Box>
@@ -354,27 +357,37 @@ const indexacion = (actualizacion) => {
       {isMobile && (
         <Box sx={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          mb: 2, pb: 1, minHeight: "10px",
+          mb: 1.5, pb: 1, minHeight: "10px",
+          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
         }}>
-          <Typography variant="h6" sx={{
-            fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' },
-            color: theme.palette.primary.main, lineHeight: 1.2
+          <Typography variant="subtitle1" sx={{
+            fontWeight: 700, fontSize: '1rem',
+            color: isDark ? '#a78bfa' : '#7c3aed', lineHeight: 1.2,
           }}>
-            Editor. {contrato?.nombreContrato}
+            Editor — {contrato?.nombreContrato}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
             <IconButton
               onClick={() => setToolbarVisible(!toolbarVisible)}
+              size="small"
               sx={{
-                color: "text.secondary",
-                bgcolor: 'rgba(0, 0, 0, 0.26)',
-                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.45)' }
+                color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.45)',
+                bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)' },
               }}
             >
-              {toolbarVisible ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              {toolbarVisible ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
             </IconButton>
-            <IconButton onClick={onClose} sx={{ color: "text.secondary", bgcolor: 'rgba(0, 0, 0, 0.26)', '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.45)' } }}>
-              <CloseIcon />
+            <IconButton
+              onClick={onClose}
+              size="small"
+              sx={{
+                color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.45)',
+                bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)' },
+              }}
+            >
+              <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
         </Box>
@@ -383,25 +396,25 @@ const indexacion = (actualizacion) => {
       {!isMobile && (
         <Box sx={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          mb: 2, pb: 1, minHeight: "10px",
+          mb: 1.5, pb: 1, minHeight: "10px",
+          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
         }}>
-          <Typography variant="h6" sx={{
-            fontWeight: 600, fontSize: '1.25rem',
-            color: theme.palette.primary.main, lineHeight: 1.2
+          <Typography variant="subtitle1" sx={{
+            fontWeight: 700, fontSize: '1.05rem',
+            color: isDark ? '#a78bfa' : '#7c3aed', lineHeight: 1.2,
           }}>
-            Editor. {contrato?.nombreContrato}
+            Editor — {contrato?.nombreContrato}
           </Typography>
           <IconButton
             onClick={() => setToolbarVisible(!toolbarVisible)}
+            size="small"
             sx={{
-              color: "text.secondary",
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-              '&:hover': {
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'
-              }
+              color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.45)',
+              bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)' },
             }}
           >
-            {toolbarVisible ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            {toolbarVisible ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
           </IconButton>
         </Box>
       )}
@@ -421,20 +434,21 @@ const indexacion = (actualizacion) => {
             'insertdatetime','media','table','wordcount'
           ],
           content_style: `
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                   font-size: 12pt; line-height: 1.6;
-                   color: ${theme.palette.mode === 'dark' ? '#e0e0e0' : '#333'};
-                   padding: 10px;
+            body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                   font-size: 12pt; line-height: 1.7;
+                   color: ${isDark ? '#e2e0e9' : '#1e1b2e'};
+                   padding: 12px;
                    width: 95%; margin: 0 auto;
-                   background-color: ${theme.palette.mode === 'dark' ? ' #1a1a1a' : 'white'}; }
+                   background-color: ${isDark ? '#12101c' : '#ffffff'}; }
             .contrato-content {
-                   background-color: ${theme.palette.mode === 'dark' ? ' #1a1a1a' : 'white'};
+                   background-color: ${isDark ? '#12101c' : '#ffffff'};
                    padding: 40px;
-                   box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+                   border-radius: 8px;
+                   box-shadow: 0 0 12px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.06)'}; }
             p { margin: 0 0 1em 0; text-align: justify; }
             strong u { font-weight: bold; text-decoration: underline; text-transform: uppercase; font-size: 12pt; display: block; margin: 15px 0 10px 0; }
             p[style*="text-align: center;"] { margin: 1.5em 0;
-                   color: ${theme.palette.mode === 'dark' ? ' #b0b0b0' : '#666'};
+                   color: ${isDark ? '#8a86a0' : '#666'};
                    font-size: 10pt; }
             .mce-content-body { outline: none !important; }
           `,
@@ -453,29 +467,32 @@ const indexacion = (actualizacion) => {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        p: "10px", 
+        p: 1.5,
         position: 'relative', 
         mt: 'auto', 
         mb: '3rem',
-        borderTop: `1px solid ${theme.palette.divider}`,
+        borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
       }}>
         <ShareButtons contrato={contrato} contenido={contenido} />
         
         <Button
           onClick={handlerSubmit}
           variant="contained"
-          color="primary"
           disabled={saving}
           sx={{ 
             textTransform: 'none', 
-            borderRadius: 2, 
+            borderRadius: 2.5, 
             px: 3, 
-            fontWeight: 500, 
+            fontWeight: 600, 
             boxShadow: 'none',
-            '&:hover': { boxShadow: '0 2px 4px rgba(0,0,0,0.1)' } 
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+              boxShadow: '0 4px 12px rgba(139,92,246,0.4)',
+            },
           }}
         >
-          {saving ? (<><CircularProgress size={20} sx={{ mr: 1 }} /> Guardando...</>) : 'Guardar'}
+          {saving ? (<><CircularProgress size={18} sx={{ mr: 1, color: 'inherit' }} /> Guardando...</>) : 'Guardar'}
         </Button>
       </Box>
     </Grid2>
@@ -490,10 +507,10 @@ const indexacion = (actualizacion) => {
   }
 
   return (
-    <Modal open={isOpen} onClose={onClose} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 500 }}>
-      <Slide direction="up" in={isOpen} timeout={500}>
+    <Modal open={isOpen} onClose={onClose} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 300, sx: { backdropFilter: 'blur(4px)' } }}>
+      <Slide direction="up" in={isOpen} timeout={250}>
         <Box sx={{
-          borderRadius: isMobile ? "20px 20px 0 0" : "12px",
+          borderRadius: isMobile ? '20px 20px 0 0' : '16px',
           position: 'fixed',
           ...(isMobile ? {
             bottom: 0,
@@ -502,7 +519,7 @@ const indexacion = (actualizacion) => {
             width: '100%',
             height: 'calc(100dvh - 56px)'
           } : {
-            bottom:-5,
+            bottom: -5,
             left: '',
             transform: 'translate(-50%, -50%)',
             width: '100vw',
@@ -511,14 +528,22 @@ const indexacion = (actualizacion) => {
           }),
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#f8fafc',
+          bgcolor: isDark ? '#0c0a14' : '#f8f7fc',
           overflow: 'hidden',
           zIndex: 1300,
-          boxShadow: isMobile ? '0 -4px 20px rgba(0,0,0,0.15)' : '0 8px 32px rgba(0,0,0,0.2)',
+          boxShadow: isMobile
+            ? '0 -6px 32px rgba(0,0,0,0.25)'
+            : `0 12px 48px ${isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.18)'}`,
           '& .tox-tinymce': { border: 'none', borderRadius: 0, height: '100%' },
-          '& .tox-editor-header': { backgroundColor: '#f8fafc', borderBottom: '1px solid #e0e0e0' },
-          '& .tox-toolbar__primary': { backgroundColor: '#f8fafc', p: '4px 8px' },
-          '& .tox-toolbar__group': { p: '4px 0' }
+          '& .tox-editor-header': {
+            backgroundColor: isDark ? '#15121f' : '#f8f7fc',
+            borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+          },
+          '& .tox-toolbar__primary': {
+            backgroundColor: isDark ? '#15121f' : '#f8f7fc',
+            p: '4px 8px',
+          },
+          '& .tox-toolbar__group': { p: '4px 0' },
         }}>
           {editorContent}
         </Box>

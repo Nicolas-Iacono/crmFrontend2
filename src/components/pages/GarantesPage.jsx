@@ -64,6 +64,9 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseIcon from '@mui/icons-material/Close';
+import SecurityIcon from '@mui/icons-material/Security';
+import MobileGaranteCard from '../common/cards/MobileGaranteCard';
+
 const GarantesPage = () => {
   const { usuarioFetch} = useAuth();
   const theme = useTheme();
@@ -334,36 +337,67 @@ const GarantesPage = () => {
     }
   };
 
+  const totalGarantes = filteredGarantes.length;
+
+  const StatCard = ({ icon, value, label, gradient }) => (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        borderRadius: 3,
+        background: gradient,
+        color: 'white',
+        minWidth: { xs: 100, sm: 140 },
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 0.5,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+        transition: 'transform 0.2s ease',
+        '&:hover': { transform: 'translateY(-2px)' },
+      }}
+    >
+      {icon}
+     <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1 }}>
+        {value}
+      </Typography>
+      <Typography variant="caption" sx={{ opacity: 0.9, textAlign: 'center', fontSize: '0.7rem' }}>
+        {label}
+      </Typography>
+       
+    </Paper>
+  );
+
   return (
     <Box sx={{ 
-      width: { xs: '100%', sm: '100%', md: '90vw' }, 
+      width: '100vw',
       minHeight: "100vh",
-      pt: { xs: 3, sm: 4 },
-      pb: { xs: 12, sm: 4 },
-      pl: { xs: 0, sm: 5 },
-      pr: { xs: 0, sm: 2 },
+      pt: { xs: 0, sm: 4, md: 2 },
+      pb: { xs: 14, sm: 12 },
+      pl: { xs: 2, sm: 3, md: '16rem' },
+      pr: { xs: 2, sm: 4, md: 3 },
       display: 'flex',
       flexDirection: 'column',
-      alignItems: { xs: 'center', md: 'flex-start' },
       bgcolor: 'background.default',
-      marginLeft: { md: '15rem' }
+      boxSizing: 'border-box',
     }}>
       <Box 
         sx={{ 
-          width: { xs: "90%", sm: "80%" },
+          width: '100%',
           mt: { xs: '4rem', sm: 0 },
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center'
         }}
       >
+   
         <Box 
           sx={{ 
             display: 'flex', 
             width: '100%',
             alignItems: 'center',
             justifyContent: 'space-between',
-            mb: { xs: 2, sm: 3 },
+            mb: { xs: 2, sm: 2 },
             marginTop:{xs:"0rem", md:"2rem"}
           }}
         >
@@ -379,15 +413,21 @@ const GarantesPage = () => {
             >
               <ArrowBackIcon />
             </IconButton>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                fontWeight: 600,
-                color: 'text.primary'
-              }}
-            >
-              Garantes
-            </Typography>
+            <Box>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: 'text.primary',
+                  lineHeight: 1.2,
+                }}
+              >
+                Garantes
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                Gestiona los garantes de tus contratos
+              </Typography>
+            </Box>
           </Box>
           <Tooltip title="Añadir garante">
             <Fab 
@@ -395,10 +435,29 @@ const GarantesPage = () => {
               aria-label="add" 
               size="small"
               onClick={() => navigate('/nuevo-garante')}
+                sx={{ 
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+            color: '#fff',
+            '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' },
+          }}
             >
               <AddIcon />
             </Fab>
           </Tooltip>
+        </Box>
+     <Box sx={{ 
+          display: { xs: 'none', sm: 'flex' }, 
+          gap: 1.5, 
+          width: '100%', 
+          mb: 2.5,
+          flexWrap: 'wrap',
+        }}>
+          <StatCard 
+            icon={<SecurityIcon sx={{ fontSize: 24, opacity: 0.9 }} />}
+            value={totalGarantes}
+            label="Total garantes"
+            gradient="linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)"
+          />
         </Box>
         
         <TextField
@@ -455,93 +514,15 @@ const GarantesPage = () => {
           (
             <Box sx={{ width: '100%' }}>
               {garantesPaginados.map(garante => (
-                <Box key={garante.id} sx={{ mb: 2, position: 'relative' }}>
-                  {expandedCards[garante.id] && (
-                    <Box sx={{
-                      display: 'flex',
-                      justifyContent: 'end',
-                      gap: 1,
-                      padding: '.4rem .3rem',
-                      position: 'relative',
-                      zIndex: 2,
-                      borderRadius: '10px 10px 0 0',
-                      boxShadow: '0px 0px 1px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <Chip
-                        icon={<DescriptionIcon />}
-                        onClick={(e) => { e.stopPropagation(); openGaranteDocs(garante); }}
-                        sx={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, width: 50, minWidth: 40,
-                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.35)' : 'rgba(25, 118, 210, 0.2)',
-                          color: 'primary.main', padding: 0,
-                          '& .MuiChip-icon': { margin: 0 }, '& .MuiChip-label': { display: 'none' },
-                          '&:hover': { bgcolor: theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.5)' : 'rgba(25, 118, 210, 0.35)', boxShadow: 2 },
-                          transition: 'all 0.2s ease', boxShadow: 1
-                        }}
-                      />
-                      <Chip
-                        icon={<EditIcon />}
-                        onClick={(e) => { e.stopPropagation(); handleEditOpen(garante); }}
-                        sx={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, width: 50, minWidth: 40,
-                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(98, 9, 199, 0.59)' : 'rgba(98, 9, 199, 0.2)',
-                          color: 'primary.main', padding: 0,
-                          '& .MuiChip-icon': { margin: 0 }, '& .MuiChip-label': { display: 'none' },
-                          '&:hover': { bgcolor: 'rgba(98, 9, 199, 0.46)', transform: 'translateY(-1px)', boxShadow: 2 },
-                          transition: 'all 0.2s ease', boxShadow: 1
-                        }}
-                      />
-                      <Chip
-                        icon={<DeleteIcon />}
-                        onClick={(e) => { e.stopPropagation(); eliminarGarante(garante.id); }}
-                        sx={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, width: 50, minWidth: 40,
-                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(243, 29, 197, 0.59)' : 'rgba(244, 67, 54, 0.2)',
-                          color: 'error.main', padding: 0,
-                          '& .MuiChip-icon': { margin: 0 }, '& .MuiChip-label': { display: 'none' },
-                          '&:hover': { bgcolor: theme.palette.mode === 'dark' ? 'rgba(185, 14, 148, 0.59)' : 'rgba(224, 14, 14, 0.39)', transform: 'translateY(-1px)', boxShadow: 2 },
-                          transition: 'all 0.2s ease', boxShadow: 1
-                        }}
-                      />
-                    </Box>
-                  )}
-
-                  <Paper sx={{ borderRadius: 2, boxShadow: 1, '&:hover': { boxShadow: 3 }, bgcolor: 'background.paper' }}>
-                    <Box
-                      sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                      onClick={() => handleToggleCard(garante.id)}
-                    >
-                      <Typography variant="h6">{garante.nombre} {garante.apellido}</Typography>
-                      <IconButton
-                        onClick={(e) => { e.stopPropagation(); handleToggleCard(garante.id); }}
-                        sx={{ transform: expandedCards[garante.id] ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}
-                      >
-                        <ExpandMoreIcon />
-                      </IconButton>
-                    </Box>
-                    <Collapse in={!!expandedCards[garante.id]}>
-                      <Divider sx={{ my: 1.5 }} />
-                      <Box sx={{ p: 2, pt: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        <Typography><strong>DNI:</strong> {garante.dni || 'No disponible'}</Typography>
-                        <Typography><strong>Email:</strong> {garante.email || 'No disponible'}</Typography>
-                        <Typography><strong>Teléfono:</strong> {garante.telefono || 'No disponible'}</Typography>
-                        <Typography><strong>Dirección:</strong> {(garante.direccionResidencial || `${garante.calle || ''} ${garante.numero || ''}`).trim() || 'No disponible'}</Typography>
-                      </Box>
-                      <Box sx={{ padding: 0, display: 'flex', flexDirection: 'row', height: '4rem', width: '100%' }}>
-                        <Box sx={{ borderRadius: '0 0 0 10px', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 1.5, backgroundColor: 'rgb(28, 110, 13)', width: '50%' }}>
-                          <IconButton href={`https://wa.me/${garante.telefono}`} target="_blank" sx={{ color: 'white' }}>
-                            <WhatsAppIcon sx={{ fontSize: 45 }} />
-                          </IconButton>
-                        </Box>
-                        <Box sx={{ borderRadius: '0 0 10px 0', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 1.5, backgroundColor: 'rgb(19, 21, 62)', width: '50%' }}>
-                          <IconButton href={`mailto:${garante.email}`} sx={{ color: 'white' }}>
-                            <EmailIcon sx={{ fontSize: 45 }} />
-                          </IconButton>
-                        </Box>
-                      </Box>
-                    </Collapse>
-                  </Paper>
-                </Box>
+                <MobileGaranteCard
+                  key={garante.id}
+                  garante={garante}
+                  isExpanded={!!expandedCards[garante.id]}
+                  onToggle={handleToggleCard}
+                  onEdit={handleEditOpen}
+                  onDelete={eliminarGarante}
+                  onDocuments={openGaranteDocs}
+                />
               ))}
               {totalPaginas > 0 && (
                 <Box display="flex" justifyContent="center" mt={2} mb={3} sx={{ width: '100%' }}>

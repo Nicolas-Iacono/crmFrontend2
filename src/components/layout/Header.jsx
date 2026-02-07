@@ -6,17 +6,10 @@ import {
   useTheme,
   useMediaQuery,
   Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   Switch,
   Divider,
   Typography,
-  ListItemButton,
   Badge,
-  Button,
-  Fab,
   Tooltip
 } from '@mui/material';
 import Swal from 'sweetalert2';
@@ -52,6 +45,7 @@ import EventBusyIcon from '@mui/icons-material/EventBusy';
 import playstoreLogo from '../../assets/playstore.png';
 export const Header = ({ toggleTheme, darkMode }) => {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
@@ -70,6 +64,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [notificationDetailOpen, setNotificationDetailOpen] = useState(false);
   const [newAlertCount, setNewAlertCount] = useState(0);
+   const [alertaRecibo, setAlertaRecibo] = useState(null);
   const apiRoot = `${import.meta.env.VITE_API_URL}${String(import.meta.env.VITE_API_URL || '').includes('/api') ? '' : '/api'}`;
   // Datos de notificaciones desde el backend
   const [notifications, setNotifications] = useState([]);
@@ -78,7 +73,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
   const lastReciboAlertIdsRef = useRef(new Set());
   const lastScrollY = useRef(0);
   const hideTimer = useRef(null);
-
+  const [alertas, setAlertas] = useState([]);
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
   };
@@ -136,6 +131,34 @@ export const Header = ({ toggleTheme, darkMode }) => {
       setIsClosing(false);
     }, 600); // Tiempo igual a la duración de la animación
   };
+  const fetchReciboDetails = async (reciboId) => {
+    if (!reciboId) return null;
+    try {
+      const token =
+        localStorage.getItem('token') ||
+        localStorage.getItem('inquilino_token') ||
+        localStorage.getItem('propietario_token') ||
+        localStorage.getItem('admin_token');
+
+      const response = await fetch(`${apiRoot}/recibo/${reciboId}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return result?.data ?? null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error al obtener detalles del recibo:', error);
+      return null;
+    }
+  };
+
 
   // Funciones para manejar el modal de detalles
   const handleNotificationClick = (notification) => {
@@ -202,15 +225,24 @@ export const Header = ({ toggleTheme, darkMode }) => {
     });
   };
 
-  const mapReciboAlertasToNotifications = (alertas) => {
+  const mapReciboAlertasToNotifications = (alertas, recibosData = {}) => {
     return alertas.map((a) => {
       const createdAt = parseBackendDate(a.fechaCreacion || a.ultimaNotificacion);
       const isTransfer = a.tipo === "TRANSFERENCIA_PENDIENTE";
-      const title = isTransfer ? "Transferencia pendiente" : "Alerta de recibo";
-      const reciboLabel = a.reciboId ? `#${a.reciboId}` : "sin número";
-      const message = isTransfer
-        ? `Tenés una transferencia pendiente para el recibo ${reciboLabel}.`
-        : `Tenés una alerta de pago para el recibo ${reciboLabel}.`;
+      const title = isTransfer ? "Transferencia pendiente de revision " : "Alerta de recibo";
+
+      const reciboData = recibosData[a.reciboId] || null;
+      const periodo = reciboData?.periodo || null;
+      const nombreContrato = reciboData?.nombreContrato || null;
+
+      let message;
+      if (isTransfer && periodo && nombreContrato) {
+        message = `Tenés una transferencia pendiente de revision para el recibo de ${periodo} / ${nombreContrato}.`;
+      } else if (isTransfer) {
+        message = `Tenés una transferencia pendiente para el recibo #${a.reciboId || 'N/A'}.`;
+      } else {
+        message = `Tenés una alerta de pago para el recibo #${a.reciboId || 'N/A'}.`;
+      }
 
       return {
         id: `recibo-${a.id}`,
@@ -225,41 +257,19 @@ export const Header = ({ toggleTheme, darkMode }) => {
         type: isTransfer ? "payment" : "warning",
         source: "recibo-alerta",
         raw: a,
+        reciboData,
       };
     });
   };
 
-  const mapPushToNotification = (payload) => {
-    const now = new Date();
-    const pushType = payload?.data?.type;
-    const isTransfer = pushType === "TRANSFERENCIA_PENDIENTE";
-    const title = payload?.title || (isTransfer ? "Transferencia notificada" : "Nueva notificación");
-    const message = payload?.body || "Tienes una nueva notificación.";
-    const type = isTransfer ? "payment" : "contract";
-
-    return {
-      id: `push-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      contratoId: payload?.data?.contratoId ?? null,
-      title,
-      message,
-      time: now.toLocaleString(),
-      timestamp: now.getTime(),
-      read: false,
-      type,
-      source: "push",
-      raw: payload?.data ?? null,
-    };
-  };
-
   const mergeNotifications = ({ contractAlerts, reciboAlerts } = {}) => {
     setNotifications((prev) => {
-      const pushNotifications = prev.filter((notification) => notification.source === "push");
       const contratoNotifications = contractAlerts
         ?? prev.filter((notification) => notification.source === "alerta");
       const reciboNotifications = reciboAlerts
         ?? prev.filter((notification) => notification.source === "recibo-alerta");
 
-      const combined = [...reciboNotifications, ...contratoNotifications, ...pushNotifications];
+      const combined = [...reciboNotifications, ...contratoNotifications];
       combined.sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
       const unreadCount = combined.filter((notification) => !notification.read).length;
       setNotificationCount(unreadCount);
@@ -323,8 +333,19 @@ export const Header = ({ toggleTheme, darkMode }) => {
 
       if (response.ok) {
         const result = await response.json();
-        const alertas = result?.data ?? [];
-        const mappedNotifications = mapReciboAlertasToNotifications(alertas);
+        const alertasData = result?.data ?? [];
+        setAlertas(alertasData);
+
+        const reciboIds = [...new Set(alertasData.map((a) => a.reciboId).filter(Boolean))];
+        const recibosData = {};
+        await Promise.all(
+          reciboIds.map(async (id) => {
+            const data = await fetchReciboDetails(id);
+            if (data) recibosData[id] = data;
+          })
+        );
+
+        const mappedNotifications = mapReciboAlertasToNotifications(alertasData, recibosData);
         const incomingIds = new Set(mappedNotifications.map((notification) => notification.id));
         lastReciboAlertIdsRef.current = incomingIds;
         mergeNotifications({ reciboAlerts: mappedNotifications });
@@ -335,6 +356,7 @@ export const Header = ({ toggleTheme, darkMode }) => {
       console.error('Error en fetchReciboAlertas:', error);
     }
   };
+
 
   const refreshNotifications = async ({ showToast = false } = {}) => {
     if (!isLogged) return;
@@ -395,24 +417,20 @@ export const Header = ({ toggleTheme, darkMode }) => {
     const handleServiceWorkerMessage = (event) => {
       if (event.data?.type !== "PUSH_NOTIFICATION") return;
       const payload = event.data?.payload;
-      const notification = mapPushToNotification(payload);
 
-      setNotifications((prev) => {
-        const updated = [notification, ...prev];
-        const unreadCount = updated.filter((item) => !item.read).length;
-        setNotificationCount(unreadCount);
-        return updated;
-      });
+      const title = payload?.title || "Nueva notificación";
+      const message = payload?.body || "Tienes una nueva notificación.";
 
+      // Mostrar toast inmediato con info del push
       if (Swal) {
         Swal.fire({
           toast: true,
           position: "top-end",
-          icon: "success",
-          title: notification.title,
-          text: notification.message,
+          icon: "info",
+          title,
+          text: message,
           showConfirmButton: false,
-          timer: 2500,
+          timer: 3000,
           timerProgressBar: true,
           customClass: {
             popup: "compact-toast",
@@ -426,6 +444,29 @@ export const Header = ({ toggleTheme, darkMode }) => {
           },
         });
       }
+
+      // Inyectar la notificación push directamente en el panel
+      const pushNotification = {
+        id: `push-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        title,
+        message,
+        time: new Date().toLocaleString(),
+        timestamp: Date.now(),
+        read: false,
+        type: "info",
+        source: "push",
+        raw: payload,
+      };
+
+      setNotifications((prev) => {
+        const updated = [pushNotification, ...prev];
+        const unreadCount = updated.filter((n) => !n.read).length;
+        setNotificationCount(unreadCount);
+        return updated;
+      });
+
+      // También refrescar alertas del backend por si hay nuevas
+      fetchReciboAlertas();
     };
 
     navigator.serviceWorker.addEventListener("message", handleServiceWorkerMessage);
@@ -547,212 +588,254 @@ export const Header = ({ toggleTheme, darkMode }) => {
       children: initials,
     };
   }
-const authorities = localStorage.getItem('authorities');
+
+  const authorities = localStorage.getItem('authorities');
+
+  const getRoleName = () => {
+    if (authorities?.includes('ROLE_SUPER_ADMIN')) return 'Super Admin';
+    if (authorities?.includes('ROLE_ADMIN')) return 'Administrador';
+    return 'Usuario';
+  };
+
+  const getPlanBadge = () => {
+    if (authorities?.includes('ROLE_SUPER_ADMIN')) {
+      return { label: 'Unlimited', bg: 'linear-gradient(135deg, #DC143C 0%, #FF69B4 100%)', color: '#fff' };
+    }
+    if (plan?.status === 'ACTIVE' && (plan?.planName === 'pro+' || plan?.planName === 'Pro' || plan?.planName === 'Superior')) {
+      return { label: plan.planName, bg: 'linear-gradient(135deg, #B8860B 0%, #FFD700 100%)', color: '#1a1a1a' };
+    }
+    return { label: 'Free', bg: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', color: '#fff' };
+  };
+
+  const planBadge = getPlanBadge();
+
+  const drawerMenuItems = [
+    { icon: <CalculateIcon />, label: 'Calculadora', tour: 'drawer-calculadora', onClick: () => handleNavigate('/calculadora-de-alquileres'), color: '#3b82f6' },
+    { icon: <CalendarMonthIcon />, label: 'Calendario', tour: 'drawer-calendario', onClick: () => handleNavigate('/calendario'), color: '#22c55e', badge: hasCalendarEvents },
+    { icon: <ReceiptIcon />, label: 'Presupuestos', tour: 'drawer-presupuestos', onClick: () => handleNavigate('/presupuestos'), color: '#f59e0b' },
+    { icon: <PaidIcon />, label: 'Ingresos', tour: null, onClick: () => handleNavigate('/contabilidad'), color: '#10b981' },
+    { icon: <ContactMailIcon />, label: 'Prospectos', tour: null, onClick: () => handleNavigate('/prospectos'), color: '#ec4899' },
+    { icon: <QrCode2Icon />, label: 'Compartir', tour: 'drawer-compartir', onClick: () => { setDrawerOpen(false); handleOpenQR(); }, color: '#6366f1' },
+  ];
+
+  const drawerBottomItems = [
+    { icon: <WorkspacePremiumIcon />, label: 'Planes Premium', tour: 'drawer-suscripcion', onClick: handleOpenSubscriptionModal, color: '#f59e0b' },
+    { icon: <SettingsIcon />, label: 'Ajustes', tour: 'drawer-ajustes', onClick: () => handleNavigate('/ajustes'), color: isDark ? '#94a3b8' : '#64748b' },
+  ];
+
   const drawerContent = (
     <Box
-      sx={{ width: 250, height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.mode === 'dark' ? 'rgb(35, 35, 35)' : '#fff', borderRadius:"0px 15px 0px 0px", position:"relative"}}
+      sx={{ width: 280, height: '100%', display: 'flex', flexDirection: 'column', bgcolor: isDark ? '#111118' : '#fff', position: 'relative' }}
       role="presentation"
     >
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Avatar
-          src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : googleProfile?.picture || ''}
-          {...(!usuarioFetch?.logo && { ...stringAvatar((usuarioFetch?.username || '').toUpperCase()) })}
-          sx={{ width: 80, height: 80, mx: 'auto', mb: 1 }}
-        />
-        <Typography variant="body1">{usuarioFetch?.nombreNegocio}</Typography>
-       
-<Typography variant="body2" color="text.secondary">
-  {authorities?.includes('ROLE_SUPER_ADMIN')
-    ? 'Super Admin'
-    : authorities?.includes('ROLE_ADMIN')
-    ? 'Administrador'
-    : authorities?.includes('ROLE_USER')
-    ? 'Usuario'
-    : 'Usuario'}
-</Typography>
-      {authorities?.includes('ROLE_SUPER_ADMIN') ? (
-  // 🟡 Plan ilimitado para Super Admin
-  <Box
-    sx={{
-      background: "linear-gradient(135deg, #8B0000 0%, #DC143C 25%, #FF69B4 50%, #FFB6C1 75%, #8B0000 100%)",
-      boxShadow: "0 4px 15px rgba(243, 153, 171, 0.29), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
-      width: "100%",
-      borderRadius: 3,
-      height: "1.7rem",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <Typography variant="body1" sx={{ color: "rgb(250, 250, 250)", fontWeight: "bold" }}>
-      Unlimited Version
-    </Typography>
-
-
-     {/* Icon button de notificaciones para mobile */}
-          <Box sx={{
-            position: 'absolute',
-            top: 16,
-            left: 190,
-            zIndex: 1200,
-            transition: 'transform 0.3s ease-in-out',
-            transform: (visible || location.pathname === '/ajustes' || location.pathname === '/calendario' || location.pathname === '/' || location.pathname.startsWith('/recibos-page')) ? 'translateX(0)' : 'translateX(100px)',
-          }}>
-            <Tooltip title="Notificaciones">
-              <IconButton
-                onClick={handleNotificationsClick}
-                sx={{ 
-                  p: 1.5,
-                  boxShadow: 3, 
-                  bgcolor: 'background.paper', 
-                  '&:hover': { bgcolor: 'background.paper' },
-                  color: theme.palette.mode === 'dark' ? 'text.primary' : 'text.secondary'
-                }}
-              >
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+      {/* Profile header */}
+      <Box sx={{
+        p: 2.5,
+        pb: 2,
+        background: isDark
+          ? 'linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(124,58,237,0.08) 100%)'
+          : 'linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(124,58,237,0.03) 100%)',
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+          <Avatar
+            src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : googleProfile?.picture || ''}
+            {...(!usuarioFetch?.logo && { ...stringAvatar((usuarioFetch?.username || '').toUpperCase()) })}
+            sx={{ width: 48, height: 48, border: `2px solid ${isDark ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.2)'}` }}
+          />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {usuarioFetch?.nombreNegocio || 'Mi Negocio'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+              {getRoleName()}
+            </Typography>
           </Box>
-  </Box>
-  
-) : plan?.status === "ACTIVE" && 
-   (plan?.planName === "pro+" || plan?.planName === "Pro" || plan?.planName === "Superior") ? (
-  // 🟡 Plan Pro o Superior activo
-  <Box
-    sx={{
-      background: "linear-gradient(135deg, #B8860B 0%, #FFD700 15%, #FFF8DC 30%, #FFD700 45%, #DAA520 60%, #FFF8DC 75%, #FFD700 90%, #B8860B 100%)",
-      boxShadow: "inset 0 2px 8px rgba(255, 215, 0, 0.3), inset 0 -2px 8px rgba(184, 134, 11, 0.4), 0 4px 12px rgba(255, 215, 0, 0.2)",
-      width: "100%",
-      borderRadius: 3,
-      height: "1.7rem",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <Typography variant="body1" sx={{ color: "rgb(49,49,49)" }}>
-      {plan?.planName}
-    </Typography>
-  </Box>
-) : (
-  // 🟣 Plan Free
-  <Box
-    sx={{
-      background: "linear-gradient(135deg, #4B0082 0%, #8A2BE2 15%, #DDA0DD 30%, #9370DB 45%, #6A5ACD 60%, #E6E6FA 75%, #8A2BE2 90%, #4B0082 100%)",
-      boxShadow: "inset 0 2px 8px rgba(138, 43, 226, 0.3), inset 0 -2px 8px rgba(75, 0, 130, 0.4), 0 4px 12px rgba(138, 43, 226, 0.2)",
-      width: "100%",
-      borderRadius: 3,
-      height: "1.7rem",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <Typography variant="body1" sx={{ color: "rgb(255,255,254)" }}>
-      Plan Free
-    </Typography>
-  </Box>
-)}
-
-         
+          {/* Notifications button */}
+          <IconButton
+            size="small"
+            onClick={handleNotificationsClick}
+            sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' } }}
+          >
+            <Badge badgeContent={notificationCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', height: 16, minWidth: 16 } }}>
+              <NotificationsIcon sx={{ fontSize: 18 }} />
+            </Badge>
+          </IconButton>
+        </Box>
+        {/* Plan badge */}
+        <Box sx={{
+          background: planBadge.bg,
+          borderRadius: 2,
+          px: 2,
+          py: 0.5,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.5,
+        }}>
+          <WorkspacePremiumIcon sx={{ fontSize: 14, color: planBadge.color }} />
+          <Typography variant="caption" sx={{ fontWeight: 700, color: planBadge.color, fontSize: '0.65rem', letterSpacing: 0.5 }}>
+            {planBadge.label}
+          </Typography>
+        </Box>
       </Box>
-      <Divider sx={{ my: 1 }} />
-      <List>
-        <ListItem disablePadding>
-          <ListItemButton data-tour="drawer-calculadora" onClick={() => handleNavigate('/calculadora-de-alquileres')}>
-            <ListItemIcon><CalculateIcon /></ListItemIcon>
-            <ListItemText primary="Calculadora" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton data-tour="drawer-calendario" onClick={() => handleNavigate('/calendario')}>
-            <ListItemIcon>
-              <Badge color="error" variant="dot" invisible={!hasCalendarEvents}>
-                <CalendarMonthIcon />
-              </Badge>
-            </ListItemIcon>
-            <ListItemText primary="Calendario" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton data-tour="drawer-presupuestos" onClick={() => handleNavigate('/presupuestos')}>
-            <ListItemIcon><ReceiptIcon /></ListItemIcon>
-            <ListItemText primary="Presupuestos" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigate('/contabilidad')}>
-            <ListItemIcon><PaidIcon /></ListItemIcon>
-            <ListItemText primary="Ingresos" />
-          </ListItemButton>
-        </ListItem>
-      
-        <ListItem disablePadding>
-          <ListItemButton data-tour="drawer-compartir" onClick={() => { setDrawerOpen(false); handleOpenQR(); }}>
-            <ListItemIcon><QrCode2Icon  /></ListItemIcon>
-            <ListItemText primary="Compartir Contacto" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton data-tour="drawer-suscripcion" onClick={handleOpenSubscriptionModal}>
-            <ListItemIcon><WorkspacePremiumIcon sx={{ color: '#FF9800' }} /></ListItemIcon>
-            <ListItemText primary="Planes Premium" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton data-tour="drawer-ajustes" onClick={() => handleNavigate('/ajustes')}>
-            <ListItemIcon><SettingsIcon  /></ListItemIcon>
-            <ListItemText primary="Ajustes" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigate('/prospectos')}>
-            <ListItemIcon><ContactMailIcon /></ListItemIcon>
-            <ListItemText primary="Prospectos" />
-          </ListItemButton>
-        </ListItem>
+
+      {/* Menu items */}
+      <Box sx={{ flex: 1, px: 1.5, py: 1.5, overflowY: 'auto' }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'text.secondary', fontSize: '0.6rem', px: 1, mb: 0.5, display: 'block' }}>
+          Herramientas
+        </Typography>
+        {drawerMenuItems.map((item, i) => (
+          <Box
+            key={i}
+            data-tour={item.tour}
+            onClick={item.onClick}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 1.5,
+              py: 1,
+              borderRadius: 2,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              '&:active': { transform: 'scale(0.98)' },
+              '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' },
+            }}
+          >
+            <Box sx={{
+              width: 34,
+              height: 34,
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: isDark ? `${item.color}22` : `${item.color}14`,
+              color: item.color,
+              '& .MuiSvgIcon-root': { fontSize: 18 },
+            }}>
+              {item.badge ? (
+                <Badge color="error" variant="dot" invisible={!item.badge}
+                  sx={{ '& .MuiBadge-badge': { top: 2, right: 2, width: 6, height: 6, minWidth: 6 } }}>
+                  {item.icon}
+                </Badge>
+              ) : item.icon}
+            </Box>
+            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+              {item.label}
+            </Typography>
+          </Box>
+        ))}
+
+        <Box sx={{ my: 1.5, mx: 1, borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }} />
+
+        {drawerBottomItems.map((item, i) => (
+          <Box
+            key={i}
+            data-tour={item.tour}
+            onClick={item.onClick}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 1.5,
+              py: 1,
+              borderRadius: 2,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              '&:active': { transform: 'scale(0.98)' },
+              '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' },
+            }}
+          >
+            <Box sx={{
+              width: 34,
+              height: 34,
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: isDark ? `${item.color}22` : `${item.color}14`,
+              color: item.color,
+              '& .MuiSvgIcon-root': { fontSize: 18 },
+            }}>
+              {item.icon}
+            </Box>
+            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+              {item.label}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      {/* Footer */}
+      <Box sx={{
+        px: 1.5,
+        py: 1.5,
+        borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+      }}>
+        {/* Dark mode toggle */}
         {isMobile && (
-          <ListItem>
-            <ListItemIcon>{darkMode ? <DarkModeIcon /> : <LightModeIcon />}</ListItemIcon>
-            <ListItemText primary="Tema Oscuro" />
-            <Switch edge="end" data-tour="toggle-tema" onChange={toggleTheme} checked={darkMode} />
-          </ListItem>
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 1.5,
+            py: 0.75,
+            borderRadius: 2,
+            mb: 0.5,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{
+                width: 34, height: 34, borderRadius: 2,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                bgcolor: isDark ? 'rgba(251,191,36,0.15)' : 'rgba(99,102,241,0.1)',
+                color: isDark ? '#fbbf24' : '#6366f1',
+                '& .MuiSvgIcon-root': { fontSize: 18 },
+              }}>
+                {darkMode ? <DarkModeIcon /> : <LightModeIcon />}
+              </Box>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>Tema</Typography>
+            </Box>
+            <Switch
+              size="small"
+              data-tour="toggle-tema"
+              onChange={toggleTheme}
+              checked={darkMode}
+              sx={{
+                '& .MuiSwitch-switchBase.Mui-checked': { color: '#8b5cf6' },
+                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#8b5cf6' },
+              }}
+            />
+          </Box>
         )}
-        
-        <ListItem disablePadding>
-          <ListItemButton onClick={handleLogout}>
-            <ListItemIcon><LogoutIcon color="error" /></ListItemIcon>
-            <ListItemText primary="Cerrar Sesión" primaryTypographyProps={{ color: 'error' }} />
-          </ListItemButton>
-        </ListItem>
-        {/* <Box sx={{ p: 2, mt: 'auto' }}>
-        <Button
-          data-tour="open-chat"
-          variant="contained"
-          fullWidth
-          startIcon={<AutoAwesomeIcon />}
-          onClick={handleOpenChat}
+        {/* Logout */}
+        <Box
+          onClick={handleLogout}
           sx={{
-            color: 'white',
-            backgroundColor: '#6e42ca',
-            borderRadius: '12px',
-            textTransform: 'none',
-            fontWeight: 'bold',
-            py: 1.5,
-            transition: 'background 0.3s ease, transform 0.2s ease',
-            '&:hover': {
-              transform: 'scale(1.03)',
-              background: 'linear-gradient(45deg, #F871B8 0%, #6E42CA 50%, #3B82F6 100%)',
-            },
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            px: 1.5,
+            py: 1,
+            borderRadius: 2,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            '&:active': { transform: 'scale(0.98)' },
+            '&:hover': { bgcolor: isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.06)' },
           }}
         >
-          tuinmoIA
-        </Button>
-        </Box> */}
-       
-      </List>
+          <Box sx={{
+            width: 34, height: 34, borderRadius: 2,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            bgcolor: isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.08)',
+            color: '#ef4444',
+            '& .MuiSvgIcon-root': { fontSize: 18 },
+          }}>
+            <LogoutIcon />
+          </Box>
+          <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem', color: '#ef4444' }}>
+            Cerrar Sesión
+          </Typography>
+        </Box>
+      </Box>
     </Box>
   );
 
@@ -968,20 +1051,34 @@ const authorities = localStorage.getItem('authorities');
             transition: 'transform 0.3s ease-in-out',
             transform: (visible || location.pathname === '/ajustes' || location.pathname === '/calendario' || location.pathname === '/' || location.pathname.startsWith('/recibos-page')) ? 'translateX(0)' : 'translateX(-100px)',
           }}>
-            <IconButton onClick={handleDrawerToggle} sx={{ p: 0, boxShadow: 3, bgcolor: 'background.paper', '&:hover': { bgcolor: 'background.paper' } }}>
-              <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} />
+            <IconButton onClick={handleDrawerToggle} sx={{
+              p: 0.3,
+              bgcolor: isDark ? 'rgba(30,30,40,0.9)' : 'rgba(245, 245, 245, 0.95)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxShadow: isDark ? '0 2px 16px rgba(0,0,0,0.4)' : '0 2px 16px rgba(0,0,0,0.1)',
+              border: `1.5px solid ${isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.15)'}`,
+              borderRadius: 2.5,
+              '&:hover': { bgcolor: isDark ? 'rgba(30,30,40,0.95)' : 'rgba(255,255,255,1)' },
+            }}>
+              <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} sx={{ width: 36, height: 36, borderRadius: 1.5, border: notificationCount > 0 ? '2.5px solid #8b5cf6' : '2px solid transparent', boxShadow: notificationCount > 0 ? '0 0 8px rgba(139,92,246,0.5)' : 'none', transition: 'border 0.3s ease, box-shadow 0.3s ease', animation: notificationCount > 0 ? 'notifPulse 2s ease-in-out infinite' : 'none', '@keyframes notifPulse': { '0%, 100%': { boxShadow: '0 0 4px rgba(139,92,246,0.3)' }, '50%': { boxShadow: '0 0 12px rgba(139,92,246,0.6)' } } }} />
             </IconButton>
             <Drawer
               anchor="left"
               open={drawerOpen}
               onClose={handleDrawerToggle}
+              sx={{ zIndex: 1400 }}
               PaperProps={{
                 sx: {
-                  borderTopRightRadius: 15,
-                  borderBottomRightRadius: 0,
+                  borderTopRightRadius: 20,
+                  borderBottomRightRadius: 20,
                   borderTopLeftRadius: 0,
                   borderBottomLeftRadius: 0,
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  boxShadow: isDark
+                    ? '8px 0 40px rgba(0,0,0,0.5)'
+                    : '8px 0 40px rgba(0,0,0,0.1)',
+                  border: 'none',
                 }
               }}
             >
@@ -1060,7 +1157,7 @@ const authorities = localStorage.getItem('authorities');
                           </Box>
                 
                 <IconButton data-tour="open-drawer" onClick={handleDrawerToggle} sx={{ p: 0 }}>
-                   <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} />
+                   <Avatar src={usuarioFetch?.logo ? `${usuarioFetch.logo}?t=${logoTimestamp}` : ''} {...(!usuarioFetch?.logo && { ...stringAvatar((authUser?.username || '').toUpperCase()) })} sx={{ border: notificationCount > 0 ? '2.5px solid #8b5cf6' : '2.5px solid rgba(255,255,255,0.3)', boxShadow: notificationCount > 0 ? '0 0 10px rgba(139,92,246,0.5)' : 'none', transition: 'border 0.3s ease, box-shadow 0.3s ease', animation: notificationCount > 0 ? 'notifPulse 2s ease-in-out infinite' : 'none', '@keyframes notifPulse': { '0%, 100%': { boxShadow: '0 0 4px rgba(139,92,246,0.3)' }, '50%': { boxShadow: '0 0 12px rgba(139,92,246,0.6)' } } }} />
                 </IconButton>
               </Box>
               <Drawer anchor="right" open={drawerOpen} onClose={handleDrawerToggle}>{drawerContent}</Drawer>

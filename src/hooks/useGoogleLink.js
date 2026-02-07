@@ -7,31 +7,21 @@ const useGoogleLink = () => {
   const auth = useAuth();
   const token = auth?.token;
   
-  // Si el contexto no está disponible, retornar valores por defecto
-  if (!auth) {
-    return {
-      isLinked: false,
-      isLoading: false,
-      googleProfile: null,
-      handleLink: () => {},
-      handleUnlink: () => {}
-    };
-  }
   const [googleProfile, setGoogleProfile] = useState(null);
   const [isLinked, setIsLinked] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!!auth);
 
   const fetchGoogleProfile = useCallback(async () => {
+    if (!auth || !token) {
+      setIsLoading(false);
+      return;
+    }
     const authConfig = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
       withCredentials: true,
     };
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
     setIsLoading(true);
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/oauth/google/profile`, authConfig);

@@ -5,7 +5,6 @@ import {
   Typography,
   IconButton,
   Collapse,
-  Chip,
   Avatar,
   Tooltip,
   alpha
@@ -14,30 +13,24 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email';
 import EditIcon from '@mui/icons-material/Edit';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { useTheme } from '@mui/material/styles';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BadgeIcon from '@mui/icons-material/Badge';
-import PersonIcon from '@mui/icons-material/Person';
+import { useTheme } from '@mui/material/styles';
 
-const MobilePropietarioCard = ({ 
-  propietario, 
+const MobileGaranteCard = ({ 
+  garante, 
   isExpanded, 
   onToggle,
   onEdit,
   onDelete,
-  onCreateProfile,
-  hasAccount,
-  onHasAccount,
   onDocuments
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  
+
   const getInitials = (nombre, apellido) => {
     const n = (nombre || '').charAt(0).toUpperCase();
     const a = (apellido || '').charAt(0).toUpperCase();
@@ -45,12 +38,12 @@ const MobilePropietarioCard = ({
   };
 
   const gradientColors = [
+    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+    'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+    'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+    'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
     'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
   ];
 
   const getGradient = (id) => gradientColors[(id || 0) % gradientColors.length];
@@ -64,10 +57,10 @@ const MobilePropietarioCard = ({
         width: 32, 
         height: 32, 
         borderRadius: '8px',
-        bgcolor: isDark ? alpha(theme.palette.primary.main, 0.15) : alpha(theme.palette.primary.main, 0.08),
+        bgcolor: isDark ? alpha(theme.palette.warning.main, 0.15) : alpha(theme.palette.warning.main, 0.08),
       }}>
         {React.cloneElement(icon, { 
-          sx: { fontSize: 18, color: theme.palette.primary.main } 
+          sx: { fontSize: 18, color: theme.palette.warning.main } 
         })}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -103,7 +96,9 @@ const MobilePropietarioCard = ({
       </IconButton>
     </Tooltip>
   );
-  
+
+  const direccion = (garante.direccionResidencial || `${garante.calle || ''} ${garante.numero || ''}`).trim();
+
   return (
     <Paper 
       elevation={0}
@@ -130,41 +125,35 @@ const MobilePropietarioCard = ({
           gap: 2,
           cursor: 'pointer',
         }}
-        onClick={() => onToggle(propietario.id)}
+        onClick={() => onToggle(garante.id)}
       >
         <Avatar
           sx={{
             width: 52,
             height: 52,
-            background: getGradient(propietario.id),
+            background: getGradient(garante.id),
             fontSize: '1.1rem',
             fontWeight: 700,
             boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+            color: '#333',
           }}
         >
-          {getInitials(propietario.nombre, propietario.apellido)}
+          {getInitials(garante.nombre, garante.apellido)}
         </Avatar>
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography 
-              variant="subtitle1" 
-              sx={{ 
-                fontWeight: 700, 
-                color: 'text.primary',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {propietario.nombre} {propietario.apellido}
-            </Typography>
-            {hasAccount && (
-              <Tooltip title="Tiene cuenta activa">
-                <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
-              </Tooltip>
-            )}
-          </Box>
+          <Typography 
+            variant="subtitle1" 
+            sx={{ 
+              fontWeight: 700, 
+              color: 'text.primary',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {garante.nombre} {garante.apellido}
+          </Typography>
           <Typography 
             variant="body2" 
             sx={{ 
@@ -175,7 +164,7 @@ const MobilePropietarioCard = ({
               whiteSpace: 'nowrap',
             }}
           >
-            {propietario.email || 'Sin email'}
+            {garante.email || 'Sin email'}
           </Typography>
         </Box>
 
@@ -183,7 +172,7 @@ const MobilePropietarioCard = ({
           size="small"
           onClick={(e) => { 
             e.stopPropagation(); 
-            onToggle(propietario.id); 
+            onToggle(garante.id); 
           }}
           sx={{
             width: 36,
@@ -209,10 +198,9 @@ const MobilePropietarioCard = ({
             p: 1.5,
             mb: 2,
           }}>
-            <InfoRow icon={<BadgeIcon />} label="DNI / CUIT" value={propietario.cuit || propietario.dni} />
-            <InfoRow icon={<PhoneIcon />} label="Teléfono" value={propietario.telefono} />
-            <InfoRow icon={<LocationOnIcon />} label="Dirección" value={propietario.direccionResidencial} />
-            <InfoRow icon={<PersonIcon />} label="Usuario" value={propietario.usuarioUsername} />
+            <InfoRow icon={<BadgeIcon />} label="DNI / CUIT" value={garante.cuit || garante.dni} />
+            <InfoRow icon={<PhoneIcon />} label="Teléfono" value={garante.telefono} />
+            <InfoRow icon={<LocationOnIcon />} label="Dirección" value={direccion} />
           </Box>
 
           <Box sx={{ 
@@ -225,7 +213,7 @@ const MobilePropietarioCard = ({
               <Tooltip title="WhatsApp" arrow>
                 <IconButton
                   size="small"
-                  href={`https://wa.me/${(propietario.telefono || '').replace(/\D/g, '')}`}
+                  href={`https://wa.me/${(garante.telefono || '').replace(/\D/g, '')}`}
                   target="_blank"
                   onClick={(e) => e.stopPropagation()}
                   sx={{
@@ -246,7 +234,7 @@ const MobilePropietarioCard = ({
               <Tooltip title="Email" arrow>
                 <IconButton
                   size="small"
-                  href={`mailto:${propietario.email}`}
+                  href={`mailto:${garante.email}`}
                   onClick={(e) => e.stopPropagation()}
                   sx={{
                     width: 40,
@@ -268,34 +256,19 @@ const MobilePropietarioCard = ({
             <Box sx={{ display: 'flex', gap: 0.75 }}>
               <ActionButton 
                 icon={<DescriptionIcon sx={{ fontSize: 18 }} />}
-                onClick={(e) => { e.stopPropagation(); if (onDocuments) onDocuments(propietario); }}
+                onClick={(e) => { e.stopPropagation(); if (onDocuments) onDocuments(garante); }}
                 tooltip="Documentos"
                 color="info"
               />
               <ActionButton 
                 icon={<EditIcon sx={{ fontSize: 18 }} />}
-                onClick={(e) => { e.stopPropagation(); if (onEdit) onEdit(propietario.id); }}
+                onClick={(e) => { e.stopPropagation(); if (onEdit) onEdit(garante); }}
                 tooltip="Editar"
                 color="primary"
               />
-              {hasAccount ? (
-                <ActionButton 
-                  icon={<CheckCircleIcon sx={{ fontSize: 18 }} />}
-                  onClick={(e) => { e.stopPropagation(); if (onHasAccount) onHasAccount(propietario.id); }}
-                  tooltip="Ver credenciales"
-                  color="success"
-                />
-              ) : (
-                <ActionButton 
-                  icon={<PersonAddAlt1Icon sx={{ fontSize: 18 }} />}
-                  onClick={(e) => { e.stopPropagation(); if (onCreateProfile) onCreateProfile(propietario.id); }}
-                  tooltip="Crear perfil"
-                  color="success"
-                />
-              )}
               <ActionButton 
                 icon={<DeleteOutlineIcon sx={{ fontSize: 18 }} />}
-                onClick={(e) => { e.stopPropagation(); if (onDelete) onDelete(propietario.id); }}
+                onClick={(e) => { e.stopPropagation(); if (onDelete) onDelete(garante.id); }}
                 tooltip="Eliminar"
                 color="error"
               />
@@ -307,4 +280,4 @@ const MobilePropietarioCard = ({
   );
 };
 
-export default MobilePropietarioCard;
+export default MobileGaranteCard;

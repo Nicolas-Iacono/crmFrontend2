@@ -63,7 +63,7 @@ import ModalContract from '../common/popUps/ModalContract';
 import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ContractsTour from '../common/tour/ContractsTour';
-import { showSuccess, showError, showInfo } from '../alertas/showAlert';
+import { showSuccess, showError, showInfo, showConfirm } from '../alertas/showAlert';
 import http from '../api/http';
 import EditContratoModal from '../common/popUps/EditContratoModal';
 import EditorWithChatModal from '../common/popUps/EditorWithChatModal';
@@ -191,13 +191,10 @@ const ContratosPage = () => {
         (error.response?.status === 500 &&
          mensajeError.includes("contrato activo"))
       ) {
-        const confirmar = await Swal.fire({
+        const confirmar = await showConfirm({
           title: 'Contrato activo',
           text: '¿Querés eliminarlo de todas formas?',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, eliminar igual',
-          cancelButtonText: 'Cancelar',
+          confirmText: 'Sí, eliminar igual',
         });
     
         if (confirmar.isConfirmed) {

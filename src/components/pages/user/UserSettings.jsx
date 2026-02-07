@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/GlobalAuth';
-import { Box, Typography, Avatar, Paper, IconButton, Fab, Modal, Backdrop, Fade, TextField, Button, Divider, CircularProgress, useTheme, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Chip, Stack } from '@mui/material';
-import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike';
+import { Box, Typography, Avatar, Paper, IconButton, Fab, Modal, Backdrop, Fade, TextField, Button, Divider, CircularProgress, useTheme, useMediaQuery, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Chip, Stack } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
@@ -21,8 +20,24 @@ import { useNavigate } from 'react-router-dom';
 import SubscriptionModal from '../../common/SubscriptionModal/SubscriptionModal';
 import ConfigurarPagosModal from '../../common/ConfigurarPagosModal';
 import { showSuccess, showError, showWarning } from '../../alertas/showAlert';
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import QrCodeIcon from '@mui/icons-material/QrCode';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import CloseIcon from '@mui/icons-material/Close';
+import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
+import LinkIcon from '@mui/icons-material/Link';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 const UserSettings = () => {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const { isLinked, isLoading, googleProfile, handleLink, handleUnlink } = useGoogleLink();
   const { user, isLogged, updateUserProfile, logoTimestamp, logout, plan, usuarioFetch, isLoading: authLoading } = useAuth();
@@ -395,855 +410,668 @@ END:VCARD`
     );
   }
 
+  const infoFields = [
+    { label: 'Email', value: email, icon: <EmailOutlinedIcon />, color: '#8b5cf6' },
+    { label: 'Usuario', value: usuario, icon: <PersonOutlineIcon />, color: '#3b82f6' },
+    { label: 'Razón Social', value: `${razonSocial}, ${partido}, ${provincia}`, icon: <BusinessOutlinedIcon />, color: '#6366f1' },
+    { label: 'Matrícula', value: matricula, icon: <BadgeOutlinedIcon />, color: '#8b5cf6' },
+    { label: 'Teléfono', value: telefono, icon: <PhoneOutlinedIcon />, color: '#22c55e' },
+    { label: 'CUIT', value: cuit, icon: <FingerprintIcon />, color: '#f59e0b' },
+  ];
+
   return (
     <>
     <Box sx={{ 
       width: { xs: '100%', md: '84vw' },
-      bgcolor: theme.palette.background.default,
+      bgcolor: isDark ? '#0a0a12' : '#f5f3ff',
       display: 'flex', 
       justifyContent: 'start', 
-      alignItems: 'flex-start', 
-      pt: 2,
+      alignItems: 'center', 
       minHeight: '100vh',
       flexDirection: 'column',
-      marginLeft: { xs:"0",md: '15rem' },
-      overflowY: 'auto'
+      marginLeft: { xs: '0', md: '15rem' },
+      overflowY: 'auto',
+      pb: 10,
     }}>
-      <Paper elevation={4} sx={{ 
-        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-        borderRadius: "0 0 20px 20px",
-          width:"100%",
-          minHeight:"200px",
-          overflow: 'hidden',
-         
-            display:"flex",
-            flexDirection:"column",
-            alignItems:"center",
-            justifyContent:"center",
-            pt:4,
-            pb:4,
-            gap:"2rem",
-            }}>
-        {/* Header azul y foto de perfil */}
- <Typography variant="h6" color="white">Cuenta</Typography>
-   
-        <Box position="relative" display="flex" justifyContent="center" alignItems="center">
-    {isUploading && <CircularProgress size={98} sx={{ position: 'absolute', zIndex: 1, color: 'white' }} />}
-  <Avatar
-    src={profilePic}
-    alt={nombreNegocio}
-    sx={{ 
-      width: 90, 
-      height: 90, 
-      border: '4px solid #fff', 
-      opacity: isUploading ? 0.5 : 1,
-      backgroundSize:"contain", 
-      backgroundPosition:"center center", 
-      backgroundRepeat:"no-repeat"
-    }}
-  />
+      {/* Header with gradient */}
+      <Box sx={{
+        width: '100%',
+        background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #4c1d95 100%)',
+        position: 'relative',
+        overflow: 'hidden',
+        pb: { xs: 8, md: 10 },
+        pt: { xs: 3, md: 4 },
+        px: { xs: 2, md: 4 },
+      }}>
+        {/* Decorative shapes */}
+        <Box sx={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.06)' }} />
+        <Box sx={{ position: 'absolute', bottom: -40, left: '30%', width: 150, height: 150, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
+        <Box sx={{ position: 'absolute', top: 20, left: -30, width: 100, height: 100, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.03)' }} />
+
+        {/* Top bar */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pl: 8.5 }}>
   
-  <label htmlFor="upload-logo">
-    <input
-      id="upload-logo"
-      type="file"
-      accept="image/*"
-      style={{ display: 'none' }}
-      onChange={async (e) => {
-        const file = e.target.files[0];
-        if (file && usuarioFetch?.id) {
-          setIsUploading(true);
-          try {
-            await subirLogo(usuarioFetch.id, file);
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/usuario/nombre-negocio/${user.nombreNegocio}`);
-            const updatedUserData = response.data;
-            updateUserProfile(updatedUserData);
-          } catch (error) {
-            console.error('Error during logo upload process:', error);
-          } finally {
-            setIsUploading(false);
-          }
-        }
-      }}
-    />
-    <IconButton
-      component="span"
-      color="primary"
-      sx={{
-        bgcolor: '#fff',
-        boxShadow: 3,
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-      }}
-    >
-      <AddPhotoAlternateIcon sx={{ fontSize: 24, color: theme.palette.primary.main }} />
-    </IconButton>
-  </label>
-  
-</Box>
-<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="h6" color="white">{nombreNegocio}</Typography>
-       
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <SettingsIcon sx={{ color: '#fbbf24', fontSize: 22 }} />
+              <Typography variant="h6" sx={{ color: '#fff', fontWeight: 800, letterSpacing: -0.5 }}>
+                Ajustes
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton onClick={handleOpenQR} sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
+              <QrCodeIcon fontSize="small" />
+            </IconButton>
+            <IconButton onClick={handleOpenEditModal} sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </Box>
-
-          </Paper>
-        {/* Datos del usuario */}
-        
-
-        <Box px={3} pt={3} pb={3} sx={{
-    display: "flex",
-    flexDirection: "column",
-    width: { xs: '85%', md: '80%' },
-    flex: 1, // importante: ocupa el resto del espacio disponible
-    overflowY: "auto", // habilita el scroll
-    paddingBottom: "50px", // espacio reducido para el botón fijo
-    justifyContent:"flex-start",
-    alignItems:"flex-start"
-  }}
->
-
-          <Typography variant="overline" color={theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.main}>EMAIL</Typography>
-          <Box  sx={{
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: "5px", 
-            display:"flex", 
-            alignItems:"end", 
-            justifyContent:"start",
-            padding:"0 .5rem",
-            width:"90%",
-            borderBottom:`3px solid ${theme.palette.primary.main}`, 
-            height:"40px"
-          }}>
-          <Typography variant="subtitle1" color={theme.palette.text.primary} >{email}</Typography>
-          </Box>
-
-          <Typography variant="overline"  color={theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.main}>USUARIO</Typography>
-          <Box display="flex" alignItems="center" gap={1} sx={{
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: "5px", 
-            display:"flex", 
-            alignItems:"end", 
-            justifyContent:"start",
-            padding:"0 .5rem",
-            width:"90%",
-            borderBottom:`3px solid ${theme.palette.primary.main}`, 
-            height:"40px"
-          }}>
-          <Typography variant="subtitle1" color={theme.palette.text.primary} >{usuario}</Typography>
-          </Box>
-
-          <Typography variant="overline" color={theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.main}>RAZÓN SOCIAL</Typography>
-          <Box display="flex" alignItems="center" gap={1} sx={{
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: "5px", 
-            display:"flex", 
-            alignItems:"end", 
-            justifyContent:"start",
-            padding:"0 .5rem",
-            width:"90%",
-            borderBottom:`3px solid ${theme.palette.primary.main}`, 
-            height:"40px"
-          }}>
-          <Typography variant="subtitle1" color={theme.palette.text.primary} sx={{fontSize:".9rem"}} >{`${razonSocial}, ${partido}, ${provincia}`}</Typography>
-          </Box>
-
-          <Typography variant="overline" color={theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.main}>MATRÍCULA</Typography>
-          <Box display="flex" alignItems="center" gap={1} sx={{
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: "5px", 
-            display:"flex", 
-            alignItems:"end", 
-            justifyContent:"start",
-            padding:"0 .5rem",
-            width:"90%",
-            borderBottom:`3px solid ${theme.palette.primary.main}`, 
-            height:"40px"
-          }}>
-          <Typography variant="subtitle1" color={theme.palette.text.primary} >{`${matricula}`}</Typography>
-          </Box>
-
-          <Typography variant="overline" color={theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.main}>TELÉFONO</Typography>
-          <Box display="flex" alignItems="center" gap={1} sx={{
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: "5px", 
-            display:"flex", 
-            alignItems:"end", 
-            justifyContent:"start",
-            padding:"0 .5rem",
-            width:"90%",
-            borderBottom:`3px solid ${theme.palette.primary.main}`, 
-            height:"40px"
-          }}>
-          <Typography variant="subtitle1" color={theme.palette.text.primary} >{`${telefono}`}</Typography>
-          </Box>
-
-          <Typography variant="overline" color={theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.main}>CUIT</Typography>
-          <Box display="flex" alignItems="center" gap={1} sx={{
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: "5px", 
-            display:"flex", 
-            alignItems:"end", 
-            justifyContent:"start",
-            padding:"0 .5rem",
-            width:"90%",
-            borderBottom:`3px solid ${theme.palette.primary.main}`, 
-            height:"40px"
-          }}>
-          <Typography variant="subtitle1" color={theme.palette.text.primary} >{`${cuit}`}</Typography>
-          </Box>
-            <Box sx={{width:"100%", height:"300px", display:"flex",
-              alignItems:"center", justifyContent:"center", marginTop:"2rem"
-            }}>
-              <Iframe
-                url={`https://www.google.com/maps?q=${encodeURIComponent(direccionCompleta)}&output=embed`}
-                width="100%"
-                height="100%"
-                frameBorder="1"
-                style={{ border: 10 , marginTop:"4rem"}}
-                allowFullScreen
-              />
-            </Box>
-            <Box sx={{ 
-              my: 4, 
-              p: 2, 
-              border: `1px solid ${theme.palette.divider}`, 
-              borderRadius: '8px', 
-              backgroundColor: theme.palette.background.paper 
-            }}>
-              <Typography variant="h6" gutterBottom color={theme.palette.mode === 'dark' ? 'white' : "black"}>Vinculación con Google</Typography>
-              {isLoading ? (
-                <CircularProgress />
-              ) : isLinked && googleProfile ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width:"80%" }}>
-                  <Avatar src={googleProfile.picture} alt={googleProfile.name} />
-                  <Box>
-                    <Typography variant="body1" fontWeight="bold" color={theme.palette.mode === 'dark' ? 'white' : "black"}>{googleProfile.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">{googleProfile.email}</Typography>
-                  </Box>
-                  <IconButton variant="outlined" color="error" onClick={handleUnlink} sx={{ ml: 'auto' }}>
-                    
-                    <DeleteIcon sx={{ mr: 1 }} />
-                  </IconButton>
-                </Box>
-              ) : (
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 2 }}>
-                    Vincula tu cuenta de Google para un inicio de sesión más rápido y seguro.
-                  </Typography>
-                  <GoogleLoginButton onClick={handleLink} />
-                </Box>
-              )}
-            </Box>
-
-            {/* Sección de Mercado Pago */}
-            <Box sx={{ 
-              my: 4, 
-              p: 3, 
-              border: `1px solid ${theme.palette.divider}`, 
-              borderRadius: '12px', 
-              backgroundColor: theme.palette.background.paper,
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              {/* Header con logo y status */}
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ 
-                    width: 48, 
-                    height: 48, 
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #00B5E2 0%, #0055A4 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', fontSize: '14px' }}>
-                      MP
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                      Mercado Pago
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {/* Indicador de estado */}
-                      <Box sx={{ 
-                        width: 8, 
-                        height: 8, 
-                        borderRadius: '50%',
-                        backgroundColor: mercadoPagoStatus?.connected ? '#4caf50' : '#ff9800',
-                        animation: mercadoPagoStatus?.connected ? 'pulse 2s infinite' : 'none',
-                        '@keyframes pulse': {
-                          '0%': { transform: 'scale(1)', opacity: 1 },
-                          '50%': { transform: 'scale(1.1)', opacity: 0.8 },
-                          '100%': { transform: 'scale(1)', opacity: 1 },
-                        }
-                      }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {loadingMercadoPagoStatus 
-                          ? 'Verificando estado...' 
-                          : mercadoPagoStatus?.connected 
-                            ? 'Conectado' 
-                            : 'No conectado'
-                        }
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-                
-                {/* Badge de estado */}
-                {mercadoPagoStatus?.connected && (
-                  <Chip 
-                    label="Activo" 
-                    size="small"
-                    sx={{ 
-                      backgroundColor: '#e8f5e8',
-                      color: '#2e7d32',
-                      fontWeight: 500,
-                      fontSize: '0.75rem'
-                    }}
-                  />
-                )}
-              </Box>
-
-              {/* Información adicional */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  {mercadoPagoStatus?.connected
-                    ? 'Tu cuenta está lista para recibir pagos automáticos desde los recibos.'
-                    : 'Conectá tu cuenta de Mercado Pago para habilitar el cobro automático a inquilinos.'
-                  }
-                </Typography>
-                
-                {/* Información detallada cuando está conectado */}
-                {mercadoPagoStatus?.connected && mercadoPagoStatus.mpAccountEmail && (
-                  <Box sx={{ 
-                    p: 2, 
-                    borderRadius: '8px',
-                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#f5f5f5',
-                    mt: 2
-                  }}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      <strong>Cuenta vinculada:</strong> {mercadoPagoStatus.mpAccountEmail}
-                    </Typography>
-                    {mercadoPagoStatus.tokenExpiresAt && (
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Tokens expiran:</strong> {new Date(mercadoPagoStatus.tokenExpiresAt).toLocaleDateString()}
-                      </Typography>
-                    )}
-                  </Box>
-                )}
-              </Box>
-
-              {/* Botón de acción moderno */}
-              <Button
-                fullWidth
-                variant={mercadoPagoStatus?.connected ? "outlined" : "contained"}
-                onClick={mercadoPagoStatus?.connected ? handleMercadoPagoDisconnect : handleMercadoPagoConnect}
-                disabled={loadingMercadoPagoStatus}
-                sx={{ 
-                  py: 1.5,
-                  borderRadius: '8px',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '16px',
-                  backgroundColor: mercadoPagoStatus?.connected 
-                    ? 'transparent' 
-                    : 'linear-gradient(135deg, #00B5E2 0%, #0055A4 100%)',
-                  border: mercadoPagoStatus?.connected 
-                    ? `2px solid #d32f2f` 
-                    : 'none',
-                  color: mercadoPagoStatus?.connected ? '#d32f2f' : 'white',
-                  '&:hover': {
-                    backgroundColor: mercadoPagoStatus?.connected 
-                      ? 'rgba(211, 47, 47, 0.04)' 
-                      : 'linear-gradient(135deg, #0099CC 0%, #004488 100%)',
-                    border: mercadoPagoStatus?.connected 
-                      ? `2px solid #c62828` 
-                      : 'none',
-                  },
-                  '&:disabled': {
-                    backgroundColor: theme.palette.action.disabled,
-                    color: theme.palette.action.disabled,
-                  }
-                }}
-                startIcon={
-                  <Box sx={{ 
-                    width: 20, 
-                    height: 20, 
-                    borderRadius: '50%',
-                    backgroundColor: mercadoPagoStatus?.connected ? 'transparent' : 'rgba(255,255,255,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    {mercadoPagoStatus?.connected ? (
-                      <DeleteIcon sx={{ fontSize: 16 }} />
-                    ) : (
-                      <AddPhotoAlternateIcon sx={{ fontSize: 16 }} />
-                    )}
-                  </Box>
-                }
-              >
-                {loadingMercadoPagoStatus 
-                  ? 'Verificando...' 
-                  : mercadoPagoStatus?.connected 
-                    ? 'Desconectar cuenta' 
-                    : 'Conectar Mercado Pago'
-                }
-              </Button>
-            </Box>
-
-            {/* Sección de Configuración de Pagos */}
-            <Box sx={{ 
-              my: 4, 
-              p: 3, 
-              border: `1px solid ${theme.palette.divider}`, 
-              borderRadius: '12px', 
-              backgroundColor: theme.palette.background.paper,
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              {/* Header con logo y acción */}
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ 
-                    width: 48, 
-                    height: 48, 
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <PaymentIcon sx={{ fontSize: 24, color: 'white' }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                      Configuración de Pagos
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Datos bancarios para recibir cobros
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-
-              {/* Información */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Configura tus datos bancarios para poder recibir pagos de los alquileres de forma automática y segura.
-                </Typography>
-                
-                <Box sx={{ 
-                  p: 2, 
-                  borderRadius: '8px',
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(76, 175, 80, 0.05)',
-                  border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.2)'}`,
-                  mb: 2
-                }}>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>¿Qué necesitas configurar?</strong>
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                    • Alias de la cuenta (obligatorio)<br/>
-                    • CBU (opcional, si usas solo alias)<br/>
-                    • Titular de la cuenta (obligatorio)<br/>
-                    • CUIT del titular (obligatorio)<br/>
-                    • Banco (opcional)
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Botón de acción */}
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={() => setConfigurarPagosModalOpen(true)}
-                sx={{ 
-                  py: 1.5,
-                  borderRadius: '8px',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '16px',
-                  background: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #45A049 0%, #1B5E20 100%)',
-                  },
-                }}
-                startIcon={
-                  <Box sx={{ 
-                    width: 20, 
-                    height: 20, 
-                    borderRadius: '50%',
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <PaymentIcon sx={{ fontSize: 16 }} />
-                  </Box>
-                }
-              >
-                Configurar Pagos para Cobros
-              </Button>
-            </Box>
-
-            {/* Sección de Estado de Suscripción */}
-            <Box sx={{ 
-              my: 4, 
-              p: 3, 
-              border: `2px solid ${plan?.status === 'CANCELED' ? theme.palette.error.main : theme.palette.primary.main}`, 
-              borderRadius: '8px', 
-              backgroundColor: plan?.status === 'CANCELED' 
-                ? (theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.05)')
-                : (theme.palette.mode === 'dark' ? 'rgba(26, 35, 126, 0.1)' : 'rgba(26, 35, 126, 0.05)')
-            }}>
-              <Typography variant="h6" gutterBottom 
-                color={plan?.status === 'CANCELED' ? 'error' : 'primary'} 
-                sx={{ fontWeight: 'bold' }}
-              >
-                Estado de Suscripción
-              </Typography>
-              
-              {plan ? (
-                <Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                        Plan Actual:
-                      </Typography>
-                      <Typography variant="body1" color="primary" sx={{ fontWeight: 'bold' }}>
-                        {plan.planName}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Estado:
-                      </Typography>
-                      <Box sx={{ 
-                        px: 2, 
-                        py: 0.5, 
-                        borderRadius: '16px',
-                        backgroundColor: plan.status === 'CANCELED' 
-                          ? 'rgba(211, 47, 47, 0.2)' 
-                          : plan.status === 'ACTIVE' 
-                            ? 'rgba(76, 175, 80, 0.2)'
-                            : 'rgba(255, 152, 0, 0.2)',
-                        color: plan.status === 'CANCELED' 
-                          ? theme.palette.error.main 
-                          : plan.status === 'ACTIVE' 
-                            ? '#4caf50'
-                            : '#ff9800'
-                      }}>
-                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                          {plan.status === 'CANCELED' ? 'CANCELADO' : 
-                           plan.status === 'ACTIVE' ? 'ACTIVO' : 
-                           plan.status}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Límite de Contratos:
-                      </Typography>
-                      <Typography variant="body2">
-                        {plan.contratosActivos || 0} / {plan.contractLimit}
-                      </Typography>
-                    </Box>
-                    
-                    {plan.currentPeriodEnd && (
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Vence:
-                        </Typography>
-                        <Typography variant="body2">
-                          {new Date(plan.currentPeriodEnd).toLocaleDateString('es-ES')}
-                        </Typography>
-                      </Box>
-                    )}
-                    
-                    {plan.cancelAtPeriodEnd && (
-                      <Box sx={{ 
-                        p: 2, 
-                        borderRadius: '8px', 
-                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                        border: '1px solid #ff9800'
-                      }}>
-                        <Typography variant="body2" color="#ff9800" sx={{ fontWeight: 'bold' }}>
-                          ⚠️ Tu suscripción se cancelará al final del período actual
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                  
-                  {plan.planName === 'Free' ? (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleOpenSubscriptionModal}
-                      sx={{
-                        background: 'linear-gradient(135deg, #1a237e 0%, #3f51b5 100%)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #0d1652 0%, #283593 100%)',
-                        }
-                      }}
-                    >
-                      Deseo Suscribirme
-                    </Button>
-                  ) : plan.status !== 'CANCELED' && !plan.cancelAtPeriodEnd && (
-                   <Button
-  variant="outlined"
-  color="error"
-  onClick={handleCancelSubscription}
-  sx={{
-    borderWidth: 2,
-    '&:hover': {
-      borderWidth: 2,
-      backgroundColor: 'rgba(211, 47, 47, 0.1)',
-    },
-  }}
->
-  Cancelar Suscripción
-</Button>
-                  )}
-                  
-                  {(plan.status === 'CANCELED' || plan.cancelAtPeriodEnd) && (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleOpenSubscriptionModal}
-                      sx={{
-                        background: 'linear-gradient(135deg, #1a237e 0%, #3f51b5 100%)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #0d1652 0%, #283593 100%)',
-                        }
-                      }}
-                    >
-                      Reactivar Suscripción
-                    </Button>
-                  )}
-                </Box>
-              ) : (
-                <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                    No tienes una suscripción activa. Mejora tu experiencia con nuestros planes premium.
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleOpenSubscriptionModal}
-                    sx={{
-                      background: 'linear-gradient(135deg, #1a237e 0%, #3f51b5 100%)',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #0d1652 0%, #283593 100%)',
-                      }
-                    }}
-                  >
-                    Ver Planes de Suscripción
-                  </Button>
-                </Box>
-              )}
-            </Box>
-
-            {/* Zona de peligro - Eliminar cuenta */}
-            <Box sx={{ 
-              my: 4, 
-              p: 3, 
-              border: `2px solid ${theme.palette.error.main}`, 
-              borderRadius: '8px', 
-              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.05)'
-            }}>
-              <Typography variant="h6" gutterBottom color="error" sx={{ fontWeight: 'bold' }}>
-                Zona de Peligro
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, ten cuidado.
-              </Typography>
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={handleDeleteAccount}
-                sx={{
-                  borderWidth: 2,
-                  '&:hover': {
-                    borderWidth: 2,
-                    backgroundColor: 'rgba(211, 47, 47, 0.1)'
-                  }
-                }}
-              >
-                Eliminar cuenta permanentemente
-              </Button>
-            </Box>
-            
-        </Box>
-       
-      {/* Botón para agregar imagen en la esquina inferior derecha */}
-      <Box sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1301 }}>
-       
       </Box>
-      
-   
+
+      {/* Profile Card - overlaps header */}
+      <Paper elevation={0} sx={{
+        width: { xs: '90%', md: '70%', lg: '60%' },
+        maxWidth: 700,
+        mt: { xs: -6, md: -7 },
+        mx: 'auto',
+        borderRadius: 4,
+        overflow: 'hidden',
+        bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(139,92,246,0.1)'}`,
+        boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.3)' : '0 8px 32px rgba(139,92,246,0.1)',
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 4, pb: 3, px: 3 }}>
+          {/* Avatar */}
+          <Box position="relative" sx={{ mb: 2 }}>
+            {isUploading && <CircularProgress size={108} sx={{ position: 'absolute', top: -4, left: -4, zIndex: 2, color: '#8b5cf6' }} />}
+            <Avatar
+              src={profilePic}
+              alt={nombreNegocio}
+              sx={{ 
+                width: 100, height: 100, 
+                border: `4px solid ${isDark ? 'rgba(139,92,246,0.4)' : 'rgba(139,92,246,0.2)'}`,
+                boxShadow: '0 4px 20px rgba(139,92,246,0.2)',
+                opacity: isUploading ? 0.5 : 1,
+                fontSize: '2rem',
+              }}
+            />
+            <label htmlFor="upload-logo">
+              <input
+                id="upload-logo"
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (file && usuarioFetch?.id) {
+                    setIsUploading(true);
+                    try {
+                      await subirLogo(usuarioFetch.id, file);
+                      const response = await axios.get(`${import.meta.env.VITE_API_URL}/usuario/nombre-negocio/${user.nombreNegocio}`);
+                      const updatedUserData = response.data;
+                      updateUserProfile(updatedUserData);
+                    } catch (error) {
+                      console.error('Error during logo upload process:', error);
+                    } finally {
+                      setIsUploading(false);
+                    }
+                  }
+                }}
+              />
+              <IconButton
+                component="span"
+                size="small"
+                sx={{
+                  position: 'absolute', bottom: 2, right: 2,
+                  bgcolor: '#8b5cf6', color: '#fff',
+                  boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
+                  width: 32, height: 32,
+                  '&:hover': { bgcolor: '#7c3aed' },
+                }}
+              >
+                <CameraAltIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </label>
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>{nombreNegocio}</Typography>
+          <Typography variant="body2" sx={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary', mb: 1 }}>{email}</Typography>
+          {plan && (
+            <Chip
+              icon={<WorkspacePremiumIcon sx={{ fontSize: 16 }} />}
+              label={plan.planName || 'Free'}
+              size="small"
+              sx={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                '& .MuiChip-icon': { color: '#fbbf24' },
+              }}
+            />
+          )}
+        </Box>
+      </Paper>
+
+      {/* Content area */}
+      <Box sx={{
+        width: { xs: '90%', md: '70%', lg: '60%' },
+        maxWidth: 700,
+        mx: 'auto',
+        mt: 3,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2.5,
+      }}>
+        {/* Info Fields Card */}
+        <Paper elevation={0} sx={{
+          borderRadius: 3,
+          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+          overflow: 'hidden',
+        }}>
+          <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}` }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b5cf6', fontSize: '0.75rem', letterSpacing: 0.5 }}>
+              INFORMACIÓN DE LA CUENTA
+            </Typography>
+          </Box>
+          {infoFields.map((field, index) => (
+            <Box key={field.label} sx={{
+              display: 'flex', alignItems: 'center', gap: 2,
+              px: 2.5, py: 1.8,
+              borderBottom: index < infoFields.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}` : 'none',
+              transition: 'background 0.2s',
+              '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(139,92,246,0.03)' },
+            }}>
+              <Box sx={{
+                width: 36, height: 36, borderRadius: 2, flexShrink: 0,
+                bgcolor: `${field.color}15`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: field.color,
+                '& .MuiSvgIcon-root': { fontSize: 18 },
+              }}>
+                {field.icon}
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'text.secondary', fontSize: '0.65rem', letterSpacing: 0.3, textTransform: 'uppercase' }}>
+                  {field.label}
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {field.value}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+        </Paper>
+
+        {/* Map Section */}
+        <Paper elevation={0} sx={{
+          borderRadius: 3,
+          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+          overflow: 'hidden',
+        }}>
+          <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: 2, bgcolor: '#3b82f615', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+              <MapOutlinedIcon sx={{ fontSize: 18 }} />
+            </Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+              Ubicación
+            </Typography>
+          </Box>
+          <Box sx={{ height: 220, width: '100%' }}>
+            <Iframe
+              url={`https://www.google.com/maps?q=${encodeURIComponent(direccionCompleta)}&output=embed`}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              style={{ border: 0 }}
+              allowFullScreen
+            />
+          </Box>
+        </Paper>
+        {/* Google Link Section */}
+        <Paper elevation={0} sx={{
+          borderRadius: 3,
+          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+          overflow: 'hidden',
+        }}>
+          <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: 2, bgcolor: '#ea443515', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ea4435' }}>
+              <LinkIcon sx={{ fontSize: 18 }} />
+            </Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+              Vinculación con Google
+            </Typography>
+            {isLinked && (
+              <Chip label="Vinculado" size="small" sx={{ ml: 'auto', bgcolor: '#22c55e18', color: '#22c55e', fontWeight: 600, fontSize: '0.65rem', height: 22 }} />
+            )}
+          </Box>
+          <Box sx={{ p: 2.5 }}>
+            {isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={24} sx={{ color: '#8b5cf6' }} /></Box>
+            ) : isLinked && googleProfile ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar src={googleProfile.picture} alt={googleProfile.name} sx={{ width: 40, height: 40, border: `2px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}` }} />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{googleProfile.name}</Typography>
+                  <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary' }}>{googleProfile.email}</Typography>
+                </Box>
+                <IconButton onClick={handleUnlink} size="small" sx={{ color: '#ef4444', bgcolor: '#ef444410', '&:hover': { bgcolor: '#ef444420' } }}>
+                  <DeleteIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Box>
+            ) : (
+              <Box>
+                <Typography variant="body2" sx={{ mb: 2, color: isDark ? 'rgba(255,255,255,0.6)' : 'text.secondary', fontSize: '0.8rem' }}>
+                  Vincula tu cuenta de Google para un inicio de sesión más rápido y seguro.
+                </Typography>
+                <GoogleLoginButton onClick={handleLink} />
+              </Box>
+            )}
+          </Box>
+        </Paper>
+
+        {/* Mercado Pago Section */}
+        {/* <Paper elevation={0} sx={{
+          borderRadius: 3,
+          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+          overflow: 'hidden',
+        }}>
+          <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: 2, background: 'linear-gradient(135deg, #00B5E2 0%, #0055A4 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.6rem' }}>MP</Typography>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem' }}>Mercado Pago</Typography>
+            </Box>
+            {mercadoPagoStatus?.connected && (
+              <Chip label="Conectado" size="small" icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#22c55e', ml: 1 }} />}
+                sx={{ bgcolor: '#22c55e18', color: '#22c55e', fontWeight: 600, fontSize: '0.65rem', height: 22 }} />
+            )}
+          </Box>
+          <Box sx={{ p: 2.5 }}>
+            <Typography variant="body2" sx={{ mb: 2, color: isDark ? 'rgba(255,255,255,0.6)' : 'text.secondary', fontSize: '0.8rem' }}>
+              {mercadoPagoStatus?.connected
+                ? 'Tu cuenta está lista para recibir pagos automáticos desde los recibos.'
+                : 'Conectá tu cuenta de Mercado Pago para habilitar el cobro automático a inquilinos.'}
+            </Typography>
+            {mercadoPagoStatus?.connected && mercadoPagoStatus.mpAccountEmail && (
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,181,226,0.05)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,181,226,0.15)'}`, mb: 2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 600 }}>Cuenta: {mercadoPagoStatus.mpAccountEmail}</Typography>
+                {mercadoPagoStatus.tokenExpiresAt && (
+                  <Typography variant="caption" display="block" sx={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'text.secondary', mt: 0.5 }}>
+                    Expira: {new Date(mercadoPagoStatus.tokenExpiresAt).toLocaleDateString()}
+                  </Typography>
+                )}
+              </Box>
+            )}
+            <Button
+              fullWidth
+              onClick={mercadoPagoStatus?.connected ? handleMercadoPagoDisconnect : handleMercadoPagoConnect}
+              disabled={loadingMercadoPagoStatus}
+              sx={{
+                py: 1.2, borderRadius: 2.5, textTransform: 'none', fontWeight: 600, fontSize: '0.85rem',
+                background: mercadoPagoStatus?.connected ? 'transparent' : 'linear-gradient(135deg, #00B5E2 0%, #0055A4 100%)',
+                color: mercadoPagoStatus?.connected ? '#ef4444' : '#fff',
+                border: mercadoPagoStatus?.connected ? '1.5px solid #ef444450' : 'none',
+                boxShadow: mercadoPagoStatus?.connected ? 'none' : '0 4px 12px rgba(0,85,164,0.25)',
+                '&:hover': {
+                  background: mercadoPagoStatus?.connected ? '#ef444410' : 'linear-gradient(135deg, #0099CC 0%, #004488 100%)',
+                  boxShadow: mercadoPagoStatus?.connected ? 'none' : '0 6px 20px rgba(0,85,164,0.35)',
+                },
+              }}
+              startIcon={mercadoPagoStatus?.connected ? <DeleteIcon sx={{ fontSize: 18 }} /> : <LinkIcon sx={{ fontSize: 18 }} />}
+            >
+              {loadingMercadoPagoStatus ? 'Verificando...' : mercadoPagoStatus?.connected ? 'Desconectar' : 'Conectar Mercado Pago'}
+            </Button>
+          </Box>
+        </Paper> */}
+
+        {/* Configuración de Pagos Section */}
+        <Paper elevation={0} sx={{
+          borderRadius: 3,
+          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+          overflow: 'hidden',
+        }}>
+          <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: 2, background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <PaymentIcon sx={{ fontSize: 18, color: '#fff' }} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem' }}>Configuración de Pagos</Typography>
+              <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'text.secondary' }}>Datos bancarios para cobros</Typography>
+            </Box>
+          </Box>
+          <Box sx={{ p: 2.5 }}>
+            <Typography variant="body2" sx={{ mb: 2, color: isDark ? 'rgba(255,255,255,0.6)' : 'text.secondary', fontSize: '0.8rem' }}>
+              Configura tus datos bancarios para poder recibir pagos de alquileres de forma automática y segura.
+            </Typography>
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.05)', border: `1px solid ${isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)'}`, mb: 2 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>¿Qué necesitas configurar?</Typography>
+              <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary', lineHeight: 1.6 }}>
+                Alias · CBU · Titular · CUIT del titular · Banco
+              </Typography>
+            </Box>
+            <Button
+              fullWidth
+              onClick={() => setConfigurarPagosModalOpen(true)}
+              sx={{
+                py: 1.2, borderRadius: 2.5, textTransform: 'none', fontWeight: 600, fontSize: '0.85rem',
+                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                color: '#fff',
+                boxShadow: '0 4px 12px rgba(34,197,94,0.25)',
+                '&:hover': { boxShadow: '0 6px 20px rgba(34,197,94,0.35)' },
+              }}
+              startIcon={<PaymentIcon sx={{ fontSize: 18 }} />}
+            >
+              Configurar Pagos para Cobros
+            </Button>
+          </Box>
+        </Paper>
+
+        {/* Subscription Status Section */}
+        <Paper elevation={0} sx={{
+          borderRadius: 3,
+          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+          overflow: 'hidden',
+        }}>
+          <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: 2, background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <WorkspacePremiumIcon sx={{ fontSize: 18, color: '#fbbf24' }} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem' }}>Suscripción</Typography>
+            </Box>
+            {plan && (
+              <Chip
+                label={plan.status === 'CANCELED' ? 'Cancelado' : plan.status === 'ACTIVE' ? 'Activo' : plan.status}
+                size="small"
+                sx={{
+                  bgcolor: plan.status === 'CANCELED' ? '#ef444418' : plan.status === 'ACTIVE' ? '#22c55e18' : '#f59e0b18',
+                  color: plan.status === 'CANCELED' ? '#ef4444' : plan.status === 'ACTIVE' ? '#22c55e' : '#f59e0b',
+                  fontWeight: 600, fontSize: '0.65rem', height: 22,
+                }}
+              />
+            )}
+          </Box>
+          <Box sx={{ p: 2.5 }}>
+            {plan ? (
+              <>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary' }}>Plan Actual</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#8b5cf6' }}>{plan.planName}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary' }}>Contratos</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{plan.contratosActivos || 0} / {plan.contractLimit}</Typography>
+                  </Box>
+                  {plan.currentPeriodEnd && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary' }}>Vence</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{new Date(plan.currentPeriodEnd).toLocaleDateString('es-ES')}</Typography>
+                    </Box>
+                  )}
+                </Box>
+                {plan.cancelAtPeriodEnd && (
+                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f59e0b10', border: '1px solid #f59e0b30', mb: 2 }}>
+                    <Typography variant="caption" sx={{ color: '#f59e0b', fontWeight: 600 }}>
+                      Tu suscripción se cancelará al final del período actual
+                    </Typography>
+                  </Box>
+                )}
+                {plan.planName === 'Free' ? (
+                  <Button fullWidth onClick={handleOpenSubscriptionModal} sx={{
+                    py: 1.2, borderRadius: 2.5, textTransform: 'none', fontWeight: 600, fontSize: '0.85rem',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', color: '#fff',
+                    boxShadow: '0 4px 12px rgba(139,92,246,0.25)',
+                    '&:hover': { boxShadow: '0 6px 20px rgba(139,92,246,0.35)' },
+                  }}>
+                    Mejorar Plan
+                  </Button>
+                ) : plan.status !== 'CANCELED' && !plan.cancelAtPeriodEnd ? (
+                  <Button fullWidth onClick={handleCancelSubscription} sx={{
+                    py: 1, borderRadius: 2.5, textTransform: 'none', fontWeight: 600, fontSize: '0.8rem',
+                    color: '#ef4444', border: '1.5px solid #ef444440', bgcolor: 'transparent',
+                    '&:hover': { bgcolor: '#ef444410' },
+                  }}>
+                    Cancelar Suscripción
+                  </Button>
+                ) : null}
+                {(plan.status === 'CANCELED' || plan.cancelAtPeriodEnd) && (
+                  <Button fullWidth onClick={handleOpenSubscriptionModal} sx={{
+                    py: 1.2, borderRadius: 2.5, textTransform: 'none', fontWeight: 600, fontSize: '0.85rem',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', color: '#fff',
+                    boxShadow: '0 4px 12px rgba(139,92,246,0.25)',
+                    '&:hover': { boxShadow: '0 6px 20px rgba(139,92,246,0.35)' },
+                  }}>
+                    Reactivar Suscripción
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <Typography variant="body2" sx={{ mb: 2, color: isDark ? 'rgba(255,255,255,0.6)' : 'text.secondary', fontSize: '0.8rem' }}>
+                  No tienes una suscripción activa. Mejora tu experiencia con nuestros planes premium.
+                </Typography>
+                <Button fullWidth onClick={handleOpenSubscriptionModal} sx={{
+                  py: 1.2, borderRadius: 2.5, textTransform: 'none', fontWeight: 600, fontSize: '0.85rem',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', color: '#fff',
+                  boxShadow: '0 4px 12px rgba(139,92,246,0.25)',
+                  '&:hover': { boxShadow: '0 6px 20px rgba(139,92,246,0.35)' },
+                }}>
+                  Ver Planes de Suscripción
+                </Button>
+              </>
+            )}
+          </Box>
+        </Paper>
+
+        {/* Danger Zone */}
+        <Paper elevation={0} sx={{
+          borderRadius: 3,
+          bgcolor: isDark ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.03)',
+          border: `1px solid ${isDark ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.12)'}`,
+          overflow: 'hidden',
+        }}>
+          <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.08)'}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: 2, bgcolor: '#ef444418', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+              <WarningAmberIcon sx={{ fontSize: 18 }} />
+            </Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#ef4444' }}>
+              Zona de Peligro
+            </Typography>
+          </Box>
+          <Box sx={{ p: 2.5 }}>
+            <Typography variant="body2" sx={{ mb: 2, color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary', fontSize: '0.8rem' }}>
+              Una vez que elimines tu cuenta, no hay vuelta atrás. Todos tus datos serán eliminados permanentemente.
+            </Typography>
+            <Button
+              fullWidth
+              onClick={handleDeleteAccount}
+              startIcon={<DeleteIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                py: 1, borderRadius: 2.5, textTransform: 'none', fontWeight: 600, fontSize: '0.8rem',
+                color: '#ef4444', border: '1.5px solid #ef444440', bgcolor: 'transparent',
+                '&:hover': { bgcolor: '#ef444410', borderColor: '#ef4444' },
+              }}
+            >
+              Eliminar cuenta permanentemente
+            </Button>
+          </Box>
+        </Paper>
+
+      </Box>
     </Box>
 
-    <Fab
-      color="primary"
-      aria-label="share"
-      onClick={handleOpenEditModal}
-      sx={{
-        width: 45,
-        height: 45,
-        position: 'fixed',
-        top: {xs:15,md: 75},
-        right: {xs:20,md: 20},
-        bgcolor: 'rgb(229, 229, 229)',
-        '&:hover': {
-          bgcolor: 'rgb(155, 155, 155)',
-        },
-      }}
-    >
-
-      <EditIcon sx={{ color: 'rgb(41, 29, 110)' }} />
-    </Fab>
-
+    {/* QR Modal */}
     <Modal
       open={openQR}
       onClose={handleCloseQR}
       closeAfterTransition
       slots={{ backdrop: Backdrop }}
-      slotProps={{
-        backdrop: {
-          timeout: 500,
-        },
-      }}
+      slotProps={{ backdrop: { timeout: 500, sx: { bgcolor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' } } }}
     >
       <Fade in={openQR}>
         <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 320,
-          bgcolor: 'background.paper',
-          borderRadius: '8px',
-          boxShadow: 24,
-          p: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 2,
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 340, maxWidth: '90%',
+          bgcolor: isDark ? '#111118' : '#fff',
+          borderRadius: 4,
+          boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+          overflow: 'hidden',
         }}>
-          <Typography variant="h6" color="primary">Compartir Contacto</Typography>
-          <Box sx={{ p: 2, bgcolor: 'white', borderRadius: '4px' }}>
-            <QRCode value={qrData} size={256} />
+          <Box sx={{ height: 4, background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)' }} />
+          <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <QrCodeIcon sx={{ color: '#8b5cf6', fontSize: 20 }} />
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Compartir Contacto</Typography>
+              </Box>
+              <IconButton onClick={handleCloseQR} size="small" sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Box sx={{ p: 2.5, bgcolor: '#fff', borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+              <QRCode value={qrData} size={220} />
+            </Box>
+            <Typography variant="caption" align="center" sx={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary' }}>
+              Escaneá este código para guardar los datos del martillero.
+            </Typography>
           </Box>
-          <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-            Escanea este código para guardar los datos del martillero.
-          </Typography>
         </Box>
       </Fade>
     </Modal>
 
+    {/* Edit Modal */}
     <Modal
       open={editModalOpen}
       onClose={handleCloseEditModal}
       closeAfterTransition
       slots={{ backdrop: Backdrop }}
-      slotProps={{
-        backdrop: {
-          timeout: 500,
-        },
-      }}
+      slotProps={{ backdrop: { timeout: 500, sx: { bgcolor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' } } }}
     >
       <Fade in={editModalOpen}>
         <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '75%',
-          maxWidth: 500,
-          bgcolor: 'background.paper',
-          borderRadius: '20px',
-          boxShadow: 24,
-          p: 4,
-          maxHeight: '90vh',
-          overflowY: 'auto',
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: '85%', maxWidth: 500,
+          bgcolor: isDark ? '#111118' : '#fff',
+          borderRadius: 4,
+          boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+          maxHeight: '90vh', overflowY: 'auto',
+          overflow: 'hidden',
         }}>
-          <Typography variant="h6" color="primary" gutterBottom>Editar Información</Typography>
-          <form onSubmit={handleFormSubmit}>
-            <TextField name="nombreNegocio" label="Nombre del Negocio" value={formData.nombreNegocio || ''} onChange={handleFormChange} fullWidth margin="normal" />
-            <TextField name="razonSocial" label="Razón Social / Dirección" value={formData.razonSocial || ''} onChange={handleFormChange} fullWidth margin="normal" />
-            <TextField name="cuit" label="CUIT" value={formData.cuit || ''} onChange={handleFormChange} fullWidth margin="normal" />
-            <TextField name="matricula" label="Matrícula" value={formData.matricula || ''} onChange={handleFormChange} fullWidth margin="normal" />
-            <TextField name="telefono" label="Teléfono" value={formData.telefono || ''} onChange={handleFormChange} fullWidth margin="normal" />
-            <TextField name="email" label="Email" value={formData.email || ''} onChange={handleFormChange} fullWidth margin="normal" />
-            <TextField name="localidad" label="Localidad" value={formData.localidad || ''} onChange={handleFormChange} fullWidth margin="normal" />
-            <TextField name="partido" label="Partido" value={formData.partido || ''} onChange={handleFormChange} fullWidth margin="normal" />
-            <TextField name="provincia" label="Provincia" value={formData.provincia || ''} onChange={handleFormChange} fullWidth margin="normal" />
-            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-              <Button onClick={handleCloseEditModal} color="secondary">Cancelar</Button>
-              <Button type="submit" variant="contained">Guardar Cambios</Button>
+          <Box sx={{ height: 4, background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)' }} />
+          <Box sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <EditIcon sx={{ color: '#8b5cf6', fontSize: 20 }} />
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Editar Información</Typography>
+              </Box>
+              <IconButton onClick={handleCloseEditModal} size="small" sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
             </Box>
-          </form>
+            <form onSubmit={handleFormSubmit}>
+              {[
+                { name: 'nombreNegocio', label: 'Nombre del Negocio' },
+                { name: 'razonSocial', label: 'Razón Social / Dirección' },
+                { name: 'cuit', label: 'CUIT' },
+                { name: 'matricula', label: 'Matrícula' },
+                { name: 'telefono', label: 'Teléfono' },
+                { name: 'email', label: 'Email' },
+                { name: 'localidad', label: 'Localidad' },
+                { name: 'partido', label: 'Partido' },
+                { name: 'provincia', label: 'Provincia' },
+              ].map((field) => (
+                <TextField
+                  key={field.name}
+                  name={field.name}
+                  label={field.label}
+                  value={formData[field.name] || ''}
+                  onChange={handleFormChange}
+                  fullWidth
+                  size="small"
+                  sx={{
+                    mb: 1.5,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#8b5cf6' },
+                    },
+                    '& .MuiInputLabel-root.Mui-focused': { color: '#8b5cf6' },
+                  }}
+                />
+              ))}
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+                <Button onClick={handleCloseEditModal} sx={{ borderRadius: 2.5, color: isDark ? 'rgba(255,255,255,0.6)' : 'text.secondary', textTransform: 'none' }}>
+                  Cancelar
+                </Button>
+                <Button type="submit" sx={{
+                  borderRadius: 2.5, textTransform: 'none', fontWeight: 600, px: 3,
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', color: '#fff',
+                  boxShadow: '0 4px 12px rgba(139,92,246,0.25)',
+                  '&:hover': { boxShadow: '0 6px 16px rgba(139,92,246,0.35)' },
+                }}>
+                  Guardar Cambios
+                </Button>
+              </Box>
+            </form>
+          </Box>
         </Box>
       </Fade>
     </Modal>
 
-    {/* Dialog de confirmación para eliminar cuenta */}
+    {/* Delete Dialog */}
     <Dialog
       open={deleteDialogOpen}
       onClose={handleCancelDelete}
-      aria-labelledby="delete-dialog-title"
-      aria-describedby="delete-dialog-description"
       maxWidth="sm"
       fullWidth
+      PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}
     >
-      <DialogTitle id="delete-dialog-title" sx={{ color: 'error.main', fontWeight: 'bold' }}>
-        ¿Estás seguro que quieres eliminar tu cuenta?
+      <Box sx={{ height: 4, bgcolor: '#ef4444' }} />
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontWeight: 700, pt: 2.5 }}>
+        <Box sx={{ width: 36, height: 36, borderRadius: 2.5, bgcolor: '#ef444418', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+          <WarningAmberIcon sx={{ fontSize: 20 }} />
+        </Box>
+        ¿Eliminar tu cuenta?
       </DialogTitle>
       <DialogContent>
-        <DialogContentText id="delete-dialog-description">
+        <Typography variant="body2" sx={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'text.secondary', mb: 2 }}>
           Esta acción es <strong>irreversible</strong>. Se eliminarán permanentemente:
-        </DialogContentText>
-        <Box component="ul" sx={{ mt: 2, pl: 2 }}>
-          <Typography component="li" variant="body2" color="text.secondary">
-            Todos tus datos personales y de negocio
-          </Typography>
-          <Typography component="li" variant="body2" color="text.secondary">
-            Todos los contratos, propiedades, inquilinos y propietarios
-          </Typography>
-          <Typography component="li" variant="body2" color="text.secondary">
-            Toda la información financiera y contable
-          </Typography>
-          <Typography component="li" variant="body2" color="text.secondary">
-            Las vinculaciones con servicios externos
-          </Typography>
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {['Datos personales y de negocio', 'Contratos, propiedades, inquilinos y propietarios', 'Información financiera y contable', 'Vinculaciones con servicios externos'].map((item, i) => (
+            <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ef4444', flexShrink: 0 }} />
+              <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary' }}>{item}</Typography>
+            </Box>
+          ))}
         </Box>
-        <DialogContentText sx={{ mt: 2, fontWeight: 'bold', color: 'error.main' }}>
-          Esta acción NO se puede deshacer.
-        </DialogContentText>
       </DialogContent>
-      <DialogActions sx={{ p: 3, gap: 1 }}>
-        <Button 
-          onClick={handleCancelDelete} 
-          variant="outlined"
-          disabled={isDeleting}
-        >
+      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+        <Button onClick={handleCancelDelete} disabled={isDeleting} sx={{ borderRadius: 2.5, textTransform: 'none', color: isDark ? 'rgba(255,255,255,0.6)' : 'text.secondary' }}>
           Cancelar
         </Button>
-        <Button 
-          onClick={handleConfirmDelete} 
-          color="error" 
-          variant="contained"
+        <Button
+          onClick={handleConfirmDelete}
           disabled={isDeleting}
-          startIcon={isDeleting ? <CircularProgress size={20} /> : <DeleteIcon />}
+          startIcon={isDeleting ? <CircularProgress size={16} /> : <DeleteIcon sx={{ fontSize: 18 }} />}
+          sx={{
+            borderRadius: 2.5, textTransform: 'none', fontWeight: 600, px: 3,
+            bgcolor: '#ef4444', color: '#fff',
+            '&:hover': { bgcolor: '#dc2626' },
+          }}
         >
-          {isDeleting ? 'Eliminando...' : 'Sí, eliminar permanentemente'}
+          {isDeleting ? 'Eliminando...' : 'Eliminar permanentemente'}
         </Button>
       </DialogActions>
     </Dialog>
